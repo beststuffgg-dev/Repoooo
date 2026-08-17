@@ -46,7 +46,7 @@ const HOOK=`;window.__t={
   set baseBeatMs(v){baseBeatMs=v},
   get overtime(){return overtime}, set overtime(v){overtime=v},
   get SHOP_AVATARS(){return SHOP_AVATARS}, get PENDING_AVATARS(){return PENDING_AVATARS},
-  get SHOP_THEMES(){return SHOP_THEMES}, hasArt, themeOwned, buyTheme,
+  get SHOP_THEMES(){return SHOP_THEMES}, hasArt, themeOwned,
   get TRAILS(){return TRAILS}, get HIT_FX(){return HIT_FX},
   get CAMPAIGN_AVATARS(){return CAMPAIGN_AVATARS}, get ALL_AVATARS(){return ALL_AVATARS},
   get GEN_THEMES(){return GEN_THEMES}, syncAreaRewards, areaCleared,
@@ -447,20 +447,30 @@ probe('shop themes: locked until bought or earned',()=>{
   t.progress.cleared={}; t.saveProgress();
 });
 
-probe('buying a theme deducts coins',()=>{
-  const w2=window, t=T();
-  const vapor=T().SHOP_THEMES.find(x=>x.id==='vapor');
-  t.profile.coins=vapor.price+100;
-  const before=t.profile.coins;
-  const ok=T().buyTheme(vapor);
-  if(!ok)throw new Error('purchase failed with enough coins');
-  if(t.profile.coins!==before-vapor.price)throw new Error('coins now '+t.profile.coins);
-  if(!T().themeOwned('vapor'))throw new Error('theme not owned after purchase');
-  // and refuses when short
-  t.profile.coins=10;
-  if(T().buyTheme(T().SHOP_THEMES.find(x=>x.id==='mono')))
-    throw new Error('bought a theme with 10 coins');
-  notes.push('vapor cost '+vapor.price+'; purchase refused at 10 coins');
+// Beta 15 stopped selling themes. A look is either free or earned by
+// clearing the area it belongs to — coins were never the interesting
+// gate, and charging for a palette sat badly beside areas that hand you
+// one for playing. buyTheme is gone; this checks the new rule.
+probe('themes are free, except the six earned by clearing an area',()=>{
+  const t=T();
+  t.progress.cleared={}; t.saveProgress();
+  const gated=['walnut','blueprint','amber','mono','bone','vapor'];
+  gated.forEach(id=>{
+    if(t.themeOwned(id))throw new Error(id+' should be locked on a fresh save');
+  });
+  if(!t.themeOwned('graphite'))throw new Error('graphite should always be free');
+  // Every generated theme is free.
+  const gen=t.GEN_THEMES;
+  const paidGen=gen.filter(g=>!t.themeOwned(g.id));
+  if(paidGen.length)throw new Error(paidGen.length+' generated themes are still locked');
+  // Clearing an area unlocks exactly its theme, and costs nothing.
+  const coinsBefore=t.profile.coins;
+  const c={}; for(let i=0;i<15;i++)c['1-'+i]=true;
+  t.progress.cleared=c; t.saveProgress();
+  if(!t.themeOwned('walnut'))throw new Error('clearing area 1 did not unlock walnut');
+  if(t.themeOwned('vapor'))throw new Error('area 10 theme unlocked by clearing area 1');
+  if(t.profile.coins!==coinsBefore)throw new Error('unlocking a theme cost coins');
+  notes.push(gated.length+' themes earned by clearing an area; '+gen.length+' generated ones free');
 });
 
 probe('daily: claimable once, then locked until tomorrow',()=>{

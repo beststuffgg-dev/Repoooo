@@ -345,10 +345,16 @@ const probes = [
   }],
   ['dark area overrides light theme, restores after', () => {
     const D = window.document;
+    // Bone is earned by clearing area 9 now rather than bought, so this
+    // picks whichever light theme is actually available — the point of
+    // the probe is the light/dark handoff, not which theme does it.
     D.querySelector('.hnav[data-tab="themes"]').click();
-    const bone = D.querySelector('.theme-card[data-theme="bone"]');
-    bone.click(); bone.click();
-    if (!D.body.classList.contains('light')) throw new Error('setup: not light');
+    const light = [...D.querySelectorAll('.theme-card:not(.locked)')]
+      .find(c => window.themeIsLight(c.dataset.theme));
+    if (!light) throw new Error('no unlocked light theme to test with');
+    light.click();
+    if (!D.body.classList.contains('light'))
+      throw new Error('setup: not light (tried ' + light.dataset.theme + ')');
     D.querySelector('.hnav[data-tab="levels"]').click();
     D.querySelector('#cam-scroll .lvl-row:not(.locked)').click();
     if (D.body.classList.contains('light'))

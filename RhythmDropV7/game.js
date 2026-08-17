@@ -1227,11 +1227,28 @@ function clearCustomTheme() {
     .forEach(k => r.removeProperty('--' + k));
 }
 
+// The 25 generated themes existed in GEN_THEMES and applyTheme knew how
+// to render them, but the grid only ever listed the 8 hand-authored
+// ones — so they were unreachable from the UI. Now that a theme costs
+// nothing, there is no reason to hide them.
+function genThemeCard(t) {
+  const d = t.def || {};
+  return {
+    id: t.id,
+    name: t.name,
+    subs: (d.mat || 'metal').replace(/^./, ch => ch.toUpperCase()),
+    dots: [d.tap || '#888', d.dtap || '#666', d.bg || '#222'],
+    ink:  d.text || 'var(--text)',
+  };
+}
+
 function buildThemesGrid() {
   const g = document.getElementById('themes-grid');
+  if (!g) return;
   g.innerHTML = '';
   const cur = store.loadTheme();
-  THEMES.forEach(th => {
+  const all = THEMES.concat((typeof GEN_THEMES !== 'undefined' ? GEN_THEMES : []).map(genThemeCard));
+  all.forEach(th => {
     const c = document.createElement('div');
     c.className = 'theme-card' + (th.id === cur ? ' selected' : '');
     c.dataset.theme = th.id;
@@ -1248,21 +1265,21 @@ function buildThemesGrid() {
         <div class="tc-dot" style="background:${th.dots[2]}"></div>
       </div>`;
     c.style.color = th.ink || 'var(--text)';
-    // Locked themes show their price and can be bought in place.
-    const meta = SHOP_THEMES.find(x => x.id === th.id);
-    const owned = !meta || themeOwned(th.id);
+    // A locked theme now names the area that unlocks it instead of a
+    // price — there is nothing left to buy.
+    const owned = themeOwned(th.id);
     if (!owned) {
       c.classList.add('locked');
       const tag = document.createElement('div');
       tag.className = 'theme-price';
-      tag.textContent = meta.price + ' coins';
+      tag.textContent = themeUnlockNote(th.id);
       c.appendChild(tag);
     }
 
     c.addEventListener('click', () => {
       if (!owned) {
-        if (!buyTheme(meta)) return;
-        buildThemesGrid();
+        showToast(themeUnlockNote(th.id) + ' to unlock this theme', true);
+        return;
       }
       applyTheme(th.id);
       const form = document.getElementById('custom-theme-form');
@@ -2089,6 +2106,39 @@ document.querySelectorAll('.hnav').forEach(t => t.addEventListener('click', () =
   if (t.dataset.tab === 'settings') buildSettingsPanel();
 }));
 
+// ══════════════════════════════════════
+//  SHOP TABS
+//  Avatars, trails, effects and boxes were one long scroll. Same tab
+//  language as settings and the campaign eras.
+// ══════════════════════════════════════
+const SHOP_TABS = [
+  ['avatars', 'Avatars'],
+  ['trails',  'Trails'],
+  ['hitfx',   'Effects'],
+  ['boxes',   'Boxes'],
+];
+let shopTab = 'avatars';
+
+function renderShopTabs() {
+  const strip = document.getElementById('shop-tabs');
+  if (!strip) return;
+  strip.innerHTML = '';
+  SHOP_TABS.forEach(([key, label]) => {
+    const t = document.createElement('div');
+    t.className = 'set-tab' + (shopTab === key ? ' active' : '');
+    t.textContent = label;
+    t.tabIndex = 0;
+    const go = () => { shopTab = key; renderShop(); };
+    t.addEventListener('click', go);
+    t.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
+    });
+    strip.appendChild(t);
+    const g = document.getElementById('shop-g-' + key);
+    if (g) g.style.display = shopTab === key ? 'block' : 'none';
+  });
+}
+
 // ── Shop render ─────────────────────────────
 function renderShop() {
   const grid = document.getElementById('shop-avatar-grid');
@@ -2096,6 +2146,8 @@ function renderShop() {
   grid.innerHTML = '';
   const shop = store.loadShop();
 
+  renderShopTabs();
+  renderBoxShop();
   renderCosmetics();
 
   // Colourway applies to whichever avatar is equipped, so it
@@ -2238,7 +2290,65 @@ function claimDaily() {
 //  to coins rather than being a dead pull — a box should never
 //  be worth nothing.
 // ══════════════════════════════════════
+// Boxes you can buy, cheapest first. Rarity buys a better pool, not a
+// bigger one — a rare box is mostly avatars, a common one is mostly
+// trails and effects.
+const BOX_SHOP = [
+  { rarity:'common', name:'Common Box', price:800,
+    blurb:'Mostly trails and effects', accent:'var(--tap)' },
+  { rarity:'rare',   name:'Rare Box',   price:2200,
+    blurb:'Mostly avatars, incl. the expensive ones', accent:'var(--dtap)' },
+  { rarity:'epic',   name:'Epic Box',   price:5000,
+    blurb:'Avatars only, weighted to the rarest', accent:'var(--perfect)' },
+];
+
+function renderBoxShop() {
+  const host = document.getElementById('shop-boxes');
+  if (!host) return;
+  host.innerHTML = '';
+  BOX_SHOP.forEach(b => {
+    const card = document.createElement('div');
+    card.className = 'box-card';
+    card.tabIndex = 0;
+    card.innerHTML = `
+      <div class="box-card-art" style="color:${b.accent}">
+        <svg class="ic"><use href="#ic-gift"/></svg>
+      </div>
+      <div class="box-card-info">
+        <div class="box-card-name"></div>
+        <div class="box-card-blurb"></div>
+      </div>
+      <div class="box-card-price"></div>`;
+    card.querySelector('.box-card-name').textContent  = b.name;
+    card.querySelector('.box-card-blurb').textContent = b.blurb;
+    card.querySelector('.box-card-price').textContent = b.price.toLocaleString();
+    card.style.setProperty('--box-accent', b.accent);
+
+    const buy = () => {
+      if (profile.coins < b.price) {
+        showToast('Not enough coins — need ' + b.price.toLocaleString(), true);
+        return;
+      }
+      profile.coins -= b.price;
+      saveProfile();
+      const drop = openBox(b.rarity);
+      updateProfileBar();
+      renderShop();
+      showBox(b.rarity, drop.message);
+    };
+    card.addEventListener('click', buy);
+    card.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); buy(); }
+    });
+    host.appendChild(card);
+  });
+}
+
 const BOX_TABLES = {
+  epic: [
+    { pool:'avatar', weight:88, minPrice:1800 },
+    { pool:'coins',  weight:12, amount:2000 },
+  ],
   common: [
     { pool:'trail',  weight:34 },
     { pool:'fx',     weight:34 },
@@ -2272,7 +2382,12 @@ function openBox(rarity) {
 
   let candidates, ownedList, saveOwned;
   if (row.pool === 'avatar') {
-    candidates = SHOP_AVATARS.filter(a => !row.maxPrice || a.price <= row.maxPrice);
+    candidates = SHOP_AVATARS.filter(a =>
+      (!row.maxPrice || a.price <= row.maxPrice) &&
+      (!row.minPrice || a.price >= row.minPrice));
+    // A price band that matches nothing would silently become a coin
+    // drop, which is not what an Epic box promises.
+    if (!candidates.length) candidates = SHOP_AVATARS.slice();
     ownedList  = shop.owned || [];
     saveOwned  = id => { const sh = store.loadShop(); sh.owned = sh.owned || []; sh.owned.push(id); store.saveShop(sh); };
   } else if (row.pool === 'trail') {
@@ -2348,36 +2463,72 @@ const SHOP_THEMES = [
   { id:'vapor',     name:'Vapor',       price:4500, area:10 },
 ].concat(GEN_THEMES);
 
+// Themes are no longer sold. A look is either free, or it is earned by
+// clearing the area it belongs to — coins were never the interesting
+// gate, and paying for a palette sat badly next to areas that hand you
+// one for playing.
+const THEME_BY_AREA = { walnut:1, blueprint:3, amber:4, mono:8, bone:9, vapor:10 };
+
 function themeOwned(id) {
   if (id === 'graphite' || id === 'custom') return true;
-  const shop = store.loadShop();
-  // Clearing the matching area also grants its shop theme, so
-  // playing the campaign unlocks looks rather than only coins.
-  const byArea = { walnut:1, amber:4, vapor:10, bone:9, blueprint:3, mono:8 };
-  if (byArea[id] && areaCleared(byArea[id])) return true;
-  return (shop.themes || []).includes(id);
-}
-
-function buyTheme(t) {
-  if (profile.coins < t.price) {
-    showToast('Not enough coins — need ' + t.price, true);
-    return false;
-  }
-  profile.coins -= t.price;
-  saveProfile();
-  const shop = store.loadShop();
-  shop.themes = shop.themes || [];
-  shop.themes.push(t.id);
-  store.saveShop(shop);
-  uiSound('purchase');
-  showToast('Unlocked ' + t.name);
-  updateProfileBar();
+  // Earned by playing: the six that map to an area stay locked until
+  // that area is cleared.
+  if (THEME_BY_AREA[id]) return areaCleared(THEME_BY_AREA[id]);
+  // Everything else is free.
   return true;
 }
+
+// What to show on a locked theme card, so it reads as a goal rather
+// than a price.
+function themeUnlockNote(id) {
+  const a = THEME_BY_AREA[id];
+  if (!a || themeOwned(id)) return '';
+  const area = CAM().areaById(a);
+  return 'Clear ' + (area ? area.name : 'area ' + a);
+}
+
+// (buyTheme removed: themes are not sold any more. shop.themes is still
+// read on sync so an older save that owned some does not error.)
 
 // ── Trails & hit effects in the shop ──────
 // Owned cosmetics live in the same shop record as avatars, so
 // they sync with everything else for free.
+// A small looping demo of a trail or a hit effect. It is driven by the
+// item's own data through the same shape class and CSS variables the
+// game itself uses, so a card cannot drift from what it sells.
+function buildFxPreview(host, hostId, item) {
+  if (!host) return;
+  host.innerHTML = '';
+  const none = !item || item.shape === 'none';
+
+  if (hostId === 'shop-trails') {
+    const lane = document.createElement('div');
+    lane.className = 'fx-demo-lane';
+    const tile = document.createElement('i');
+    tile.className = 'fx-demo-tile' + (none ? '' : ' trail-' + item.shape);
+    if (!none) {
+      // Scaled down to card size; the ratios are what read, not the px.
+      tile.style.setProperty('--tl-len', Math.round((item.len || 0) * 0.5) + 'px');
+      tile.style.setProperty('--tl-op',  String(item.op || 0));
+      tile.style.setProperty('--tl-w',   String(item.w || 0));
+    }
+    lane.appendChild(tile);
+    host.appendChild(lane);
+    return;
+  }
+
+  const plane = document.createElement('div');
+  plane.className = 'fx-demo-plane';
+  if (!none) {
+    const burst = document.createElement('i');
+    burst.className = 'fx-demo-burst fx-' + item.shape;
+    burst.style.setProperty('--fx-scale', String(item.scale || 1));
+    burst.style.setProperty('--fx-dur',   (item.dur || 0.34) + 's');
+    plane.appendChild(burst);
+  }
+  host.appendChild(plane);
+}
+
 function renderCosmetics() {
   const shop = store.loadShop();
   shop.fx = shop.fx || [];
@@ -2393,7 +2544,11 @@ function renderCosmetics() {
       const c = document.createElement('div');
       c.className = 'fx-card' + (on ? ' on' : '') + (owned ? '' : ' locked');
       c.tabIndex = 0;
-      c.innerHTML = '<div class="fx-name"></div><div class="fx-cost"></div>';
+      // A name and a price told you nothing about what you were buying.
+      // Each card now shows the effect running, on a loop.
+      c.innerHTML = '<div class="fx-demo"></div>'
+                  + '<div class="fx-name"></div><div class="fx-cost"></div>';
+      buildFxPreview(c.querySelector('.fx-demo'), hostId, item);
       c.querySelector('.fx-name').textContent = item.name;
       c.querySelector('.fx-cost').textContent =
         on ? 'Equipped' : owned ? 'Owned' : item.price + ' coins';

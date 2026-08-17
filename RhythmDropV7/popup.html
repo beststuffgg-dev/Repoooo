@@ -250,6 +250,72 @@ body {
   filter:brightness(var(--app-brightness, 1));
 }
 
+/* ── Shop: effect previews ──
+   A name and a price said nothing about what you were buying. Each card
+   runs the effect on a loop, driven by the item's own data through the
+   same variables the game uses. */
+.fx-demo {
+  height:38px; border-radius:7px; margin-bottom:6px; position:relative;
+  overflow:hidden; background:var(--panel-deep);
+  box-shadow:inset 0 1px 3px var(--bevel-shade);
+}
+.fx-demo-lane { position:absolute; inset:0; }
+.fx-demo-tile {
+  position:absolute; left:50%; width:16px; height:9px; margin-left:-8px;
+  border-radius:3px; background:var(--tap);
+  box-shadow:0 0 6px var(--glow-tap);
+  animation:fx-demo-fall 1.9s linear infinite;
+}
+@keyframes fx-demo-fall {
+  from { top:-12px; } to { top:42px; }
+}
+.fx-demo-plane {
+  position:absolute; inset:0;
+  display:flex; align-items:flex-end; justify-content:center;
+}
+.fx-demo-plane::after {
+  content:''; position:absolute; left:8%; right:8%; bottom:9px; height:2px;
+  background:var(--accent); opacity:.55; border-radius:1px;
+}
+.fx-demo-burst {
+  position:absolute; left:50%; bottom:9px; width:34px; margin-left:-17px;
+  animation:fx-demo-pulse 1.6s ease-out infinite;
+}
+@keyframes fx-demo-pulse {
+  0%       { opacity:0; transform:scale(.4); }
+  18%      { opacity:1; transform:scale(1); }
+  55%,100% { opacity:0; transform:scale(1.5); }
+}
+body.reduce-motion .fx-demo-tile,
+body.reduce-motion .fx-demo-burst { animation:none; }
+
+/* ── Shop: mystery boxes ── */
+.box-card {
+  display:flex; align-items:center; gap:11px; cursor:pointer;
+  padding:11px 12px; border-radius:11px; margin-bottom:8px;
+  background:linear-gradient(160deg,
+    color-mix(in srgb,var(--box-accent,var(--tap)) 12%,var(--panel-raised)), var(--panel));
+  border:1px solid var(--bevel-shade);
+  transition:border-color .14s, transform .12s;
+}
+.box-card:hover { border-color:var(--box-accent,var(--tap)); }
+.box-card:active { transform:translateY(1px); }
+.box-card:focus-visible { outline:2px solid var(--tap); outline-offset:1px; }
+.box-card-art {
+  width:36px; height:36px; border-radius:10px; flex:none;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--panel-deep);
+  box-shadow:inset 0 1px 3px var(--bevel-shade);
+}
+.box-card-art .ic { width:18px; height:18px; }
+.box-card-info { flex:1; min-width:0; }
+.box-card-name  { font-size:13px; font-weight:700; }
+.box-card-blurb { font-size:10px; color:var(--muted); margin-top:2px; }
+.box-card-price {
+  font-family:var(--font-data); font-size:12px; font-weight:700;
+  color:var(--coin, var(--perfect)); flex:none;
+}
+
 /* ── Settings tabs ──
    Seven stacked sections was a long scroll for something you dip into.
    Same chip language as the era tabs so the app has one idea of a tab. */
@@ -3347,29 +3413,43 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 
   <!-- SHOP TAB -->
   <div class="tab-pane" id="tab-shop">
-    <div class="shop-section-head">Trails</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:7px;">What a note leaves behind as it falls</div>
-    <div class="fx-grid" id="shop-trails"></div>
+    <div class="set-tabs" id="shop-tabs"></div>
 
-    <div class="shop-section-head" style="margin-top:14px">Hit Effects</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:7px;">Fired at the strike plane on a PERFECT</div>
-    <div class="fx-grid" id="shop-hitfx"></div>
-
-    <div class="shop-section-head" style="margin-top:14px">Colourway</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:7px;">Applies to your equipped avatar — free with any avatar you own</div>
-    <div class="cw-row" id="shop-colourways" style="justify-content:flex-start;margin-bottom:4px"></div>
-    <div class="shop-section-head">Avatars</div>
-    <div class="avatar-grid" id="shop-avatar-grid"></div>
-    <div class="shop-section-head" style="margin-top:14px">Custom Avatar</div>
-    <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Upload any image — cropped to a square for 2,500 coins</div>
-    <div class="custom-av-upload" id="custom-av-upload-area">
-      <div class="custom-av-preview" id="custom-av-preview">
-        <span style="font-size:28px;color:var(--muted)">+</span>
+    <div class="set-group" id="shop-g-avatars">
+      <div class="shop-section-head">Colourway</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:7px;">Applies to your equipped avatar — free with any avatar you own</div>
+      <div class="cw-row" id="shop-colourways" style="justify-content:flex-start;margin-bottom:4px"></div>
+      <div class="shop-section-head">Avatars</div>
+      <div class="avatar-grid" id="shop-avatar-grid"></div>
+      <div class="shop-section-head" style="margin-top:14px">Custom Avatar</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Upload any image — cropped to a square for 2,500 coins</div>
+      <div class="custom-av-upload" id="custom-av-upload-area">
+        <div class="custom-av-preview" id="custom-av-preview">
+          <span style="font-size:28px;color:var(--muted)">+</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;">Click to upload image<br><span style="font-size:10px;opacity:.6">Cropped to a square</span></div>
+        <input type="file" id="custom-av-file" accept="image/*" style="display:none">
       </div>
-      <div style="font-size:11px;color:var(--muted);text-align:center;">Click to upload image<br><span style="font-size:10px;opacity:.6">180×240px recommended</span></div>
-      <input type="file" id="custom-av-file" accept="image/*" style="display:none">
+      <button id="custom-av-buy-btn" style="display:none;width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;font-family:var(--font-body);cursor:pointer;">Buy &amp; Equip Custom Avatar — 2,500 coins</button>
     </div>
-    <button id="custom-av-buy-btn" style="display:none;width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;font-family:var(--font-body);cursor:pointer;">Buy & Equip Custom Avatar — 2,500 coins</button>
+
+    <div class="set-group" id="shop-g-trails" style="display:none">
+      <div class="shop-section-head">Trails</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:7px;">What a note leaves behind as it falls</div>
+      <div class="fx-grid" id="shop-trails"></div>
+    </div>
+
+    <div class="set-group" id="shop-g-hitfx" style="display:none">
+      <div class="shop-section-head">Hit Effects</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:7px;">Fired at the strike plane on a PERFECT</div>
+      <div class="fx-grid" id="shop-hitfx"></div>
+    </div>
+
+    <div class="set-group" id="shop-g-boxes" style="display:none">
+      <div class="shop-section-head">Mystery Boxes</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:9px;">One random cosmetic. A duplicate converts to coins, so a box is never wasted.</div>
+      <div id="shop-boxes"></div>
+    </div>
   </div>
 
   <div class="tab-pane" id="tab-themes">
