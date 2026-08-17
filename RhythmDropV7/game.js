@@ -2084,6 +2084,9 @@ document.querySelectorAll('.hnav').forEach(t => t.addEventListener('click', () =
   document.getElementById('tab-' + t.dataset.tab).classList.add('active');
   uiSound('detent');
   if (t.dataset.tab === 'shop') renderShop();
+  // Rebuild on open so the panel can never show stale values after a
+  // setting was changed from somewhere else.
+  if (t.dataset.tab === 'settings') buildSettingsPanel();
 }));
 
 // ── Shop render ─────────────────────────────
@@ -2591,15 +2594,65 @@ function keyCodeLabel(code) {
   return code;
 }
 
+// Which tab each section lives under. Settings had grown to seven
+// stacked sections and a very long scroll; grouping them is the whole
+// point of the tabs.
+const SETTINGS_TABS = [
+  ['play',  'Play'],
+  ['audio', 'Audio'],
+  ['look',  'Look'],
+  ['data',  'Data'],
+];
+const SETTINGS_SECTION_TAB = {
+  'Controls':'play', 'Gameplay':'play',
+  'Instrument':'audio', 'Sound':'audio', 'Output':'audio',
+  'Visuals':'look', 'Display':'look', 'Extension Size':'look',
+  'Account Sync':'data',
+};
+let settingsTab = 'play';
+
 function buildSettingsPanel() {
-  const panel = document.getElementById('tab-settings');
-  if (!panel) return;
-  panel.innerHTML = '';
+  const host = document.getElementById('tab-settings');
+  if (!host) return;
+  host.innerHTML = '';
 
   const s = currentSettings;
 
+  // ── Tab strip ──
+  const strip = document.createElement('div');
+  strip.className = 'set-tabs';
+  const groups = {};
+  SETTINGS_TABS.forEach(([key, label]) => {
+    const t = document.createElement('div');
+    t.className = 'set-tab' + (settingsTab === key ? ' active' : '');
+    t.textContent = label;
+    t.tabIndex = 0;
+    const go = () => { settingsTab = key; buildSettingsPanel(); };
+    t.addEventListener('click', go);
+    t.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
+    });
+    strip.appendChild(t);
+
+    const g = document.createElement('div');
+    g.className = 'set-group';
+    g.style.display = settingsTab === key ? 'block' : 'none';
+    groups[key] = g;
+  });
+  host.appendChild(strip);
+  SETTINGS_TABS.forEach(([key]) => host.appendChild(groups[key]));
+
+  // Everything below still writes to `panel`; this routes those writes
+  // into whichever group the current section belongs to, so the section
+  // builders did not have to be rewritten one by one.
+  let cur = groups[SETTINGS_TABS[0][0]];
+  const panel = { appendChild(node) { cur.appendChild(node); return node; } };
+  const toTab = key => { cur = groups[key] || cur; };
+
   // ── Section heading helper ──
+  // Also switches which tab subsequent content lands in.
   function sectionHead(text) {
+    toTab(SETTINGS_SECTION_TAB[text] || 'play');
     const d = document.createElement('div');
     d.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);font-family:var(--font-data);text-transform:uppercase;margin:14px 0 6px;';
     d.textContent = text;
@@ -2676,6 +2729,36 @@ function buildSettingsPanel() {
   });
 
   // ── VISUALS section ──
+  // ── DISPLAY: brightness ──
+  panel.appendChild(sectionHead('Display'));
+
+  const briRow = document.createElement('div');
+  briRow.style.cssText = 'margin-bottom:10px;';
+  const briTop = document.createElement('div');
+  briTop.style.cssText = 'display:flex;justify-content:space-between;margin-bottom:5px;';
+  briTop.innerHTML = '<span style="font-size:12px;color:var(--muted)">Brightness</span>'
+    + '<span id="set-bri-val" style="font-size:12px;font-weight:700;color:var(--tap);font-family:var(--font-data)"></span>';
+  briRow.appendChild(briTop);
+
+  const bri = document.createElement('input');
+  bri.type = 'range'; bri.id = 'set-bri';
+  bri.min = '60'; bri.max = '140'; bri.step = '1';
+  bri.value = String(Math.round((s.brightness === undefined ? 1 : s.brightness) * 100));
+  bri.style.cssText = 'width:100%;accent-color:var(--tap);cursor:pointer;';
+  const showBri = () => {
+    const el = document.getElementById('set-bri-val');
+    if (el) el.textContent = bri.value + '%';
+  };
+  bri.addEventListener('input', () => {
+    currentSettings.brightness = Number(bri.value) / 100;
+    applyBrightness();
+    showBri();
+  });
+  bri.addEventListener('change', () => store.saveSettings(currentSettings));
+  briRow.appendChild(bri);
+  panel.appendChild(briRow);
+  showBri();
+
   panel.appendChild(sectionHead('Visuals'));
 
   const lsLabel = document.createElement('div');
@@ -2910,6 +2993,88 @@ function buildSettingsPanel() {
   panel.appendChild(speedNote);
 
   // ── SOUND section ──
+  // ── OUTPUT: volume and device ──
+  panel.appendChild(sectionHead('Output'));
+
+  const volRow = document.createElement('div');
+  volRow.style.cssText = 'margin-bottom:10px;';
+  const volTop = document.createElement('div');
+  volTop.style.cssText = 'display:flex;justify-content:space-between;margin-bottom:5px;';
+  volTop.innerHTML = '<span style="font-size:12px;color:var(--muted)">Volume</span>'
+    + '<span id="set-vol-val" style="font-size:12px;font-weight:700;color:var(--tap);font-family:var(--font-data)"></span>';
+  volRow.appendChild(volTop);
+
+  const vol = document.createElement('input');
+  vol.type = 'range'; vol.id = 'set-vol';
+  vol.min = '0'; vol.max = '100'; vol.step = '1';
+  vol.value = String(Math.round((s.volume === undefined ? 1 : s.volume) * 100));
+  vol.style.cssText = 'width:100%;accent-color:var(--tap);cursor:pointer;';
+  const showVol = () => {
+    const el = document.getElementById('set-vol-val');
+    if (el) el.textContent = vol.value + '%';
+  };
+  vol.addEventListener('input', () => {
+    currentSettings.volume = Number(vol.value) / 100;
+    if (window.RD_setVolume) window.RD_setVolume(currentSettings.volume);
+    showVol();
+  });
+  // Save on release, not on every pixel of the drag.
+  vol.addEventListener('change', () => {
+    store.saveSettings(currentSettings);
+    if (window.RD_playNoteFreq) { try { window.RD_playNoteFreq(523.25, false, 0); } catch (e) {} }
+  });
+  volRow.appendChild(vol);
+  panel.appendChild(volRow);
+  showVol();
+
+  // Output device. setSinkId is Chrome 110+; where it is missing we say
+  // so rather than showing a control that cannot work.
+  const outRow = document.createElement('div');
+  outRow.style.cssText = 'margin-bottom:6px;';
+  const outLbl = document.createElement('div');
+  outLbl.style.cssText = 'font-size:12px;color:var(--muted);margin-bottom:5px;';
+  outLbl.textContent = 'Output device';
+  outRow.appendChild(outLbl);
+
+  if (window.RD_canPickOutput && window.RD_canPickOutput()) {
+    const sel = document.createElement('select');
+    sel.style.cssText = 'width:100%;padding:7px 8px;border-radius:8px;border:1px solid var(--border2);'
+      + 'background:var(--bg3);color:var(--text);font-size:12px;font-family:var(--font-body);cursor:pointer;';
+    const def = document.createElement('option');
+    def.value = ''; def.textContent = 'System default';
+    sel.appendChild(def);
+    sel.value = s.audioOut || '';
+    sel.addEventListener('change', () => {
+      currentSettings.audioOut = sel.value;
+      store.saveSettings(currentSettings);
+      if (window.RD_setOutput) {
+        window.RD_setOutput(sel.value).then(ok2 => {
+          showToast(ok2 ? 'Output switched' : 'Could not switch output', !ok2);
+        });
+      }
+    });
+    outRow.appendChild(sel);
+    // Labels are only populated once the page has audio permission, so
+    // an unlabelled list is normal — the ids still work.
+    if (window.RD_listOutputs) {
+      window.RD_listOutputs().then(list => {
+        list.forEach((d, i) => {
+          const o = document.createElement('option');
+          o.value = d.deviceId;
+          o.textContent = d.label || ('Output ' + (i + 1));
+          sel.appendChild(o);
+        });
+        if (s.audioOut) sel.value = s.audioOut;
+      });
+    }
+  } else {
+    const note = document.createElement('div');
+    note.style.cssText = 'font-size:10px;color:var(--dim);font-family:var(--font-data);';
+    note.textContent = 'This browser plays on the system default device.';
+    outRow.appendChild(note);
+  }
+  panel.appendChild(outRow);
+
   panel.appendChild(sectionHead('Sound'));
 
   // Audio offset calibration. Web Audio latency varies enough
@@ -2932,6 +3097,7 @@ function buildSettingsPanel() {
   calRow.appendChild(calBtn);
   panel.appendChild(calRow);
 
+  toTab('data');
   // ── Replay the tutorial ──
   // It shows once on first launch; this is how you get it back.
   const tutBtn = document.createElement('button');
@@ -2942,6 +3108,7 @@ function buildSettingsPanel() {
   tutBtn.addEventListener('click', openTutorial);
   panel.appendChild(tutBtn);
 
+  toTab('data');
   // ── Reset button ──
   const resetBtn = document.createElement('button');
   resetBtn.style.cssText = 'width:100%;margin-top:8px;padding:9px;border-radius:9px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;transition:border-color .15s,color .15s;';
@@ -4904,6 +5071,9 @@ const DEFAULT_SETTINGS = {
   areaThemes: true,      // let each area recolour the app while you play it
   laneStyle: 'keycap',   // keycap | light
   audioOffset: 0,        // ms, measured by the calibration tool
+  volume: 1,             // 0..1, applied on the audio master gain
+  audioOut: '',          // output device id; '' = system default
+  brightness: 1,         // 0.6..1.4, a filter on the app root
 };
 
 // Hit window is where difficulty flexes. Note speed deliberately
@@ -4932,10 +5102,19 @@ function loadAndApplySettings() {
     if (saved.hitFx)      currentSettings.hitFx      = saved.hitFx;
     if (typeof saved.areaThemes === 'boolean') currentSettings.areaThemes = saved.areaThemes;
     if (typeof saved.audioOffset === 'number') currentSettings.audioOffset = saved.audioOffset;
+    // Numeric settings have to be tested by type, not truthiness: a
+    // volume of 0 is a real value and `if (saved.volume)` would drop it.
+    if (typeof saved.volume === 'number')     currentSettings.volume     = saved.volume;
+    if (typeof saved.brightness === 'number') currentSettings.brightness = saved.brightness;
+    if (typeof saved.audioOut === 'string')   currentSettings.audioOut   = saved.audioOut;
   }
   applySettingsToDOM();
   // Apply saved instrument to audio engine
   if (window.RD_saveInstrument) window.RD_saveInstrument(currentSettings.instrument || 'synth');
+  // And the saved output device, once the context exists.
+  if (currentSettings.audioOut && window.RD_setOutput) {
+    window.RD_setOutput(currentSettings.audioOut);
+  }
 }
 
 // Plays 8 metronome beats and measures the mean offset between
@@ -5004,12 +5183,24 @@ function runCalibration(btn) {
   }
 }
 
+// Brightness rides on the root as a filter, so it covers every screen
+// including the board without any element needing to know about it.
+function applyBrightness() {
+  const b = currentSettings.brightness;
+  const v = (b === undefined || b === null) ? 1 : Math.max(0.6, Math.min(1.4, b));
+  document.documentElement.style.setProperty('--app-brightness', String(v));
+}
+
 function applySettingsToDOM() {
   applyTrailClass();
   applyHitFxVars();
   // Bindings may have just changed; the keydown handler reads a cached
   // map rather than rebuilding one per keystroke.
   if (typeof refreshKeyMap === 'function') refreshKeyMap();
+  applyBrightness();
+  if (window.RD_setVolume) {
+    window.RD_setVolume(currentSettings.volume === undefined ? 1 : currentSettings.volume);
+  }
   document.body.classList.toggle('lane-light',
     (currentSettings.laneStyle || 'keycap') === 'light');
   // Sizing the window only means anything in a popup, which has none of

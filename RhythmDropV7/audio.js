@@ -15,6 +15,58 @@ function ctx() {
 
 window.RD_getContext = function () { return _ctx; };
 
+// ── Output volume ─────────────────────────
+// Applied on the master gain, so it scales everything including the
+// backing track. Stored here rather than in settings so audio.js can be
+// reasoned about on its own; game.js persists it.
+let _volume = 1;
+window.RD_setVolume = function (v) {
+  _volume = Math.max(0, Math.min(1, Number(v) || 0));
+  if (_masterGain) _masterGain.gain.value = _volume;
+  return _volume;
+};
+window.RD_getVolume = function () { return _volume; };
+
+// ── Output device ─────────────────────────
+// AudioContext.setSinkId is Chrome 110+. Where it is missing the game
+// simply plays on the default device, which is what it did before.
+window.RD_canPickOutput = function () {
+  try { return typeof AudioContext !== 'undefined'
+      && 'setSinkId' in AudioContext.prototype; }
+  catch (e) { return false; }
+};
+window.RD_listOutputs = function () {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) {
+    return Promise.resolve([]);
+  }
+  return navigator.mediaDevices.enumerateDevices()
+    .then(list => list.filter(d => d.kind === 'audiooutput'))
+    .catch(() => []);
+};
+window.RD_setOutput = function (deviceId) {
+  const c = ctx();
+  if (!c || typeof c.setSinkId !== 'function') return Promise.resolve(false);
+  return c.setSinkId(deviceId || '').then(() => true).catch(() => false);
+};
+
+// ── First-gesture resume ──────────────────
+// Browsers start an AudioContext suspended until the page sees a real
+// gesture. Without this the first note of the first level after opening
+// the popup can be swallowed, which reads as "the audio is broken".
+// Cheap to leave armed: it removes itself once the context is running.
+(function armAudioOnGesture() {
+  const wake = () => {
+    try {
+      const c = ctx();
+      if (c && c.state === 'suspended' && c.resume) c.resume();
+      if (c && c.state === 'running') off();
+    } catch (e) { /* best effort */ }
+  };
+  const evts = ['pointerdown', 'keydown', 'touchstart'];
+  const off = () => evts.forEach(e => window.removeEventListener(e, wake, true));
+  evts.forEach(e => window.addEventListener(e, wake, true));
+})();
+
 // ── Master gain ───────────────────────────
 // Every voice connects straight here, so simultaneous notes simply sum.
 // Four notes at once measured a peak around 2.7 — hard digital clipping,
@@ -27,7 +79,7 @@ function masterGain() {
   if (!_masterGain) {
     const c = ctx();
     _masterGain = c.createGain();
-    _masterGain.gain.value = 1;
+    _masterGain.gain.value = _volume;
 
     // Every browser this ships to has DynamicsCompressorNode, but the
     // limiter is a safeguard, not a dependency: if it is missing, play
