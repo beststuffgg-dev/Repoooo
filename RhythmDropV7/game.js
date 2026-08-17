@@ -3978,6 +3978,27 @@ function buildGrid() {
   });
 
   paintSelection();
+  paintDensityWarning();
+}
+
+// XP stops paying per note once a chart is mostly solid. Say so while
+// it is being written, rather than letting the reward look broken
+// after the fact.
+function paintDensityWarning() {
+  const el = document.getElementById('cr-dense-warn');
+  if (!el) return;
+  const cam  = CAM();
+  const cap  = cam.DENSITY_CAP;
+  const lvl  = { grid: crGrid };
+  const notes = cam.countNotes(lvl);
+  const fill  = cam.fillOf(lvl);
+  el.classList.toggle('show', fill > cap);
+  if (fill > cap) {
+    const kept = Math.round((cam.payableNotes(lvl, notes) / notes) * 100);
+    el.textContent = Math.round(fill * 100) + '% of the grid is filled. Past '
+      + Math.round(cap * 100) + '% the surplus notes barely pay — this chart earns about '
+      + kept + '% of the XP its note count suggests.';
+  }
 }
 
 document.getElementById('cr-add-rows').addEventListener('click', () => {

@@ -761,6 +761,15 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
 }
 .cr-add-btn:hover { border-color:var(--tap); color:var(--tap); }
 
+/* Shown only once a chart is dense enough for XP to start discounting
+   the surplus, so the drop never looks like a bug. */
+#cr-dense-warn {
+  display:none; margin:0 0 6px; padding:6px 9px; border-radius:8px;
+  border:1px solid var(--miss); background:color-mix(in srgb,var(--miss) 12%,transparent);
+  color:var(--miss); font-size:10px; font-weight:700; line-height:1.4;
+}
+#cr-dense-warn.show { display:block; }
+
 /* ── ADVANCED CREATOR PANEL ── */
 #adv-panel {
   border-top:1px solid var(--border); background:var(--bg2);
@@ -3677,6 +3686,7 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
   </div>
 
   <div class="cr-grid-wrap" id="cr-grid-wrap">
+    <div id="cr-dense-warn"></div>
     <div id="cr-grid"></div>
     <button class="cr-add-btn" id="cr-add-rows">+ 4 beats</button>
   </div>

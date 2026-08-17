@@ -326,6 +326,14 @@
     let deg = opts.startDeg || 0;
     const top = mus.scale.length - 1;
 
+    const OCT_STEP = octStep(mus);
+    const degMidi  = i => degMidiOf(mus, i);
+
+    // The degree the last nextPitch() call actually sounded, octave
+    // shift included, so a chord harmonises the note beside it rather
+    // than the one the walker happened to be standing on.
+    let lastDeg = 0;
+
     function stepTo(target) {
       deg += Math.sign(target - deg) || (rnd() < 0.5 ? -1 : 1);
       deg = Math.max(0, Math.min(top, deg));
@@ -348,7 +356,8 @@
       deg = Math.max(0, Math.min(top, deg));
 
       let midi = mus.root + mus.scale[deg];
-      if (rnd() < mus.octave) midi += 12;
+      lastDeg = deg;
+      if (rnd() < mus.octave) { midi += 12; lastDeg = deg + OCT_STEP; }
       return midiToFreq(midi + 12);
     }
 
@@ -394,6 +403,15 @@
         [null, null, null, null], [null, null, null, null],
       ];
 
+      // The scale degree sounding on each beat of this bar, so the
+      // chord step can harmonise against the melody rather than
+      // guessing.
+      const beatDeg  = [];
+      // How far up the stack of thirds each beat has already been
+      // voiced, so a third note on a beat becomes the fifth and not
+      // another third.
+      const beatStack = [];
+
       if (!rest) {
         lastFam = pickFamily();
         const pat = pickPattern(lastFam);
@@ -427,33 +445,81 @@
           const isDtap  = wantDtap();
           const sustain = wantSustain();
 
-          rows[b][L] = {
-            type: isDtap ? 'dtap' : 'tap',
-            freq: nextPitch(posInPhrase, cadence),
-            sustain,
-          };
+          // A second note on a beat that is already sounding is not
+          // another step of the melody — it is harmony. Half the
+          // patterns here place two or three notes on one beat, and
+          // walking the melody for each of them is what made
+          // simultaneous hits land on whatever interval the walker
+          // happened to reach. Stack them in thirds above the note
+          // already there and those same patterns play as chords.
+          let freq;
+          if (beatDeg[b] === undefined) {
+            freq = nextPitch(posInPhrase, cadence);
+            beatDeg[b]   = lastDeg;
+            beatStack[b] = 0;
+          } else {
+            beatStack[b] += 2;
+            freq = midiToFreq(degMidi(beatDeg[b] + beatStack[b]) + 12);
+          }
+
+          rows[b][L] = { type: isDtap ? 'dtap' : 'tap', freq, sustain };
           placed++;
           if (isDtap) dtaps++;
           if (sustain > 0) susts++;
         });
 
-        // Chords use a third or fifth — never a second, which is
-        // what made earlier versions sound sour on simultaneous hits.
+        // ── Chords ───────────────────────────────────
+        // A real triad rather than one stray interval: take a beat
+        // that already carries melody, treat its degree as the chord
+        // root, and fill free lanes with the degrees stacked in
+        // thirds above it. Stacking scale degrees is what builds a
+        // triad, and it is also why the chord can never contain a
+        // second — which is what made simultaneous hits sour before.
         if (rnd() < mus.chord) {
-          // Must respect the meter too, or a waltz gets a stray
-          // note on beat 4 and stops being in three.
-          const b = Math.floor(rnd() * meter);
-          const free = [0, 1, 2, 3].filter(l => !rows[b][l]);
-          if (free.length) {
-            const L = free[Math.floor(rnd() * free.length)];
-            const jump = rnd() < 0.5 ? 2 : 4;                  // 3rd or 5th
-            const di   = Math.min(top, deg + jump);
-            rows[b][L] = {
-              type: 'tap',
-              freq: midiToFreq(mus.root + mus.scale[di] + 12),
-              sustain: 0,
-            };
-            placed++;
+          // Beats that have a note to harmonise and room beside it.
+          // Restricted to the meter, or a waltz picks up a stray
+          // note on beat four and stops being in three.
+          const cands = [];
+          for (let b = 0; b < meter; b++) {
+            if (beatDeg[b] === undefined) continue;
+            const free = [0, 1, 2, 3].filter(l => !rows[b][l]);
+            if (!free.length) continue;
+            // Downbeats carry harmony; mid-bar chords sound incidental.
+            const weight = b === 0 ? 3 : (b === meter - 1 ? 2 : 1);
+            for (let w = 0; w < weight; w++) cands.push({ b, free });
+          }
+
+          if (cands.length) {
+            const { b, free } = cands[Math.floor(rnd() * cands.length)];
+            const root = beatDeg[b];
+
+            // Third, then fifth, then the seventh once the charts are
+            // busy enough to carry it. Difficulty decides how much of
+            // the stack actually gets voiced.
+            const stack = [2, 4];
+            if (d >= 7 && rnd() < 0.35) stack.push(6);
+            const want = d < 3 ? 1
+                       : d < 6 ? (rnd() < 0.45 ? 2 : 1)
+                       : Math.min(stack.length, rnd() < 0.6 ? stack.length : 2);
+
+            // Cadence chords ring: a held triad is what resolution
+            // sounds like. Mid-phrase ones stay short.
+            const hold = (cadenceBar && d >= 3) ? 1.5 : 0;
+
+            const lanes = free.slice();
+            for (let t = 0; t < want && lanes.length; t++) {
+              const L = lanes.splice(Math.floor(rnd() * lanes.length), 1)[0];
+              // Continue the beat's own stack rather than restarting
+              // it, so this never doubles a tone already sounding.
+              beatStack[b] = (beatStack[b] || 0) + 2;
+              rows[b][L] = {
+                type: 'tap',
+                freq: midiToFreq(degMidi(root + Math.max(stack[t], beatStack[b])) + 12),
+                sustain: hold,
+              };
+              placed++;
+              if (hold > 0) susts++;
+            }
           }
         }
       }
@@ -551,6 +617,47 @@
   };
 
   const midiToFreq = m => parseFloat((440 * Math.pow(2, (m - 69) / 12)).toFixed(2));
+
+  // ── Harmony helpers ──────────────────────
+  // Chords are built by stacking scale degrees in thirds — degree i,
+  // i+2, i+4 — which is what a triad is, and why a chord built this
+  // way can never contain a second.
+
+  // How many degrees a scale takes to climb an octave. The tables run
+  // past their own octave, so this is where they start repeating; a
+  // stacked third that runs off the end wraps here instead of being
+  // clamped, which used to collapse high chords into unisons.
+  const OCT_STEP = {};
+  function octStep(mus) {
+    const key = mus.root + ':' + mus.scale.join(',');
+    if (OCT_STEP[key] !== undefined) return OCT_STEP[key];
+    let n = mus.scale.length;
+    for (let i = 1; i < mus.scale.length; i++) {
+      if (mus.scale[i] - mus.scale[0] >= 12) { n = i; break; }
+    }
+    return (OCT_STEP[key] = n);
+  }
+
+  // The MIDI note a scale degree sounds, counting past the end of the
+  // table into the octaves above.
+  function degMidiOf(mus, i) {
+    const step = octStep(mus);
+    const oct  = Math.floor(i / step);
+    return mus.root + mus.scale[i - oct * step] + oct * 12;
+  }
+
+  // The degree a frequency is sitting on. Lets a note added after the
+  // fact harmonise what it lands beside instead of picking a pitch out
+  // of the air.
+  function degOfFreq(mus, freq) {
+    const midi = Math.round(69 + 12 * Math.log2(freq / 440)) - 12;
+    let best = 0, bestD = Infinity;
+    for (let i = 0; i < octStep(mus) * 3; i++) {
+      const d = Math.abs(degMidiOf(mus, i) - midi);
+      if (d < bestD) { bestD = d; best = i; }
+    }
+    return best;
+  }
 
   // Lane default pitches for an area: the first four scale degrees.
   function scaleFreqs(areaId) {
@@ -658,7 +765,6 @@
   function varyRows(rows, seed, musicId, d) {
     const rnd = mulberry32(seed >>> 0);
     const mus = MUSIC[musicId] || MUSIC[1];
-    const top = mus.scale.length - 1;
     const bars = Math.floor(rows.length / 4);
 
     for (let b = 0; b < bars; b++) {
@@ -673,16 +779,19 @@
 
       const roll = rnd();
       if (roll < 0.30) {
-        // An extra note alongside one that is already there.
+        // An extra note alongside one that is already there — so it
+        // has to harmonise that note, not sound a degree picked out
+        // of the air. A third or a fifth above whatever is in the row.
         const [r] = cells[Math.floor(rnd() * cells.length)];
         const free = [0, 1, 2, 3].filter(l => !rows[r][l]);
         if (free.length) {
-          const L   = free[Math.floor(rnd() * free.length)];
-          const deg = Math.min(top, 2 + Math.floor(rnd() * 3));
-          const src = rows[r].find(c => c);
+          const L    = free[Math.floor(rnd() * free.length)];
+          const src  = rows[r].find(c => c);
+          const base = src ? degOfFreq(mus, src.freq) : 0;
+          const step = rnd() < 0.6 ? 2 : 4;
           rows[r][L] = {
             type: 'tap',
-            freq: midiToFreq(mus.root + mus.scale[deg] + 12),
+            freq: midiToFreq(degMidiOf(mus, base + step) + 12),
             sustain: 0,
             inst: src ? src.inst : undefined,
           };
@@ -1160,6 +1269,29 @@
       campaignStyle(areaId, levelIdx, isDouble));
   }
 
+  // Share of the grid that can be filled before XP stops paying per
+  // note, and what the notes past that point are worth.
+  const DENSITY_CAP  = 0.85;
+  const SURPLUS_RATE = 0.15;
+
+  // How full a chart's grid is, 0..1. Note-list levels have no grid to
+  // measure, so they are never treated as over-dense.
+  function fillOf(lvl) {
+    const rows = (lvl && lvl.grid) ? lvl.grid.length : 0;
+    if (!rows) return 0;
+    const lanes = lvl.grid[0].length || 4;
+    return countNotes(lvl) / (rows * lanes);
+  }
+
+  // The note count XP is actually paid on, after the density penalty.
+  function payableNotes(lvl, notes) {
+    if (notes === undefined) notes = countNotes(lvl);
+    const rows = (lvl && lvl.grid) ? lvl.grid.length : 0;
+    if (!rows) return notes;
+    const cap = rows * (lvl.grid[0].length || 4) * DENSITY_CAP;
+    return notes > cap ? cap + (notes - cap) * SURPLUS_RATE : notes;
+  }
+
   function xpFor(lvl, opts) {
     opts = opts || {};
     const notes = countNotes(lvl);
@@ -1172,12 +1304,22 @@
       ? 1 + ((lvl.areaId || 1) - 1) * 0.15
       : 1 + ((lvl.difficulty || 1) - 1) * 0.2;
 
-    let xp = Math.round(notes * speed * diff);
+    // A wall of notes is not a harder chart, it is a longer one with
+    // the key held down — filling every box was the cheapest XP per
+    // second in the game. Past DENSITY_CAP of the grid the surplus
+    // notes pay a fraction, so a musical chart always beats a solid
+    // block of the same length.
+    const paid = payableNotes(lvl, notes);
+
+    // Rounded once, at the end. Rounding at every step let the errors
+    // compound, so a run worth exactly twice another could come out
+    // two XP off and stop looking like a doubling.
+    let xp = paid * speed * diff;
 
     // Custom levels earn half: a self-authored 500-note chart
     // shouldn't be an XP faucet. Procedural levels are generated
     // from a seed, so they can't be gamed and pay full.
-    if (!lvl.campaign && !lvl.procedural) xp = Math.round(xp * 0.5);
+    if (!lvl.campaign && !lvl.procedural) xp *= 0.5;
 
     // A failed run pays for the part of the chart it actually got
     // through. Paying the full note count regardless meant quitting
@@ -1185,12 +1327,12 @@
     // clearing it, which made dying the fastest way to level.
     if (opts.completed) {
       // Finishing beats dying partway.
-      xp = Math.round(xp * 1.25);
+      xp *= 1.25;
     } else {
       const p = opts.progress === undefined ? 1 : opts.progress;
-      xp = Math.round(xp * Math.max(0, Math.min(1, p)));
+      xp *= Math.max(0, Math.min(1, p));
     }
-    return Math.max(1, xp);
+    return Math.max(1, Math.round(xp));
   }
 
   // Cumulative XP needed to REACH level n. Deliberately steep
@@ -1388,5 +1530,6 @@
     areaById, buildCampaignLevel, difficultyFor,
     generateChart, mulberry32, resolveInstrument,
     xpFor, xpForLevel, levelFromXp, levelProgress, countNotes,
+    fillOf, payableNotes, DENSITY_CAP,
   };
 })();
