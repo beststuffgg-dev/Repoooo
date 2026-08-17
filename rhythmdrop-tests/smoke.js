@@ -263,9 +263,13 @@ const probes = [
     const D = window.document;
     const sw = [...D.querySelectorAll('#shop-colourways .cw')];
     if (sw.length !== 7) throw new Error('expected 7 colourways (As drawn + 6 tints), got ' + sw.length);
-    // buy one so there is something equipped to tint
-    const card = D.querySelector('#shop-avatar-grid .avatar-card');
-    card.click();
+    // Buy one so there is something equipped to tint. Buying takes two
+    // clicks now: the first previews the avatar and arms the card, the
+    // second spends. Re-query between them — arming re-renders the grid.
+    D.querySelector('#shop-avatar-grid .avatar-card').click();
+    D.querySelector('#shop-avatar-grid .avatar-card').click();
+    if (!D.querySelector('#shop-avatar-grid .avatar-card.owned, #shop-avatar-grid .avatar-card.equipped'))
+      throw new Error('two clicks did not buy an avatar');
     const before = D.querySelector('#pbar-avatar svg.av').style.getPropertyValue('--av-p');
     // index 0 is 'As drawn'; pick a real tint
     sw[4].click();

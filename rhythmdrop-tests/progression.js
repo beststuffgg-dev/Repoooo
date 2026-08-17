@@ -343,6 +343,7 @@ probe('the Double: doubles coins AND XP, still no clear credit',()=>{
   t.progress.cleared={}; t.progress.xp=0; t.saveProgress();
   const lvl=C.buildCampaignLevel(1,0);
   // normal clear first
+  const coinsBeforeNormal=t.profile.coins;
   t.gameLevel=lvl; t.baseBeatMs=500; t.score=20000; t.endGame(true);
   const xpAfterNormal=t.progress.xp, coinsAfterNormal=t.profile.coins;
   if(!t.isCleared(1,0))throw new Error('normal clear failed');
@@ -357,9 +358,15 @@ probe('the Double: doubles coins AND XP, still no clear credit',()=>{
   // The formula rounds twice, so 2x can land a single XP either side.
   if(Math.abs(gainedXp-xpAfterNormal*2)>1)
     throw new Error('Double paid '+gainedXp+' xp, expected ~'+(xpAfterNormal*2));
-  if(gainedCoins!==40)throw new Error('Double should pay 40 coins for 20000, got '+gainedCoins);
+  // Coins are flat per level now, so the Double's coin payout is the
+  // flat rate doubled — not a function of the score at all.
+  const flat=C.COINS_PER_CLEAR;
+  if(coinsAfterNormal-coinsBeforeNormal!==flat)
+    throw new Error('normal clear should pay '+flat+', got '+(coinsAfterNormal-coinsBeforeNormal));
+  if(gainedCoins!==flat*2)
+    throw new Error('Double should pay '+(flat*2)+' coins, got '+gainedCoins);
   if(t.isCleared(1,0))throw new Error('the Double marked a level cleared');
-  notes.push('20000 pts: normal +'+coinsAfterNormal+' coins/'+xpAfterNormal+'xp; '
+  notes.push('20000 pts: normal +'+(coinsAfterNormal-coinsBeforeNormal)+' coins/'+xpAfterNormal+'xp; '
     +'Double +'+gainedCoins+' coins/'+gainedXp+'xp, no clear');
 });
 

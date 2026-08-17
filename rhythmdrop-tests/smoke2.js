@@ -52,6 +52,8 @@ const HOOK=`
   get currentSettings(){return currentSettings},
   get ctDraft(){return ctDraft}, set ctDraft(v){ctDraft=v},
   get gameLevel(){return gameLevel}, set gameLevel(v){gameLevel=v},
+  get notesHit(){return notesHit}, set notesHit(v){notesHit=v},
+  get notesTotal(){return notesTotal}, set notesTotal(v){notesTotal=v},
   set baseBeatMs(v){baseBeatMs=v}, get running(){return running},
   hitTol, spawnTile, retireTile, updateLives, hit, endGame,
   updateCtPreview, startGame, deriveTheme,
@@ -121,19 +123,37 @@ probe('streak bonus compounds',()=>{
   notes.push('score after 1 hit: '+first+', after 10: '+tenth);
   if(tenth<=first*10)throw new Error('streak/combo not compounding');
 });
-probe('coins: campaign pays full, custom pays half',()=>{
+probe('coins: every level pays the same, whatever the score',()=>{
   const t=T();
-  // campaign level -> 1 coin per 1000 points
+  const flat=window.RD_Campaign.COINS_PER_CLEAR;
+  // A campaign clear pays the flat rate...
   t.gameLevel=window.RD_Campaign.buildCampaignLevel(1,0);
-  let before=t.profile.coins; t.score=25000; t.endGame(true);
+  let before=t.profile.coins;
+  t.score=25000; t.notesTotal=1; t.notesHit=1; t.endGame(true);
   const camp=t.profile.coins-before;
-  // same score on a non-campaign chart -> half
+  // ...and so does a custom chart, and so does a run worth ten times
+  // the score. Coins count levels finished, not points scored.
   t.gameLevel=Object.assign({},window.RD_Campaign.buildCampaignLevel(1,0),{campaign:false});
-  before=t.profile.coins; t.score=25000; t.endGame(false);
+  before=t.profile.coins;
+  t.score=250000; t.notesTotal=1; t.notesHit=1; t.endGame(true);
   const cust=t.profile.coins-before;
-  notes.push('25000 pts: campaign +'+camp+' coins, custom +'+cust+' coins');
-  if(camp!==25)throw new Error('campaign should pay 25, got '+camp);
-  if(cust!==12)throw new Error('custom should pay 12, got '+cust);
+  notes.push('campaign +'+camp+' coins, custom at 10x the score +'+cust+' coins');
+  if(camp!==flat)throw new Error('campaign should pay '+flat+', got '+camp);
+  if(cust!==flat)throw new Error('custom should pay '+flat+', got '+cust);
+});
+probe('coins: a run that ends early pays for what it played',()=>{
+  const t=T();
+  const flat=window.RD_Campaign.COINS_PER_CLEAR;
+  t.gameLevel=window.RD_Campaign.buildCampaignLevel(1,0);
+  let before=t.profile.coins;
+  t.score=25000; t.notesTotal=100; t.notesHit=0; t.endGame(false);
+  const quit=t.profile.coins-before;
+  before=t.profile.coins;
+  t.score=25000; t.notesTotal=100; t.notesHit=50; t.endGame(false);
+  const half=t.profile.coins-before;
+  notes.push('quit on note 1: +'+quit+' coins, halfway: +'+half);
+  if(quit!==0)throw new Error('quitting instantly should pay 0, got '+quit);
+  if(half!==Math.round(flat/2))throw new Error('halfway should pay '+Math.round(flat/2)+', got '+half);
 });
 probe('contrast warning fires on bad pair',()=>{
   const t=T();t.ctDraft.bg='#171C24';t.ctDraft.text='#1A1A1A';t.updateCtPreview();

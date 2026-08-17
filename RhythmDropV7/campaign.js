@@ -1292,6 +1292,37 @@
     return notes > cap ? cap + (notes - cap) * SURPLUS_RATE : notes;
   }
 
+  // ── Coins ────────────────────────────────
+  // Every level pays the same. Coins used to be score/1000, and score
+  // compounds with the combo multiplier, so across the 150 campaign
+  // charts a clear paid anywhere from 116 to 181,002 — a 1560x spread
+  // in which the reward for finishing a level had almost nothing to
+  // do with finishing it and almost everything to do with how long it
+  // was. Flat, coins become a count of levels cleared.
+  const COINS_PER_CLEAR = 150;
+  // The one exception is a chart too short to be a song. Without a
+  // floor, a four-note custom level would be the fastest coin source
+  // in the game by an order of magnitude. This is a stub guard, not a
+  // difficulty curve: the shortest campaign chart has 51 notes, so
+  // every real level — authored or generated — pays the full rate.
+  const COINS_MIN_NOTES = 40;
+
+  function coinsFor(lvl, opts) {
+    opts = opts || {};
+    const notes = countNotes(lvl);
+    let c = COINS_PER_CLEAR * Math.min(1, notes / COINS_MIN_NOTES);
+    // The Double is the same chart at twice the speed, so it pays
+    // twice — the same reasoning as the XP formula.
+    c *= opts.speedMult || 1;
+    // A failed run pays for the share of the chart it got through,
+    // or quitting on the first note would pay the same as clearing.
+    if (!opts.completed) {
+      const p = opts.progress === undefined ? 1 : opts.progress;
+      c *= Math.max(0, Math.min(1, p));
+    }
+    return Math.max(0, Math.round(c));
+  }
+
   function xpFor(lvl, opts) {
     opts = opts || {};
     const notes = countNotes(lvl);
@@ -1531,5 +1562,6 @@
     generateChart, mulberry32, resolveInstrument,
     xpFor, xpForLevel, levelFromXp, levelProgress, countNotes,
     fillOf, payableNotes, DENSITY_CAP,
+    coinsFor, COINS_PER_CLEAR, COINS_MIN_NOTES,
   };
 })();

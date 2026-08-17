@@ -739,8 +739,11 @@ function renderProfile() {
 })();
 
 // ── High score management ───────────────────
-function addHighScore(name, score, levelName, coinMult) {
-  const coins = Math.floor((score / 1000) * (coinMult === undefined ? 1 : coinMult));
+// Takes the coin amount rather than a multiplier on the score: coins
+// no longer come from the score at all, so deriving them here would
+// mean two places disagreeing about the economy.
+function addHighScore(name, score, levelName, coins) {
+  coins = coins === undefined ? 0 : coins;
   const scores = store.loadScores();
   scores.push({ name, score, level: levelName, coins, date: Date.now() });
   scores.sort((a,b) => b.score - a.score);
@@ -2095,6 +2098,9 @@ document.querySelectorAll('.hnav').forEach(t => {
   });
 });
 document.querySelectorAll('.hnav').forEach(t => t.addEventListener('click', () => {
+  // Walking away from the shop abandons an armed purchase and undoes
+  // whatever it was previewing.
+  disarmPurchase(false);
   document.querySelectorAll('.hnav').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
   t.classList.add('active');
@@ -2117,6 +2123,55 @@ const SHOP_TABS = [
   ['hitfx',   'Effects'],
   ['boxes',   'Boxes'],
 ];
+// ══════════════════════════════════════
+//  ARMED PURCHASES
+//
+//  Spending coins used to be one click away, on cards you are also
+//  clicking to browse — an easy way to lose a thousand coins on a box
+//  you meant to read. Buying is now two clicks: the first previews the
+//  item and arms its card, the second spends. Clicking anything else,
+//  or waiting, disarms and undoes the preview, so a preview can never
+//  leak into saved state.
+//
+//  Only locked items arm. Equipping something already owned costs
+//  nothing and stays a single click.
+// ══════════════════════════════════════
+const ARM_MS = 6000;
+let armedBuy = null;   // { key, revert, timer }
+
+function isArmed(key) { return !!armedBuy && armedBuy.key === key; }
+
+// Clears the arm and puts back whatever the preview changed.
+function disarmPurchase(rerender) {
+  if (!armedBuy) return;
+  const revert = armedBuy.revert;
+  clearTimeout(armedBuy.timer);
+  armedBuy = null;
+  if (revert) { try { revert(); } catch (e) {} }
+  if (rerender !== false) renderShop();
+}
+
+// Clears the arm without reverting — the purchase went through, so
+// the preview is now the real thing.
+function consumeArm() {
+  if (!armedBuy) return;
+  clearTimeout(armedBuy.timer);
+  armedBuy = null;
+}
+
+function armPurchase(key, revert) {
+  disarmPurchase(false);
+  armedBuy = { key, revert, timer: setTimeout(() => disarmPurchase(), ARM_MS) };
+}
+
+// The label a locked card shows: its price normally, a confirm
+// prompt once armed.
+function priceLabel(key, price, suffix) {
+  return isArmed(key)
+    ? 'Tap again to buy'
+    : price.toLocaleString() + (suffix === undefined ? ' coins' : suffix);
+}
+
 let shopTab = 'avatars';
 
 function renderShopTabs() {
@@ -2128,7 +2183,8 @@ function renderShopTabs() {
     t.className = 'set-tab' + (shopTab === key ? ' active' : '');
     t.textContent = label;
     t.tabIndex = 0;
-    const go = () => { shopTab = key; renderShop(); };
+    // Leaving the tab abandons any armed purchase on it.
+    const go = () => { disarmPurchase(false); shopTab = key; renderShop(); };
     t.addEventListener('click', go);
     t.addEventListener('keydown', e => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); }
@@ -2168,7 +2224,9 @@ function renderShop() {
     const card = document.createElement('div');
     const owned    = shop.owned.includes(av.id);
     const equipped = shop.equipped === av.id;
-    card.className = 'avatar-card' + (equipped ? ' equipped' : owned ? ' owned' : '');
+    const avKey = 'av:' + av.id;
+    card.className = 'avatar-card' + (equipped ? ' equipped' : owned ? ' owned' : '')
+                  + (isArmed(avKey) ? ' armed' : '');
     card.tabIndex = 0;
     card.addEventListener('keydown', ev => {
       if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); card.click(); }
@@ -2177,12 +2235,12 @@ function renderShop() {
     card.innerHTML = `
       <div class="avatar-thumb"></div>
       <div class="avatar-name">${av.name}</div>
-      <div class="avatar-price">${owned ? 'Owned' : av.price + ' coins'}</div>
+      <div class="avatar-price">${owned ? 'Owned' : priceLabel(avKey, av.price)}</div>
       ${equipped ? '<div class="avatar-badge av-badge-eq">Equipped</div>' : owned ? '<div class="avatar-badge av-badge-owned">Owned</div>' : ''}
     `;
     // Locked avatars preview in grey so the artwork still reads.
     renderAvatarInto(card.querySelector('.avatar-thumb'),
-                     owned ? av.id : null, shop.colour);
+                     (owned || isArmed(avKey)) ? av.id : null, shop.colour);
     if (!owned) {
       const t = card.querySelector('.avatar-thumb .av');
       if (t) { t.style.setProperty('--av-p', 'var(--dim)'); t.style.setProperty('--av-s', 'var(--dim)'); }
@@ -2199,10 +2257,23 @@ function renderShop() {
         renderShop();
         showToast('Equipped ' + av.name + '!');
       } else {
-        // Buy
+        // Buy — but only on the second click. The first one puts the
+        // avatar on the profile bar so you can see it worn before
+        // paying for it.
         if (profile.coins < av.price) {
           showToast('Not enough coins — need ' + av.price, true); return;
         }
+        const key = 'av:' + av.id;
+        if (!isArmed(key)) {
+          armPurchase(key, updateAvatarDisplay);
+          const bar = document.getElementById('pbar-avatar');
+          if (bar) renderAvatarInto(bar, av.id, shop.colour);
+          uiSound('detent');
+          showToast('Previewing ' + av.name + ' — tap again to buy for ' + av.price);
+          renderShop();
+          return;
+        }
+        consumeArm();
         profile.coins -= av.price;
         saveProfile();
         shop.owned.push(av.id);
@@ -2302,11 +2373,26 @@ const BOX_SHOP = [
     blurb:'Avatars only, weighted to the rarest', accent:'var(--perfect)' },
 ];
 
+// The odds a box actually rolls on, read off the same table openBox
+// uses — quoting them from a hand-written string would let the copy
+// and the drop rates drift apart.
+const BOX_POOL_LABEL = { avatar:'avatar', trail:'trail', fx:'effect', coins:'coins' };
+function boxOdds(rarity) {
+  const table = BOX_TABLES[rarity] || BOX_TABLES.common;
+  const total = table.reduce((n, r) => n + r.weight, 0) || 1;
+  return table
+    .slice()
+    .sort((a, b) => b.weight - a.weight)
+    .map(r => Math.round((r.weight / total) * 100) + '% ' + (BOX_POOL_LABEL[r.pool] || r.pool))
+    .join(', ');
+}
+
 function renderBoxShop() {
   const host = document.getElementById('shop-boxes');
   if (!host) return;
   host.innerHTML = '';
   BOX_SHOP.forEach(b => {
+    const boxKey = 'box:' + b.rarity;
     const card = document.createElement('div');
     card.className = 'box-card';
     card.tabIndex = 0;
@@ -2321,7 +2407,8 @@ function renderBoxShop() {
       <div class="box-card-price"></div>`;
     card.querySelector('.box-card-name').textContent  = b.name;
     card.querySelector('.box-card-blurb').textContent = b.blurb;
-    card.querySelector('.box-card-price').textContent = b.price.toLocaleString();
+    card.querySelector('.box-card-price').textContent = priceLabel(boxKey, b.price, '');
+    card.classList.toggle('armed', isArmed(boxKey));
     card.style.setProperty('--box-accent', b.accent);
 
     const buy = () => {
@@ -2329,6 +2416,17 @@ function renderBoxShop() {
         showToast('Not enough coins — need ' + b.price.toLocaleString(), true);
         return;
       }
+      // A box has no contents to show until it is opened, so its
+      // preview is its odds — which is the thing worth knowing before
+      // spending five thousand coins on one.
+      if (!isArmed(boxKey)) {
+        armPurchase(boxKey, null);
+        uiSound('detent');
+        showToast(b.name + ': ' + boxOdds(b.rarity) + ' — tap again to buy');
+        renderShop();
+        return;
+      }
+      consumeArm();
       profile.coins -= b.price;
       saveProfile();
       const drop = openBox(b.rarity);
@@ -2541,8 +2639,10 @@ function renderCosmetics() {
       const owned = item.price === 0 || shop.fx.includes(item.id);
       const on    = (currentSettings[settingKey] || list[0].id) === item.id;
 
+      const fxKey = 'fx:' + settingKey + ':' + item.id;
       const c = document.createElement('div');
-      c.className = 'fx-card' + (on ? ' on' : '') + (owned ? '' : ' locked');
+      c.className = 'fx-card' + (on ? ' on' : '') + (owned ? '' : ' locked')
+                  + (isArmed(fxKey) ? ' armed' : '');
       c.tabIndex = 0;
       // A name and a price told you nothing about what you were buying.
       // Each card now shows the effect running, on a loop.
@@ -2551,7 +2651,7 @@ function renderCosmetics() {
       buildFxPreview(c.querySelector('.fx-demo'), hostId, item);
       c.querySelector('.fx-name').textContent = item.name;
       c.querySelector('.fx-cost').textContent =
-        on ? 'Equipped' : owned ? 'Owned' : item.price + ' coins';
+        on ? 'Equipped' : owned ? 'Owned' : priceLabel(fxKey, item.price);
 
       const pick = () => {
         if (on) return;
@@ -2559,6 +2659,20 @@ function renderCosmetics() {
           if (profile.coins < item.price) {
             showToast('Not enough coins — need ' + item.price, true); return;
           }
+          // The first click wears the effect for real — it is applied
+          // live but never saved, so backing out leaves settings
+          // exactly as they were.
+          if (!isArmed(fxKey)) {
+            const was = currentSettings[settingKey];
+            armPurchase(fxKey, () => { currentSettings[settingKey] = was; applyFn(); });
+            currentSettings[settingKey] = item.id;
+            applyFn();
+            uiSound('detent');
+            showToast('Previewing ' + item.name + ' — tap again to buy for ' + item.price);
+            renderShop();
+            return;
+          }
+          consumeArm();
           profile.coins -= item.price;
           saveProfile();
           const sh = store.loadShop();
@@ -5308,16 +5422,25 @@ function endGame(won) {
   const levelName = gameLevel ? gameLevel.name : 'Unknown';
   const isCampaign = !!(gameLevel && gameLevel.campaign);
 
-  // Custom levels pay half. Procedural levels are generated
+  // Custom levels earn half the XP. Procedural levels are generated
   // rather than self-authored, so they can't be farmed and pay full.
+  // Coins are flat for every level and do not use this.
   const isGenerated = isCampaign || !!(gameLevel && gameLevel.procedural);
 
-  // The Double pays double coins, and double XP because it is played
-  // at double speed. It still can't clear a level you haven't already
-  // cleared — it is a harder run at a song you finished, not a way
-  // around finishing one.
-  const coinMult = overtime ? 2 : (isGenerated ? 1 : 0.5);
-  const coinsEarned = addHighScore(profile.username || 'Player', score, levelName, coinMult);
+  // A run that ended early pays out on the share of the chart struck.
+  const runProgress = notesTotal ? notesHit / notesTotal : 0;
+
+  // Every level pays the same flat rate, whoever wrote it — see
+  // coinsFor. The Double still pays double, because it is the same
+  // chart at twice the speed rather than a different level. A lost
+  // run pays for the share of the chart actually struck.
+  const coinsEarned = addHighScore(
+    profile.username || 'Player', score, levelName,
+    CAM().coinsFor(gameLevel, {
+      completed: won,
+      progress: runProgress,
+      speedMult: overtime ? 2 : 1,
+    }));
 
   // The run log keeps the top 50 overall; this keeps THIS level's best
   // forever, so a personal record on song 7 survives fifty better runs
@@ -5327,8 +5450,6 @@ function endGame(won) {
     Object.assign({}, gameLevel, { double: overtime || gameLevel.double }),
     score, coinsEarned);
 
-  // A loss pays out on the share of the chart actually struck.
-  const runProgress = notesTotal ? notesHit / notesTotal : 0;
   // The Double is the same chart at twice the speed, which is a real
   // step up in difficulty, so it pays accordingly: speedMult 2 doubles
   // the speed factor in the XP formula. It used to pay nothing at all,
