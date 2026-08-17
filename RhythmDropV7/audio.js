@@ -638,6 +638,94 @@ window.RD_playNoteFreq = function (freq, isDtap, sustainSec, inst) {
 
 window.RD_playVoice = playVoice;
 
+// ══════════════════════════════════════════
+//  INSTRUMENT JINGLES
+//
+//  A single middle C tells you almost nothing about an instrument —
+//  what separates a kalimba from an organ is the attack, the decay
+//  and how notes overlap, none of which one note can show. Each
+//  instrument gets a two-second phrase written to its character:
+//  plucked voices arpeggiate so you hear each note ring and fade,
+//  sustained voices hold a chord so you hear them bloom and beat
+//  against each other, and percussive voices run so you hear the
+//  transient.
+//
+//  Steps are [offsetMs, freq, sustainSec]. Nothing runs past 2000ms.
+// ══════════════════════════════════════════
+const N = { C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00,
+            A4:440.00, B4:493.88, C5:523.25, D5:587.33, E5:659.26,
+            G5:783.99, C6:1046.50 };
+
+// Plucked and struck: an ascending arpeggio, then the octave left to ring.
+const JINGLE_PLUCK = [
+  [0,   N.C4, 0], [160, N.E4, 0], [320, N.G4, 0], [480, N.C5, 0],
+  [640, N.E5, 0], [850, N.G4, 0], [1000, N.C5, 0.95],
+];
+// Sustained: the chord builds and is held, so the voices overlap.
+const JINGLE_PAD = [
+  [0, N.C4, 1.8], [180, N.E4, 1.6], [360, N.G4, 1.4], [700, N.C5, 1.2],
+];
+// Bright and percussive: a quick run that shows the attack off.
+const JINGLE_RUN = [
+  [0, N.C5, 0], [120, N.D5, 0], [240, N.E5, 0], [360, N.G5, 0],
+  [480, N.E5, 0], [600, N.C5, 0], [780, N.G4, 0], [960, N.C6, 1],
+];
+// Synth gets an actual hook — it is the default voice, so it is the
+// one people hear first.
+const JINGLE_HOOK = [
+  [0, N.C4, 0], [140, N.G4, 0], [280, N.E4, 0], [420, N.G4, 0],
+  [560, N.A4, 0], [700, N.G4, 0], [840, N.E4, 0], [1050, N.C4, 0.9],
+];
+
+const JINGLES = {
+  synth:    JINGLE_HOOK,
+  piano:    JINGLE_PLUCK,
+  guitar:   JINGLE_PLUCK,
+  lyre:     JINGLE_PLUCK,
+  marimba:  JINGLE_RUN,
+  kalimba:  JINGLE_RUN,
+  bell:     JINGLE_RUN,
+  chiptune: JINGLE_HOOK,
+  flute:    JINGLE_PAD,
+  organ:    JINGLE_PAD,
+  strings:  JINGLE_PAD,
+  brass:    JINGLE_PAD,
+};
+
+let _jingleTimers = [];
+
+window.RD_stopJingle = function () {
+  _jingleTimers.forEach(clearTimeout);
+  _jingleTimers = [];
+};
+
+// Plays inst's phrase and returns its length in ms, so a caller can
+// hold a button lit for exactly as long as it sounds. Starting a new
+// one cancels whatever was playing — two jingles at once is noise.
+window.RD_playJingle = function (inst) {
+  window.RD_stopJingle();
+  const id    = inst || _instrument;
+  const steps = JINGLES[id] || JINGLE_PLUCK;
+  steps.forEach(([at, freq, sus]) => {
+    _jingleTimers.push(setTimeout(() => {
+      try { _playWithInstrument(freq, false, sus, id); } catch (e) {}
+    }, at));
+  });
+  const ms = jingleMs(steps);
+  _jingleTimers.push(setTimeout(() => { _jingleTimers = []; }, ms));
+  return ms;
+};
+
+// The phrase is over when its longest-ringing note is — which for a
+// held chord is the first note, not the last one played.
+function jingleMs(steps) {
+  return steps.reduce((m, [at, , sus]) => Math.max(m, at + Math.max(sus * 1000, 320)), 0);
+}
+
+window.RD_jingleLength = function (inst) {
+  return jingleMs(JINGLES[inst || _instrument] || JINGLE_PLUCK);
+};
+
 // ── Lane button glow flash ────────────────
 window.RD_flashLane = function (laneEl) {
   laneEl.style.transition = 'none';

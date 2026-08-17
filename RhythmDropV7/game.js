@@ -3083,14 +3083,14 @@ function buildSettingsPanel() {
         ? 'border-color:var(--accent);background:rgba(255,58,110,.12);color:var(--accent);'
         : 'border-color:var(--border2);background:var(--bg3);color:var(--muted);',
     ].join('');
+    btn.dataset.inst = inst.id;
     btn.innerHTML = `<svg class="ic ic-lg"><use href="#${inst.icon}"/></svg><span>${inst.label}</span>`;
     btn.addEventListener('click', () => {
       currentSettings.instrument = inst.id;
       store.saveSettings(currentSettings);
       if (window.RD_saveInstrument) window.RD_saveInstrument(inst.id);
       buildSettingsPanel(); // re-render to update highlights
-      // Play a preview note
-      if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0);
+      playInstrumentJingle(inst.id);
     });
     instrRow.appendChild(btn);
   });
@@ -3139,6 +3139,29 @@ function buildSettingsPanel() {
   hwRow.appendChild(hwBtns);
   hwRow.appendChild(hwNote);
   panel.appendChild(hwRow);
+
+  // The window above is a band of pixels around the strike plane, but
+  // it was invisible — so a miss by four pixels and a miss by forty
+  // looked the same. Drawing it turns "I don't know why that missed"
+  // into something you can see, and it resizes with the setting.
+  const hzWrap = document.createElement('label');
+  hzWrap.className = 'sync-check';
+  hzWrap.style.margin = '8px 0 2px';
+  hzWrap.innerHTML = '<input type="checkbox" id="set-hitzone"'
+    + (currentSettings.showHitZone ? ' checked' : '') + '>'
+    + '<span>Show the hit window in the lanes</span>';
+  hzWrap.querySelector('input').addEventListener('change', e => {
+    currentSettings.showHitZone = e.target.checked;
+    store.saveSettings(currentSettings);
+    applyHitZone();
+  });
+  panel.appendChild(hzWrap);
+
+  const hzNote = document.createElement('div');
+  hzNote.style.cssText = 'font-size:10px;color:var(--dim);margin:0 0 2px;line-height:1.5;';
+  hzNote.textContent = 'Draws the band a tap is counted in, with the perfect '
+    + 'zone marked inside it. A practice aid — it changes nothing about scoring.';
+  panel.appendChild(hzNote);
 
   // Note speed is intentionally absent — see HIT_WINDOWS.
   const speedNote = document.createElement('div');
@@ -4345,6 +4368,24 @@ function retractPanel() {
   panelExpansion = null;
 }
 
+// Auditions an instrument with its own two-second phrase, and marks
+// whichever button is showing it for exactly as long as it sounds.
+// One note could not tell a kalimba from an organ; a phrase can.
+function playInstrumentJingle(id) {
+  if (!window.RD_playJingle) {
+    if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0);
+    return 0;
+  }
+  const ms = window.RD_playJingle(id);
+  document.querySelectorAll('.inst-playing').forEach(b => b.classList.remove('inst-playing'));
+  const btn = document.querySelector('[data-inst="' + id + '"]');
+  if (btn) {
+    btn.classList.add('inst-playing');
+    setTimeout(() => btn.classList.remove('inst-playing'), ms);
+  }
+  return ms;
+}
+
 // ── Advanced-panel sound preview ──────────
 // Plays the chart's own opening bars with the instrument, pitches,
 // sustain and background sound currently configured, so you can hear
@@ -4445,6 +4486,7 @@ function buildAdvInstrumentRow() {
         ? 'border-color:var(--accent);background:rgba(255,58,110,.12);color:var(--accent);'
         : 'border-color:var(--border2);background:var(--bg3);color:var(--muted);',
     ].join('');
+    btn.dataset.inst = inst.id;
     btn.innerHTML = `<svg class="ic"><use href="#${inst.icon}"/></svg><span>${inst.label}</span>`;
     btn.addEventListener('click', () => {
       if (window.RD_saveInstrument) window.RD_saveInstrument(inst.id);
@@ -4452,8 +4494,7 @@ function buildAdvInstrumentRow() {
       store.saveSettings(currentSettings);
       buildAdvInstrumentRow();
       buildAdvPreview();
-      // Preview note
-      if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0);
+      playInstrumentJingle(inst.id);
     });
     row.appendChild(btn);
   });
@@ -4652,6 +4693,17 @@ function measureLanes() {
 function laneH() { return _laneH || measureLanes(); }
 function hitY()  { return laneH() - HIT_BOTTOM; }
 window.addEventListener('resize', measureLanes);
+
+// Draws the band taps are actually judged in. Sized from hitTol()
+// itself rather than a hand-tuned constant, so it cannot drift out of
+// agreement with the code that does the judging — including when the
+// hit-window setting changes it.
+function applyHitZone() {
+  const on = !!currentSettings.showHitZone;
+  document.body.classList.toggle('show-hitzone', on);
+  if (!on) return;
+  document.documentElement.style.setProperty('--hit-zone-h', (hitTol() * 2) + 'px');
+}
 
 function buildQueue(lvl) {
   if (lvl.grid) {
@@ -4957,7 +5009,8 @@ function startGame(preQueue) {
   fbTimers = [0,0,0,0]; lastTapT = {0:0,1:0,2:0,3:0};
   gameQueue = preQueue || buildQueue(gameLevel);
   notesTotal = gameQueue.length;
-  scoreEl.textContent = '0'; comboEl.textContent = '×1'; comboEl.style.color = 'var(--tap)';
+  scoreEl.textContent = '0'; comboEl.textContent = '×1';
+  applyComboTier(0);
   spdBadge.textContent = '1.0×'; spdBadge.classList.remove('show');
   updateLives();
 
@@ -5107,13 +5160,70 @@ function hit(lane, dist) {
   if (streak > 1) pts = Math.round(pts * (1 + (streak - 1) * 0.05));
   score += pts; scoreEl.textContent = score;
   comboEl.textContent = '×' + combo;
-  comboEl.style.color = combo >= 10 ? 'var(--dtap)' : combo >= 5 ? 'var(--perfect)' : 'var(--tap)';
+  applyComboTier(combo);
   showFb(lane, label, color);
+}
+
+// ── Combo tiers ───────────────────────────
+// Below fifty the badge just changes colour, as it always has. Past
+// it the run has earned some noise: the badge escalates through three
+// states and the lanes take on the same heat, so the effect is where
+// the player is looking. Milestones announce themselves once.
+const COMBO_TIERS = [
+  { at: 100, cls: 'tier-nova',  body: 'combo-nova'  },
+  { at: 75,  cls: 'tier-blaze', body: 'combo-blaze' },
+  { at: 50,  cls: 'tier-hot',   body: null          },
+];
+const COMBO_MILESTONES = [
+  { at: 50,  text: '50 COMBO'   },
+  { at: 75,  text: '75 — BLAZING' },
+  { at: 100, text: '100 — UNBROKEN' },
+  { at: 150, text: '150 — FLAWLESS' },
+  { at: 200, text: '200 — LEGENDARY' },
+];
+let comboTierCls = '';
+
+function applyComboTier(n) {
+  const tier = COMBO_TIERS.find(t => n >= t.at);
+
+  // Below the first tier the old colour ramp still applies.
+  if (!tier) {
+    comboEl.style.color = n >= 10 ? 'var(--dtap)' : n >= 5 ? 'var(--perfect)' : 'var(--tap)';
+  } else {
+    comboEl.style.color = '';
+  }
+
+  const cls = tier ? tier.cls : '';
+  if (cls !== comboTierCls) {
+    COMBO_TIERS.forEach(t => comboEl.classList.remove(t.cls));
+    if (cls) comboEl.classList.add(cls);
+    COMBO_TIERS.forEach(t => { if (t.body) document.body.classList.remove(t.body); });
+    if (tier && tier.body) document.body.classList.add(tier.body);
+    comboTierCls = cls;
+  }
+
+  const ms = COMBO_MILESTONES.find(m => m.at === n);
+  if (ms) showComboMilestone(ms.text);
+}
+
+function showComboMilestone(text) {
+  const el = document.getElementById('combo-milestone');
+  if (!el) return;
+  el.textContent = text;
+  // Restart the animation even if one is already running — a run that
+  // crosses two milestones quickly should show both.
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  if (window.RD_playVoice) {
+    try { window.RD_playVoice('perfect'); } catch (e) {}
+  }
 }
 
 function damage(lane) {
   combo = 0; streak = 0;
-  comboEl.textContent = '×1'; comboEl.style.color = 'var(--tap)';
+  comboEl.textContent = '×1';
+  applyComboTier(0);
   lives = Math.max(0, lives - 1); updateLives();
   showFb(lane, 'MISS', 'var(--miss)');
   if (lives <= 0) endGame(false);
@@ -5185,6 +5295,9 @@ function showFb(lane, text, color) {
 function endGame(won) {
   running = false; cancelAnimationFrame(raf);
   activeTiles.forEach(retireTile); activeTiles = [];
+  // The heat is a property of a live run; it must not follow the
+  // player onto the results card or back to the menu.
+  applyComboTier(0);
   if (window.RD_stopBg) window.RD_stopBg();
   if (window.RD_resetLaneFreqs) window.RD_resetLaneFreqs();
 
@@ -5349,6 +5462,7 @@ function quitToMenu() {
   running = false; cancelAnimationFrame(raf);
   if (window.RD_Loading) window.RD_Loading.cancel();
   activeTiles.forEach(retireTile); activeTiles = [];
+  applyComboTier(0);
   if (window.RD_stopBg) window.RD_stopBg();
   if (window.RD_resetLaneFreqs) window.RD_resetLaneFreqs();
   showScreen('home'); renderHome();
@@ -5490,6 +5604,7 @@ function applyBrightness() {
 function applySettingsToDOM() {
   applyTrailClass();
   applyHitFxVars();
+  applyHitZone();
   // Bindings may have just changed; the keydown handler reads a cached
   // map rather than rebuilding one per keystroke.
   if (typeof refreshKeyMap === 'function') refreshKeyMap();

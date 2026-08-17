@@ -113,6 +113,24 @@
   --lift-1: 0 1px 2px var(--bevel-shade);
   --lift-2: 0 4px 10px -2px var(--bevel-shade);
   --lift-3: 0 12px 28px -6px var(--bevel-shade);
+
+  /* ── Motion ──
+     One curve family, named. Interfaces that feel expensive move
+     fast at the start and settle slowly — a linear or symmetric
+     `ease` reads mechanical no matter how good the rest looks. These
+     are the two curves already used by hand in a dozen places here,
+     given names so everything else can share them.
+       --ease-out    the default: quick departure, soft landing
+       --ease-emph   the same shape with more overshoot in the tail,
+                     for things appearing rather than adjusting
+       --ease-in-out symmetric, for anything that loops */
+  --ease-out:    cubic-bezier(.2,.7,.3,1);
+  --ease-emph:   cubic-bezier(.2,.8,.3,1);
+  --ease-in-out: cubic-bezier(.5,0,.5,1);
+  /* Two durations. Small controls settle fast; larger surfaces take
+     slightly longer, which is what makes them read as larger. */
+  --dur-fast: .14s;
+  --dur-med:  .24s;
 }
 
 /* ── THEMES ── */
@@ -792,6 +810,20 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
   cursor:pointer; transition:background .12s,color .12s,border-color .12s;
 }
 .adv-preview:hover { background:var(--tap); color:var(--bg); }
+
+/* An instrument button stays lit for exactly as long as its phrase
+   sounds, so it is obvious which one you are listening to. */
+[data-inst].inst-playing {
+  border-color:var(--perfect) !important;
+  color:var(--perfect) !important;
+  box-shadow:0 0 14px -3px color-mix(in srgb,var(--perfect) 70%,transparent);
+}
+[data-inst].inst-playing svg { animation:instBeat .5s ease-in-out infinite; }
+@keyframes instBeat {
+  0%, 100% { transform:scale(1); }
+  50%      { transform:scale(1.14); }
+}
+body.reduce-motion [data-inst].inst-playing svg { animation:none; }
 .adv-preview.playing { background:var(--tap); color:var(--bg); }
 .adv-preview-sub {
   margin-left:auto; font-family:var(--font-data); font-size:9px;
@@ -857,6 +889,86 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
   font-family:var(--font-data); min-width:52px; text-align:center;
   transition:color .3s;
 }
+/* ── Combo tiers ──
+   Past fifty the run is going well enough to deserve saying so. Three
+   escalating states rather than one, so the badge keeps telling you
+   something new instead of maxing out and going quiet. All of it is
+   colour, glow and a slow pulse — nothing moves the badge or the
+   layout, because a HUD element that jumps during a 90-combo run is
+   the last thing anyone wants. */
+.hud-combo.tier-hot {
+  color:var(--dtap);
+  border-color:color-mix(in srgb,var(--dtap) 45%,var(--border));
+  box-shadow:var(--lift-1), 0 0 12px -2px var(--glow-dtap),
+    inset 0 1px 0 color-mix(in srgb,var(--bevel-lit) 50%,transparent);
+}
+.hud-combo.tier-blaze {
+  color:var(--perfect);
+  border-color:color-mix(in srgb,var(--perfect) 60%,var(--border));
+  background:linear-gradient(180deg,
+    color-mix(in srgb,var(--perfect) 16%,var(--panel-raised)), var(--panel));
+  box-shadow:var(--lift-1), 0 0 18px -2px color-mix(in srgb,var(--perfect) 55%,transparent),
+    inset 0 1px 0 color-mix(in srgb,var(--bevel-lit) 50%,transparent);
+  animation:comboPulse 1.15s ease-in-out infinite;
+}
+.hud-combo.tier-nova {
+  color:var(--bg);
+  border-color:color-mix(in srgb,var(--perfect) 80%,transparent);
+  background:linear-gradient(180deg,var(--perfect), var(--dtap));
+  box-shadow:var(--lift-2), 0 0 26px -2px color-mix(in srgb,var(--perfect) 70%,transparent),
+    inset 0 1px 0 rgba(255,255,255,.4);
+  animation:comboPulse .78s ease-in-out infinite;
+}
+@keyframes comboPulse {
+  0%, 100% { filter:brightness(1); }
+  50%      { filter:brightness(1.22); }
+}
+
+/* The lanes pick up the same heat, so the effect is on the board the
+   player is looking at and not only in the corner they are not. */
+body.combo-blaze .lane,
+body.combo-nova  .lane { transition:box-shadow .4s, background .4s; }
+body.combo-blaze .lane {
+  box-shadow:
+    inset 0 8px 14px -6px var(--bevel-shade),
+    inset 0 0 22px -8px color-mix(in srgb,var(--perfect) 60%,transparent),
+    inset 0 1px 0 var(--bevel-shade);
+}
+body.combo-nova .lane {
+  box-shadow:
+    inset 0 8px 14px -6px var(--bevel-shade),
+    inset 0 0 34px -8px color-mix(in srgb,var(--perfect) 85%,transparent),
+    inset 0 1px 0 var(--bevel-shade);
+}
+body.combo-nova .lane-hitbar {
+  background:linear-gradient(90deg,
+    transparent, var(--perfect) 12%, var(--perfect) 88%, transparent);
+  box-shadow:0 0 16px color-mix(in srgb,var(--perfect) 70%,transparent), 0 1px 0 var(--bevel-shade);
+}
+
+/* A milestone reads once, at the moment it is crossed, then leaves. */
+#combo-milestone {
+  position:absolute; top:52px; left:0; right:0; z-index:40;
+  text-align:center; pointer-events:none;
+  font-family:var(--font-display); font-weight:800; font-size:22px;
+  letter-spacing:-.5px; color:var(--perfect);
+  text-shadow:0 2px 14px color-mix(in srgb,var(--perfect) 70%,transparent);
+  opacity:0;
+}
+#combo-milestone.show { animation:comboMilestone 1.05s ease-out; }
+@keyframes comboMilestone {
+  0%   { opacity:0; transform:scale(.72); }
+  22%  { opacity:1; transform:scale(1.06); }
+  62%  { opacity:1; transform:scale(1); }
+  100% { opacity:0; transform:scale(1); }
+}
+
+/* Reduced motion keeps every colour cue and drops only the movement —
+   the tiers still read, they just stop breathing. */
+body.reduce-motion .hud-combo,
+body.reduce-motion #combo-milestone { animation:none !important; }
+body.reduce-motion #combo-milestone.show { opacity:1; }
+
 .hud-lives { font-size:15px; letter-spacing:4px; }
 
 #g-lanes { flex:1; display:flex; gap:6px; padding:0 12px; }
@@ -869,10 +981,13 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
   border:1px solid var(--bevel-shade);
   border-bottom-color:var(--bevel-lit);
   transition:background .3s;
+  /* --mat-bevel is edge definition: machined metal keeps a hard lit
+     edge, moulded plastic and paper soften to almost nothing. Every
+     theme already declared it; until now nothing read it. */
   box-shadow:
     inset 0 8px 14px -6px var(--bevel-shade),
     inset 0 1px 0 var(--bevel-shade),
-    inset 0 -1px 0 color-mix(in srgb,var(--bevel-lit) 40%,transparent);
+    inset 0 -1px 0 color-mix(in srgb,var(--bevel-lit) calc(40% * var(--mat-bevel)),transparent);
 }
 /* each lane has its own bg color for tap glow */
 .lane[data-lane="0"] { background:color-mix(in srgb,var(--tap) 4%,var(--panel-deep)); }
@@ -882,7 +997,10 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
 /* scanlines */
 .lane::before {
   content:''; position:absolute; inset:0; z-index:0;
-  background:repeating-linear-gradient(0deg,transparent,transparent 11px,rgba(255,255,255,.012) 12px);
+  background:
+    var(--mat-grain),
+    repeating-linear-gradient(0deg,transparent,transparent 11px,rgba(255,255,255,.012) 12px);
+  opacity:.85;
   pointer-events:none;
 }
 
@@ -903,6 +1021,53 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
     transparent, color-mix(in srgb,var(--tap) 10%,transparent));
   z-index:2;
 }
+
+/* ── The hit window, drawn ──
+   The timing window is literally a band of pixels: a tap counts if
+   the tile's centre is within hitTol() of the strike plane. That
+   was invisible, so a miss by four pixels and a miss by forty looked
+   identical. game.js sizes this from the same number it judges with,
+   including the hit-window setting, so what you see is the window
+   you actually have. Off by default — it is a training aid. */
+.lane-hitzone {
+  position:absolute; left:0; right:0;
+  /* Above the keycap on purpose. The window is centred on the strike
+     plane, which sits level with the top of the button, so half of it
+     is behind the cap — and that half is real: a tile is still
+     hittable once it is level with the key. Drawing it underneath
+     showed 51% of the truth. */
+  z-index:6;
+  height:var(--hit-zone-h,0px);
+  bottom:calc(52px - var(--hit-zone-h,0px) / 2);
+  display:none;
+  /* No fill on the outer band: three stacked washes over a textured
+     lane turned to mud. The dashed rules carry it. */
+  border-top:1px dashed color-mix(in srgb,var(--tap) 60%,transparent);
+  border-bottom:1px dashed color-mix(in srgb,var(--tap) 60%,transparent);
+  pointer-events:none;
+}
+body.show-hitzone .lane-hitzone { display:block; }
+
+/* The three bands are the three scores, taken straight from hit():
+   inside 20% of the window is PERFECT, inside 60% is GREAT, the rest
+   is GOOD. As shares of the full band that is the middle 20% and the
+   middle 60%, which is what these two are. */
+.lane-hitzone::before,
+.lane-hitzone::after {
+  content:''; position:absolute; left:0; right:0;
+}
+.lane-hitzone::before {
+  top:20%; height:60%;
+  background:color-mix(in srgb,var(--good) 7%,transparent);
+  border-top:1px dotted color-mix(in srgb,var(--good) 55%,transparent);
+  border-bottom:1px dotted color-mix(in srgb,var(--good) 55%,transparent);
+}
+.lane-hitzone::after {
+  top:40%; height:20%;
+  background:color-mix(in srgb,var(--perfect) 22%,transparent);
+  border-top:1px solid color-mix(in srgb,var(--perfect) 85%,transparent);
+  border-bottom:1px solid color-mix(in srgb,var(--perfect) 85%,transparent);
+}
 /* lane flash: replaces background briefly on tap */
 .lane.glow-tap  { background:color-mix(in srgb,var(--tap) 22%,var(--panel-deep)) !important; }
 .lane.glow-dtap { background:color-mix(in srgb,var(--dtap) 22%,var(--panel-deep)) !important; }
@@ -918,13 +1083,16 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
       var(--panel-raised) 45%,
       color-mix(in srgb,var(--bevel-shade) 30%,var(--panel-raised)) 100%);
   backdrop-filter:blur(var(--mat-blur));
-  border-top:1px solid var(--bevel-lit);
+  border-top:1px solid color-mix(in srgb,var(--bevel-lit) calc(100% * var(--mat-bevel)),var(--panel-raised));
   display:flex; align-items:center; justify-content:center;
   cursor:pointer; z-index:5; user-select:none;
   border-radius:0 0 9px 9px;
   box-shadow:
-    inset 0 1px 0 color-mix(in srgb,var(--bevel-lit) 60%,transparent),
-    0 -3px 6px -2px var(--bevel-shade);
+    inset 0 1px 0 color-mix(in srgb,var(--bevel-lit) calc(60% * var(--mat-bevel)),transparent),
+    0 -3px 6px -2px var(--bevel-shade),
+    /* A specular sweep across the top face — tight on metal and glass,
+       almost absent on wood, paper and rubber. */
+    inset 0 6px 12px -8px rgba(255,255,255,calc(.5 * var(--mat-spec)));
   transform:translateY(0);
   transition:transform .06s ease-out, box-shadow .06s, background .06s;
 }
@@ -963,20 +1131,43 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
   position:absolute; left:5px; right:5px; border-radius:7px; z-index:4;
   will-change:transform;
 }
+/* ── Tile form ──
+   A tile was a flat vertical gradient with one highlight line, which
+   reads as a sticker rather than an object. What sells a solid is
+   shading on two axes at once: the vertical ramp is the lit top face
+   falling into shadow, and the horizontal one is the body curving away
+   at both sides. Add a darker seat under the bottom edge and a
+   contact shadow that is tighter than the glow, and the tile sits in
+   the lane instead of on top of it. Both layers are gradients on the
+   element already there — no extra nodes, nothing new per frame. */
 .tile-tap {
-  background:linear-gradient(180deg,var(--tap2) 0%,var(--tap) 100%);
+  background:
+    linear-gradient(90deg,
+      rgba(0,0,0,.34) 0%, rgba(0,0,0,0) 16%,
+      rgba(255,255,255,.20) 46%, rgba(0,0,0,0) 78%, rgba(0,0,0,.34) 100%),
+    linear-gradient(180deg,var(--tap2) 0%,var(--tap) 62%,
+      color-mix(in srgb,var(--tap) 74%,#000) 100%);
   box-shadow:
     0 0 10px var(--glow-tap),
-    0 3px 6px -1px rgba(0,0,0,.55),
-    inset 0 1px 0 rgba(255,255,255,.35);
+    0 4px 7px -2px rgba(0,0,0,.62),
+    0 1px 2px rgba(0,0,0,.5),
+    inset 0 1px 0 rgba(255,255,255,.45),
+    inset 0 -2px 3px -2px rgba(0,0,0,.55);
 }
 .tile-dtap {
-  background:linear-gradient(180deg,var(--dtap2) 0%,var(--dtap) 100%);
+  background:
+    linear-gradient(90deg,
+      rgba(0,0,0,.34) 0%, rgba(0,0,0,0) 16%,
+      rgba(255,255,255,.20) 46%, rgba(0,0,0,0) 78%, rgba(0,0,0,.34) 100%),
+    linear-gradient(180deg,var(--dtap2) 0%,var(--dtap) 62%,
+      color-mix(in srgb,var(--dtap) 74%,#000) 100%);
   border:1.5px solid rgba(255,255,255,.25);
   box-shadow:
     0 0 10px var(--glow-dtap),
-    0 3px 6px -1px rgba(0,0,0,.55),
-    inset 0 1px 0 rgba(255,255,255,.35);
+    0 4px 7px -2px rgba(0,0,0,.62),
+    0 1px 2px rgba(0,0,0,.5),
+    inset 0 1px 0 rgba(255,255,255,.45),
+    inset 0 -2px 3px -2px rgba(0,0,0,.55);
 }
 .tile-dtap::after {
   content:'×2'; position:absolute; top:50%; left:50%;
@@ -1527,9 +1718,36 @@ button:focus-visible, select:focus-visible, input:focus-visible,
 .theme-card:focus-visible, .hnav:focus-visible, .ct-mat:focus-visible {
   outline:2px solid var(--tap);
   outline-offset:2px;
-  border-radius:6px;
+  /* No border-radius here. It used to force 6px onto everything it
+     touched, so a pill button got a square-ish ring and a 12px card
+     got a tight one — the ring stopped following the shape it was
+     marking. An outline already traces the element's own radius. */
 }
-.level-card, .avatar-card, .theme-card, .ct-mat { }
+
+/* ── Press feedback ──
+   Every control acknowledges the press by giving a little, which is
+   most of what separates a surface that feels physical from one that
+   feels like a web page. Scale only — no layout, no repaint of
+   anything around it.
+
+   The cards below already transition transform, so this rides their
+   existing curve; a plain button without one simply snaps, which is
+   what instant feedback should do anyway. Deliberately no transition
+   declared here — setting one would replace the border-colour and
+   shadow transitions these elements already own. */
+button:not(.lane-btn):not(:disabled):active,
+.level-card:active, .avatar-card:active, .theme-card:active,
+.box-card:active, .ct-mat:active {
+  transform:scale(.972);
+}
+/* The lane keycap has its own press, and the creator grid is dragged
+   across — neither wants a second transform fighting the first. */
+body.reduce-motion button:active,
+body.reduce-motion .level-card:active,
+body.reduce-motion .avatar-card:active,
+body.reduce-motion .theme-card:active,
+body.reduce-motion .box-card:active,
+body.reduce-motion .ct-mat:active { transform:none; }
 
 /* ── Empty states ── */
 .empty-state {
@@ -3702,11 +3920,12 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
     <div class="hud-combo" id="g-combo">×1</div>
     <div class="hud-lives" id="g-lives"></div>
   </div>
+  <div id="combo-milestone"></div>
   <div id="g-lanes">
-    <div class="lane" data-lane="0" id="lane0"><div class="lane-hitglow"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb0"></div><div class="lane-btn" id="btn0"><span class="lane-key">A</span></div></div>
-    <div class="lane" data-lane="1" id="lane1"><div class="lane-hitglow"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb1"></div><div class="lane-btn" id="btn1"><span class="lane-key">S</span></div></div>
-    <div class="lane" data-lane="2" id="lane2"><div class="lane-hitglow"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb2"></div><div class="lane-btn" id="btn2"><span class="lane-key">D</span></div></div>
-    <div class="lane" data-lane="3" id="lane3"><div class="lane-hitglow"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb3"></div><div class="lane-btn" id="btn3"><span class="lane-key">F</span></div></div>
+    <div class="lane" data-lane="0" id="lane0"><div class="lane-hitglow"></div><div class="lane-hitzone"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb0"></div><div class="lane-btn" id="btn0"><span class="lane-key">A</span></div></div>
+    <div class="lane" data-lane="1" id="lane1"><div class="lane-hitglow"></div><div class="lane-hitzone"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb1"></div><div class="lane-btn" id="btn1"><span class="lane-key">S</span></div></div>
+    <div class="lane" data-lane="2" id="lane2"><div class="lane-hitglow"></div><div class="lane-hitzone"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb2"></div><div class="lane-btn" id="btn2"><span class="lane-key">D</span></div></div>
+    <div class="lane" data-lane="3" id="lane3"><div class="lane-hitglow"></div><div class="lane-hitzone"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb3"></div><div class="lane-btn" id="btn3"><span class="lane-key">F</span></div></div>
   </div>
   <div id="g-footer">
     <span id="g-lvlname"></span>
@@ -7105,6 +7324,94 @@ window.RD_playNoteFreq = function (freq, isDtap, sustainSec, inst) {
 
 window.RD_playVoice = playVoice;
 
+// ══════════════════════════════════════════
+//  INSTRUMENT JINGLES
+//
+//  A single middle C tells you almost nothing about an instrument —
+//  what separates a kalimba from an organ is the attack, the decay
+//  and how notes overlap, none of which one note can show. Each
+//  instrument gets a two-second phrase written to its character:
+//  plucked voices arpeggiate so you hear each note ring and fade,
+//  sustained voices hold a chord so you hear them bloom and beat
+//  against each other, and percussive voices run so you hear the
+//  transient.
+//
+//  Steps are [offsetMs, freq, sustainSec]. Nothing runs past 2000ms.
+// ══════════════════════════════════════════
+const N = { C4:261.63, D4:293.66, E4:329.63, F4:349.23, G4:392.00,
+            A4:440.00, B4:493.88, C5:523.25, D5:587.33, E5:659.26,
+            G5:783.99, C6:1046.50 };
+
+// Plucked and struck: an ascending arpeggio, then the octave left to ring.
+const JINGLE_PLUCK = [
+  [0,   N.C4, 0], [160, N.E4, 0], [320, N.G4, 0], [480, N.C5, 0],
+  [640, N.E5, 0], [850, N.G4, 0], [1000, N.C5, 0.95],
+];
+// Sustained: the chord builds and is held, so the voices overlap.
+const JINGLE_PAD = [
+  [0, N.C4, 1.8], [180, N.E4, 1.6], [360, N.G4, 1.4], [700, N.C5, 1.2],
+];
+// Bright and percussive: a quick run that shows the attack off.
+const JINGLE_RUN = [
+  [0, N.C5, 0], [120, N.D5, 0], [240, N.E5, 0], [360, N.G5, 0],
+  [480, N.E5, 0], [600, N.C5, 0], [780, N.G4, 0], [960, N.C6, 1],
+];
+// Synth gets an actual hook — it is the default voice, so it is the
+// one people hear first.
+const JINGLE_HOOK = [
+  [0, N.C4, 0], [140, N.G4, 0], [280, N.E4, 0], [420, N.G4, 0],
+  [560, N.A4, 0], [700, N.G4, 0], [840, N.E4, 0], [1050, N.C4, 0.9],
+];
+
+const JINGLES = {
+  synth:    JINGLE_HOOK,
+  piano:    JINGLE_PLUCK,
+  guitar:   JINGLE_PLUCK,
+  lyre:     JINGLE_PLUCK,
+  marimba:  JINGLE_RUN,
+  kalimba:  JINGLE_RUN,
+  bell:     JINGLE_RUN,
+  chiptune: JINGLE_HOOK,
+  flute:    JINGLE_PAD,
+  organ:    JINGLE_PAD,
+  strings:  JINGLE_PAD,
+  brass:    JINGLE_PAD,
+};
+
+let _jingleTimers = [];
+
+window.RD_stopJingle = function () {
+  _jingleTimers.forEach(clearTimeout);
+  _jingleTimers = [];
+};
+
+// Plays inst's phrase and returns its length in ms, so a caller can
+// hold a button lit for exactly as long as it sounds. Starting a new
+// one cancels whatever was playing — two jingles at once is noise.
+window.RD_playJingle = function (inst) {
+  window.RD_stopJingle();
+  const id    = inst || _instrument;
+  const steps = JINGLES[id] || JINGLE_PLUCK;
+  steps.forEach(([at, freq, sus]) => {
+    _jingleTimers.push(setTimeout(() => {
+      try { _playWithInstrument(freq, false, sus, id); } catch (e) {}
+    }, at));
+  });
+  const ms = jingleMs(steps);
+  _jingleTimers.push(setTimeout(() => { _jingleTimers = []; }, ms));
+  return ms;
+};
+
+// The phrase is over when its longest-ringing note is — which for a
+// held chord is the first note, not the last one played.
+function jingleMs(steps) {
+  return steps.reduce((m, [at, , sus]) => Math.max(m, at + Math.max(sus * 1000, 320)), 0);
+}
+
+window.RD_jingleLength = function (inst) {
+  return jingleMs(JINGLES[inst || _instrument] || JINGLE_PLUCK);
+};
+
 // ── Lane button glow flash ────────────────
 window.RD_flashLane = function (laneEl) {
   laneEl.style.transition = 'none';
@@ -10312,14 +10619,14 @@ function buildSettingsPanel() {
         ? 'border-color:var(--accent);background:rgba(255,58,110,.12);color:var(--accent);'
         : 'border-color:var(--border2);background:var(--bg3);color:var(--muted);',
     ].join('');
+    btn.dataset.inst = inst.id;
     btn.innerHTML = `<svg class="ic ic-lg"><use href="#${inst.icon}"/></svg><span>${inst.label}</span>`;
     btn.addEventListener('click', () => {
       currentSettings.instrument = inst.id;
       store.saveSettings(currentSettings);
       if (window.RD_saveInstrument) window.RD_saveInstrument(inst.id);
       buildSettingsPanel(); // re-render to update highlights
-      // Play a preview note
-      if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0);
+      playInstrumentJingle(inst.id);
     });
     instrRow.appendChild(btn);
   });
@@ -10368,6 +10675,29 @@ function buildSettingsPanel() {
   hwRow.appendChild(hwBtns);
   hwRow.appendChild(hwNote);
   panel.appendChild(hwRow);
+
+  // The window above is a band of pixels around the strike plane, but
+  // it was invisible — so a miss by four pixels and a miss by forty
+  // looked the same. Drawing it turns "I don't know why that missed"
+  // into something you can see, and it resizes with the setting.
+  const hzWrap = document.createElement('label');
+  hzWrap.className = 'sync-check';
+  hzWrap.style.margin = '8px 0 2px';
+  hzWrap.innerHTML = '<input type="checkbox" id="set-hitzone"'
+    + (currentSettings.showHitZone ? ' checked' : '') + '>'
+    + '<span>Show the hit window in the lanes</span>';
+  hzWrap.querySelector('input').addEventListener('change', e => {
+    currentSettings.showHitZone = e.target.checked;
+    store.saveSettings(currentSettings);
+    applyHitZone();
+  });
+  panel.appendChild(hzWrap);
+
+  const hzNote = document.createElement('div');
+  hzNote.style.cssText = 'font-size:10px;color:var(--dim);margin:0 0 2px;line-height:1.5;';
+  hzNote.textContent = 'Draws the band a tap is counted in, with the perfect '
+    + 'zone marked inside it. A practice aid — it changes nothing about scoring.';
+  panel.appendChild(hzNote);
 
   // Note speed is intentionally absent — see HIT_WINDOWS.
   const speedNote = document.createElement('div');
@@ -11574,6 +11904,24 @@ function retractPanel() {
   panelExpansion = null;
 }
 
+// Auditions an instrument with its own two-second phrase, and marks
+// whichever button is showing it for exactly as long as it sounds.
+// One note could not tell a kalimba from an organ; a phrase can.
+function playInstrumentJingle(id) {
+  if (!window.RD_playJingle) {
+    if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0);
+    return 0;
+  }
+  const ms = window.RD_playJingle(id);
+  document.querySelectorAll('.inst-playing').forEach(b => b.classList.remove('inst-playing'));
+  const btn = document.querySelector('[data-inst="' + id + '"]');
+  if (btn) {
+    btn.classList.add('inst-playing');
+    setTimeout(() => btn.classList.remove('inst-playing'), ms);
+  }
+  return ms;
+}
+
 // ── Advanced-panel sound preview ──────────
 // Plays the chart's own opening bars with the instrument, pitches,
 // sustain and background sound currently configured, so you can hear
@@ -11674,6 +12022,7 @@ function buildAdvInstrumentRow() {
         ? 'border-color:var(--accent);background:rgba(255,58,110,.12);color:var(--accent);'
         : 'border-color:var(--border2);background:var(--bg3);color:var(--muted);',
     ].join('');
+    btn.dataset.inst = inst.id;
     btn.innerHTML = `<svg class="ic"><use href="#${inst.icon}"/></svg><span>${inst.label}</span>`;
     btn.addEventListener('click', () => {
       if (window.RD_saveInstrument) window.RD_saveInstrument(inst.id);
@@ -11681,8 +12030,7 @@ function buildAdvInstrumentRow() {
       store.saveSettings(currentSettings);
       buildAdvInstrumentRow();
       buildAdvPreview();
-      // Preview note
-      if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0);
+      playInstrumentJingle(inst.id);
     });
     row.appendChild(btn);
   });
@@ -11881,6 +12229,17 @@ function measureLanes() {
 function laneH() { return _laneH || measureLanes(); }
 function hitY()  { return laneH() - HIT_BOTTOM; }
 window.addEventListener('resize', measureLanes);
+
+// Draws the band taps are actually judged in. Sized from hitTol()
+// itself rather than a hand-tuned constant, so it cannot drift out of
+// agreement with the code that does the judging — including when the
+// hit-window setting changes it.
+function applyHitZone() {
+  const on = !!currentSettings.showHitZone;
+  document.body.classList.toggle('show-hitzone', on);
+  if (!on) return;
+  document.documentElement.style.setProperty('--hit-zone-h', (hitTol() * 2) + 'px');
+}
 
 function buildQueue(lvl) {
   if (lvl.grid) {
@@ -12186,7 +12545,8 @@ function startGame(preQueue) {
   fbTimers = [0,0,0,0]; lastTapT = {0:0,1:0,2:0,3:0};
   gameQueue = preQueue || buildQueue(gameLevel);
   notesTotal = gameQueue.length;
-  scoreEl.textContent = '0'; comboEl.textContent = '×1'; comboEl.style.color = 'var(--tap)';
+  scoreEl.textContent = '0'; comboEl.textContent = '×1';
+  applyComboTier(0);
   spdBadge.textContent = '1.0×'; spdBadge.classList.remove('show');
   updateLives();
 
@@ -12336,13 +12696,70 @@ function hit(lane, dist) {
   if (streak > 1) pts = Math.round(pts * (1 + (streak - 1) * 0.05));
   score += pts; scoreEl.textContent = score;
   comboEl.textContent = '×' + combo;
-  comboEl.style.color = combo >= 10 ? 'var(--dtap)' : combo >= 5 ? 'var(--perfect)' : 'var(--tap)';
+  applyComboTier(combo);
   showFb(lane, label, color);
+}
+
+// ── Combo tiers ───────────────────────────
+// Below fifty the badge just changes colour, as it always has. Past
+// it the run has earned some noise: the badge escalates through three
+// states and the lanes take on the same heat, so the effect is where
+// the player is looking. Milestones announce themselves once.
+const COMBO_TIERS = [
+  { at: 100, cls: 'tier-nova',  body: 'combo-nova'  },
+  { at: 75,  cls: 'tier-blaze', body: 'combo-blaze' },
+  { at: 50,  cls: 'tier-hot',   body: null          },
+];
+const COMBO_MILESTONES = [
+  { at: 50,  text: '50 COMBO'   },
+  { at: 75,  text: '75 — BLAZING' },
+  { at: 100, text: '100 — UNBROKEN' },
+  { at: 150, text: '150 — FLAWLESS' },
+  { at: 200, text: '200 — LEGENDARY' },
+];
+let comboTierCls = '';
+
+function applyComboTier(n) {
+  const tier = COMBO_TIERS.find(t => n >= t.at);
+
+  // Below the first tier the old colour ramp still applies.
+  if (!tier) {
+    comboEl.style.color = n >= 10 ? 'var(--dtap)' : n >= 5 ? 'var(--perfect)' : 'var(--tap)';
+  } else {
+    comboEl.style.color = '';
+  }
+
+  const cls = tier ? tier.cls : '';
+  if (cls !== comboTierCls) {
+    COMBO_TIERS.forEach(t => comboEl.classList.remove(t.cls));
+    if (cls) comboEl.classList.add(cls);
+    COMBO_TIERS.forEach(t => { if (t.body) document.body.classList.remove(t.body); });
+    if (tier && tier.body) document.body.classList.add(tier.body);
+    comboTierCls = cls;
+  }
+
+  const ms = COMBO_MILESTONES.find(m => m.at === n);
+  if (ms) showComboMilestone(ms.text);
+}
+
+function showComboMilestone(text) {
+  const el = document.getElementById('combo-milestone');
+  if (!el) return;
+  el.textContent = text;
+  // Restart the animation even if one is already running — a run that
+  // crosses two milestones quickly should show both.
+  el.classList.remove('show');
+  void el.offsetWidth;
+  el.classList.add('show');
+  if (window.RD_playVoice) {
+    try { window.RD_playVoice('perfect'); } catch (e) {}
+  }
 }
 
 function damage(lane) {
   combo = 0; streak = 0;
-  comboEl.textContent = '×1'; comboEl.style.color = 'var(--tap)';
+  comboEl.textContent = '×1';
+  applyComboTier(0);
   lives = Math.max(0, lives - 1); updateLives();
   showFb(lane, 'MISS', 'var(--miss)');
   if (lives <= 0) endGame(false);
@@ -12414,6 +12831,9 @@ function showFb(lane, text, color) {
 function endGame(won) {
   running = false; cancelAnimationFrame(raf);
   activeTiles.forEach(retireTile); activeTiles = [];
+  // The heat is a property of a live run; it must not follow the
+  // player onto the results card or back to the menu.
+  applyComboTier(0);
   if (window.RD_stopBg) window.RD_stopBg();
   if (window.RD_resetLaneFreqs) window.RD_resetLaneFreqs();
 
@@ -12578,6 +12998,7 @@ function quitToMenu() {
   running = false; cancelAnimationFrame(raf);
   if (window.RD_Loading) window.RD_Loading.cancel();
   activeTiles.forEach(retireTile); activeTiles = [];
+  applyComboTier(0);
   if (window.RD_stopBg) window.RD_stopBg();
   if (window.RD_resetLaneFreqs) window.RD_resetLaneFreqs();
   showScreen('home'); renderHome();
@@ -12719,6 +13140,7 @@ function applyBrightness() {
 function applySettingsToDOM() {
   applyTrailClass();
   applyHitFxVars();
+  applyHitZone();
   // Bindings may have just changed; the keydown handler reads a cached
   // map rather than rebuilding one per keystroke.
   if (typeof refreshKeyMap === 'function') refreshKeyMap();
