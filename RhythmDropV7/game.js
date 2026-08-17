@@ -192,6 +192,15 @@ function recordLevelBest(lvl, score, coins) {
   } catch (e) { /* a failed migration must never block boot */ }
 })();
 
+// Running as a real extension popup, or served as an ordinary page?
+// Everything about fixed sizing hangs off this.
+function isExtensionPopup() {
+  return location.protocol === 'chrome-extension:'
+      || location.protocol === 'moz-extension:'
+      || location.protocol === 'ms-browser-extension:';
+}
+if (isExtensionPopup()) document.documentElement.classList.add('as-popup');
+
 // ── Profile state ──────────────────────────────
 let profile  = store.loadProfile() || { username: null, coins: 0, bestScore: 0 };
 let progress = store.loadProgress();
@@ -4993,8 +5002,16 @@ function applySettingsToDOM() {
   if (typeof refreshKeyMap === 'function') refreshKeyMap();
   document.body.classList.toggle('lane-light',
     (currentSettings.laneStyle || 'keycap') === 'light');
-  document.documentElement.style.width  = currentSettings.width  + 'px';
-  document.documentElement.style.height = currentSettings.height + 'px';
+  // Sizing the window only means anything in a popup, which has none of
+  // its own. Anywhere else — a tab, a phone, a static host — applying it
+  // strands the app in a 420x640 corner of a much larger viewport.
+  if (isExtensionPopup()) {
+    document.documentElement.style.width  = currentSettings.width  + 'px';
+    document.documentElement.style.height = currentSettings.height + 'px';
+  } else {
+    document.documentElement.style.width  = '';
+    document.documentElement.style.height = '';
+  }
   // Update lane key labels in game
   const keyLabels = ['A','S','D','F'];
   currentSettings.keys.forEach((code, i) => {

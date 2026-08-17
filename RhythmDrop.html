@@ -2,6 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Without this a phone assumes a ~980px layout viewport and the app,
+     which is pinned to 420px, renders tiny in the corner with the rest
+     of the screen empty. A popup ignores it. -->
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RhythmDrop</title>
 <style>
 /* ── Google Fonts ──
@@ -222,7 +226,20 @@ body.theme-mono {
 }
 
 * { box-sizing:border-box; margin:0; padding:0; }
-html { width:420px; height:640px; overflow:hidden; resize:both; min-width:360px; min-height:520px; max-width:700px; max-height:900px; }
+/* The extension popup has no window to size itself to, so it is given
+   one. Served as a page — a tab, or a phone — that same rule pins the
+   app to a 420x640 box in the top-left and leaves the rest black, so
+   there it fills the viewport instead and centres in a readable column.
+   html.as-popup is set by game.js when the protocol is chrome-extension:. */
+html { width:100%; height:100%; overflow:hidden; }
+html.as-popup {
+  width:420px; height:640px; resize:both;
+  min-width:360px; min-height:520px; max-width:700px; max-height:900px;
+}
+html:not(.as-popup) body {
+  max-width:520px; margin:0 auto;
+  box-shadow:0 0 0 1px var(--bevel-shade);
+}
 body {
   width:100%; height:100%; overflow:hidden;
   background:var(--panel-deep); color:var(--text);
@@ -6943,6 +6960,15 @@ function recordLevelBest(lvl, score, coins) {
   } catch (e) { /* a failed migration must never block boot */ }
 })();
 
+// Running as a real extension popup, or served as an ordinary page?
+// Everything about fixed sizing hangs off this.
+function isExtensionPopup() {
+  return location.protocol === 'chrome-extension:'
+      || location.protocol === 'moz-extension:'
+      || location.protocol === 'ms-browser-extension:';
+}
+if (isExtensionPopup()) document.documentElement.classList.add('as-popup');
+
 // ── Profile state ──────────────────────────────
 let profile  = store.loadProfile() || { username: null, coins: 0, bestScore: 0 };
 let progress = store.loadProgress();
@@ -11744,8 +11770,16 @@ function applySettingsToDOM() {
   if (typeof refreshKeyMap === 'function') refreshKeyMap();
   document.body.classList.toggle('lane-light',
     (currentSettings.laneStyle || 'keycap') === 'light');
-  document.documentElement.style.width  = currentSettings.width  + 'px';
-  document.documentElement.style.height = currentSettings.height + 'px';
+  // Sizing the window only means anything in a popup, which has none of
+  // its own. Anywhere else — a tab, a phone, a static host — applying it
+  // strands the app in a 420x640 corner of a much larger viewport.
+  if (isExtensionPopup()) {
+    document.documentElement.style.width  = currentSettings.width  + 'px';
+    document.documentElement.style.height = currentSettings.height + 'px';
+  } else {
+    document.documentElement.style.width  = '';
+    document.documentElement.style.height = '';
+  }
   // Update lane key labels in game
   const keyLabels = ['A','S','D','F'];
   currentSettings.keys.forEach((code, i) => {
