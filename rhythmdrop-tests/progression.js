@@ -332,7 +332,13 @@ probe('textures vary by area and by level',()=>{
   notes.push(classes.size+' distinct textures across 10 areas; jitter e.g. '+l1.angle+'/'+l1.scale+' vs '+l2.angle+'/'+l2.scale);
 });
 
-probe('overtime: doubles coins, pays no XP, no clear credit',()=>{
+// Beta 14 changed this on purpose. The Double is the same chart at twice
+// the speed, so it now pays on the XP formula's own speed factor —
+// double speed, double XP — instead of paying nothing. It still doubles
+// coins and still cannot clear a level: you have to have finished the
+// level to be offered it, so there is nothing to farm here that
+// replaying the level wouldn't give you more slowly.
+probe('the Double: doubles coins AND XP, still no clear credit',()=>{
   const t=T();
   t.progress.cleared={}; t.progress.xp=0; t.saveProgress();
   const lvl=C.buildCampaignLevel(1,0);
@@ -340,17 +346,21 @@ probe('overtime: doubles coins, pays no XP, no clear credit',()=>{
   t.gameLevel=lvl; t.baseBeatMs=500; t.score=20000; t.endGame(true);
   const xpAfterNormal=t.progress.xp, coinsAfterNormal=t.profile.coins;
   if(!t.isCleared(1,0))throw new Error('normal clear failed');
-  // now overtime on a level that is NOT yet cleared
+  if(xpAfterNormal<=0)throw new Error('normal clear paid no xp');
+  // now the Double, on a level that is NOT yet cleared
   t.progress.cleared={}; t.saveProgress();
   t.overtime=true;
   const coinsBefore=t.profile.coins, xpBefore=t.progress.xp;
   t.gameLevel=lvl; t.score=20000; t.endGame(true);
   const gainedCoins=t.profile.coins-coinsBefore, gainedXp=t.progress.xp-xpBefore;
   t.overtime=false;
-  if(gainedXp!==0)throw new Error('overtime granted '+gainedXp+' xp');
-  if(gainedCoins!==40)throw new Error('overtime should pay 40 coins for 20000, got '+gainedCoins);
-  if(t.isCleared(1,0))throw new Error('overtime marked a level cleared');
-  notes.push('20000 pts: normal +'+(coinsAfterNormal-0)+' coins/'+xpAfterNormal+'xp; overtime +'+gainedCoins+' coins/0xp, no clear');
+  // The formula rounds twice, so 2x can land a single XP either side.
+  if(Math.abs(gainedXp-xpAfterNormal*2)>1)
+    throw new Error('Double paid '+gainedXp+' xp, expected ~'+(xpAfterNormal*2));
+  if(gainedCoins!==40)throw new Error('Double should pay 40 coins for 20000, got '+gainedCoins);
+  if(t.isCleared(1,0))throw new Error('the Double marked a level cleared');
+  notes.push('20000 pts: normal +'+coinsAfterNormal+' coins/'+xpAfterNormal+'xp; '
+    +'Double +'+gainedCoins+' coins/'+gainedXp+'xp, no clear');
 });
 
 probe('multiple voices in one song',()=>{

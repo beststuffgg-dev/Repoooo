@@ -1954,7 +1954,7 @@ body.reduce-motion .pt-node.ready .pt-dot { animation:none; }
 /* ══════════════════════════════════════
    OVERTIME
    Offered only after you clear a level. Same chart at double
-   speed, coins only — no XP and no clear credit, so it's a
+   speed — double XP and double coins, but no clear credit, so it's a
    pure gamble for money rather than a progression shortcut.
 ══════════════════════════════════════ */
 #overtime-announce {
@@ -3547,7 +3547,7 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 
 <div id="overtime-announce">
   <div id="ot-word">DOUBLE</div>
-  <div id="ot-sub">Double speed · coins only</div>
+  <div id="ot-sub">Double speed · double XP</div>
 </div>
 <div id="ot-badge">Double ×2</div>
 
@@ -3592,7 +3592,7 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
     <div id="ov-xp"></div>
     <div id="ov-levelup"></div>
     <div id="ov-code" title="Tap to copy"></div>
-    <button class="ov-btn-alt" id="ov-overtime">Double ×2 — same song, double speed</button>
+    <button class="ov-btn-alt" id="ov-overtime">Double ×2 — twice the speed, twice the XP</button>
     <div id="ov-streak-bonus"></div>
     <div class="ov-keys"><div class="ov-key">A</div><div class="ov-key">S</div><div class="ov-key">D</div><div class="ov-key">F</div></div>
     <button class="ov-play-btn" id="ov-btn">Play</button>
@@ -5073,7 +5073,11 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
   function xpFor(lvl, opts) {
     opts = opts || {};
     const notes = countNotes(lvl);
-    const speed = (lvl.bpm || 120) / 120;
+    // XP scales with how fast the notes actually came at you, so a run
+    // played at double speed is worth double — that falls straight out
+    // of the formula rather than being a bonus bolted onto it. The
+    // Double passes speedMult 2.
+    const speed = ((lvl.bpm || 120) * (opts.speedMult || 1)) / 120;
     const diff  = lvl.campaign
       ? 1 + ((lvl.areaId || 1) - 1) * 0.15
       : 1 + ((lvl.difficulty || 1) - 1) * 0.2;
@@ -10921,7 +10925,7 @@ let streak = 0; // consecutive hits for streak bonus
 // Notes struck this run, against the chart's total. A failed run is
 // paid out on this ratio, so dying early earns early-death XP.
 let notesHit = 0, notesTotal = 0;
-let overtime = false;   // double speed, coins only
+let overtime = false;   // the Double: same chart at twice the speed
 let running = false, lastT = 0, raf = null;
 let beatAccum = 0, beatIdx = 0;
 let baseBeatMs = 500, currentBeatMs = 500;
@@ -11501,9 +11505,10 @@ function endGame(won) {
   // rather than self-authored, so they can't be farmed and pay full.
   const isGenerated = isCampaign || !!(gameLevel && gameLevel.procedural);
 
-  // The Double pays double coins and no XP at all. It is a wager
-  // for money, not a way to shortcut progression — which is why
-  // it also can't clear a level you haven't already cleared.
+  // The Double pays double coins, and double XP because it is played
+  // at double speed. It still can't clear a level you haven't already
+  // cleared — it is a harder run at a song you finished, not a way
+  // around finishing one.
   const coinMult = overtime ? 2 : (isGenerated ? 1 : 0.5);
   const coinsEarned = addHighScore(profile.username || 'Player', score, levelName, coinMult);
 
@@ -11517,9 +11522,18 @@ function endGame(won) {
 
   // A loss pays out on the share of the chart actually struck.
   const runProgress = notesTotal ? notesHit / notesTotal : 0;
-  const xpGain = overtime
-    ? 0
-    : CAM().xpFor(gameLevel, { completed: won, progress: runProgress });
+  // The Double is the same chart at twice the speed, which is a real
+  // step up in difficulty, so it pays accordingly: speedMult 2 doubles
+  // the speed factor in the XP formula. It used to pay nothing at all,
+  // on the theory that it was a coin wager — but it still cannot clear
+  // a level, and you have to have finished the level to be offered it,
+  // so there is nothing here to farm that playing the level again
+  // wouldn't already give you more slowly.
+  const xpGain = CAM().xpFor(gameLevel, {
+    completed: won,
+    progress: runProgress,
+    speedMult: overtime ? 2 : 1,
+  });
   const xpRes  = xpGain ? grantXp(xpGain) : { gained: 0, levelUp: false, level: CAM().levelFromXp(progress.xp) };
 
   let earnedAvatars = [];
@@ -11551,9 +11565,9 @@ function endGame(won) {
     const xpNote = [];
     if (!isGenerated) xpNote.push('custom, halved');
     if (!won) xpNote.push(Math.round(runProgress * 100) + '% of the chart');
-    ovXp.textContent = overtime
-      ? 'No XP on the Double · coins doubled'
-      : '+' + xpGain + ' XP' + (xpNote.length ? ' (' + xpNote.join(' · ') + ')' : '');
+    if (overtime) xpNote.unshift('double speed, double XP');
+    ovXp.textContent = '+' + xpGain + ' XP'
+      + (xpNote.length ? ' (' + xpNote.join(' · ') + ')' : '');
   }
   const ovLv = document.getElementById('ov-levelup');
   if (ovLv) {

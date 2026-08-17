@@ -1163,7 +1163,11 @@
   function xpFor(lvl, opts) {
     opts = opts || {};
     const notes = countNotes(lvl);
-    const speed = (lvl.bpm || 120) / 120;
+    // XP scales with how fast the notes actually came at you, so a run
+    // played at double speed is worth double — that falls straight out
+    // of the formula rather than being a bonus bolted onto it. The
+    // Double passes speedMult 2.
+    const speed = ((lvl.bpm || 120) * (opts.speedMult || 1)) / 120;
     const diff  = lvl.campaign
       ? 1 + ((lvl.areaId || 1) - 1) * 0.15
       : 1 + ((lvl.difficulty || 1) - 1) * 0.2;
