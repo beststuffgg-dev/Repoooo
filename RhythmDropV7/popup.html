@@ -250,6 +250,27 @@ body {
   filter:brightness(var(--app-brightness, 1));
 }
 
+/* ── Loading progress ──
+   The bar tracks the preload queue, not a timer: each step reports as
+   it completes and the label names what is running. */
+#load-bar {
+  width:190px; height:3px; border-radius:2px; margin:14px 0 7px;
+  background:var(--panel-deep);
+  box-shadow:inset 0 1px 2px var(--bevel-shade);
+  overflow:hidden;
+}
+#load-bar-fill {
+  width:0; height:100%; border-radius:2px;
+  background:linear-gradient(90deg,var(--tap),var(--accent));
+  box-shadow:0 0 8px color-mix(in srgb,var(--accent) 60%,transparent);
+  transition:width .18s ease;
+}
+#load-step {
+  font-family:var(--font-data); font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); min-height:11px;
+}
+body.reduce-motion #load-bar-fill { transition:none; }
+
 /* ── Shop: effect previews ──
    A name and a price said nothing about what you were buying. Each card
    runs the effect on a loop, driven by the item's own data through the
@@ -744,8 +765,29 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
 #adv-panel {
   border-top:1px solid var(--border); background:var(--bg2);
   padding:10px 14px; display:none; flex-direction:column; gap:8px;
+  /* Held to the window space it was given (see fitPanelToExpansion) and
+     scrolled inside it, so opening it never shrinks the grid. */
+  flex-shrink:0; overflow-y:auto; overscroll-behavior:contain;
 }
 #adv-panel.open { display:flex; }
+
+/* Preview button — pinned to the top of the panel so it stays reachable
+   however far the rest of the panel is scrolled. */
+.adv-preview {
+  position:sticky; top:-10px; z-index:3; align-self:stretch;
+  display:flex; align-items:center; gap:7px;
+  padding:8px 10px; margin:-2px 0 2px;
+  border:1px solid var(--tap); border-radius:9px;
+  background:var(--bg3); color:var(--tap);
+  font-family:var(--font-body); font-size:11px; font-weight:700;
+  cursor:pointer; transition:background .12s,color .12s,border-color .12s;
+}
+.adv-preview:hover { background:var(--tap); color:var(--bg); }
+.adv-preview.playing { background:var(--tap); color:var(--bg); }
+.adv-preview-sub {
+  margin-left:auto; font-family:var(--font-data); font-size:9px;
+  font-weight:700; letter-spacing:.5px; text-transform:uppercase; opacity:.75;
+}
 .adv-section { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px; }
 
 /* per-lane note picker */
@@ -3243,6 +3285,9 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
   <symbol id="ic-note" viewBox="0 0 24 24">
     <path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>
   </symbol>
+  <symbol id="ic-play" viewBox="0 0 24 24">
+    <path d="M8 5.5v13l10.5-6.5z" stroke-linejoin="round"/>
+  </symbol>
 </defs></svg>
 
 <!-- ══════════ BOOT SPLASH ══════════ -->
@@ -3591,6 +3636,12 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 
   <!-- Advanced panel -->
   <div id="adv-panel">
+    <button class="adv-preview" id="adv-preview">
+      <svg class="ic"><use href="#ic-play"/></svg>
+      <span>Preview sound</span>
+      <span class="adv-preview-sub" id="adv-preview-sub">synth</span>
+    </button>
+
     <div class="adv-section">Theme</div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:5px;">Sets the palette, texture, scale and instruments your song plays in</div>
     <div class="theme-pick" id="adv-theme-pick"></div>
@@ -3663,6 +3714,10 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 <div id="load-veil">
   <div id="load-title"></div>
   <div id="load-meta"></div>
+  <!-- Real progress: the bar is driven by the preload steps finishing,
+       and the label names the step actually running. -->
+  <div id="load-bar"><div id="load-bar-fill"></div></div>
+  <div id="load-step"></div>
   <div id="load-ball-wrap">
     <div id="load-ball-stage"><div id="load-ball"></div></div>
     <div id="load-tiles">

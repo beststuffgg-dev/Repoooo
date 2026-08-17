@@ -116,6 +116,58 @@
     if (hud) void hud.getBoundingClientRect();
   }
 
+  // ── Decode the sprites the board will use ──────────────────
+  // The lane keycaps, HUD icons and pips all reference symbols from the
+  // inline sheet. Touching them here forces the raster before the first
+  // frame instead of during it.
+  function warmSprites() {
+    const seen = new Set();
+    document.querySelectorAll('#game svg use').forEach(u => {
+      const href = u.getAttribute('href') || u.getAttribute('xlink:href') || '';
+      if (!href || seen.has(href)) return;
+      seen.add(href);
+      const sym = document.getElementById(href.replace('#', ''));
+      if (sym) void sym.getBoundingClientRect();
+    });
+    return seen.size;
+  }
+
+  // ── Warm the trail and hit-effect layers ───────────────────
+  // Both are CSS-driven and their first use compiles a filter or a
+  // shadow. Spawning one off-screen pays that cost up front.
+  function warmEffects() {
+    const host = document.getElementById('lane0');
+    if (!host) return;
+    const fx = document.createElement('div');
+    fx.className = 'hit-fx';
+    fx.style.cssText = 'position:absolute;opacity:0;pointer-events:none;';
+    host.appendChild(fx);
+    void fx.getBoundingClientRect();
+    setTimeout(() => { if (fx.parentNode) fx.parentNode.removeChild(fx); }, 0);
+  }
+
+  // ── Size the pool to the chart ─────────────────────────────
+  // A dense chart can have far more tiles alive at once than a sparse
+  // one. Guessing 64 every time meant long levels allocated mid-song,
+  // which is exactly when it is most visible.
+  function poolSizeFor(queue) {
+    if (!queue || !queue.length) return 64;
+    // Peak concurrency: notes whose spawn windows overlap. Four lanes
+    // and a fall of roughly four beats, so a beat window of five is a
+    // safe upper bound, plus headroom.
+    let peak = 0;
+    for (let i = 0; i < queue.length; i++) {
+      let n = 0;
+      for (let j = i; j < queue.length; j++) {
+        if (queue[j].beatIdx - queue[i].beatIdx > 5) break;
+        n++;
+      }
+      if (n > peak) peak = n;
+      i += 3;                       // sampling is enough for a bound
+    }
+    return Math.max(64, Math.min(220, peak + 24));
+  }
+
   // ═══════════════════════════════════════════
   //  The bouncing ball (tier 2)
   // ═══════════════════════════════════════════
@@ -183,28 +235,43 @@
 
       const beat = Math.max(300, Math.min(700, Math.round(60000 / (bpm || 120))));
       wrap.classList.add('show');
-      let n = 3;
 
-      function tick() {
-        num.textContent = n;
+      // The count is derived from the wall clock, not from a chain of
+      // setTimeouts. A chained timer drifts under load and can land two
+      // firings inside one beat, which is how the same number ended up
+      // on screen twice; here the elapsed time decides which number is
+      // current, and a number is only painted when it actually changes.
+      const COUNT = 3;
+      const t0 = performance.now();
+      let shown = null;
+      let raf = 0;
+
+      const paint = v => {
+        num.textContent = v;
         num.classList.remove('tick');
         void num.offsetWidth;              // restart the animation
         num.classList.add('tick');
         if (window.RD_playNoteFreq) {
-          try { window.RD_playNoteFreq(n === 1 ? 523.25 : 392.00, false, 0); } catch (e) {}
+          try { window.RD_playNoteFreq(v === 1 ? 523.25 : 392.00, false, 0); } catch (e) {}
         }
-        n--;
-        if (n >= 1) {
-          setTimeout(tick, beat);
-        } else {
-          setTimeout(() => {
-            wrap.classList.remove('show');
-            num.classList.remove('tick');
-            resolve();
-          }, beat);
-        }
-      }
-      tick();
+      };
+
+      const done = () => {
+        cancelAnimationFrame(raf);
+        wrap.classList.remove('show');
+        num.classList.remove('tick');
+        resolve();
+      };
+
+      const frame = () => {
+        const elapsed = performance.now() - t0;
+        const step = Math.floor(elapsed / beat);      // 0, 1, 2, then out
+        if (step >= COUNT) { done(); return; }
+        const value = COUNT - step;                   // 3, 2, 1
+        if (value !== shown) { shown = value; paint(value); }
+        raf = requestAnimationFrame(frame);
+      };
+      frame();
     });
   }
 
@@ -263,19 +330,40 @@
 
     const cardDone = new Promise(r => setTimeout(r, CARD_RISE + CARD_HOLD));
 
-    // ── The actual work, weighted by measured cost ──
+    // ── The actual work ──
+    // Each step is named and weighted by roughly what it costs, so the
+    // bar tracks real progress instead of counting to 100 on a timer.
+    // Every step is something the first frame would otherwise pay for.
     const tasks = [
-      () => warmAudio(),
-      () => preloadInstrument(queue),
-      () => prebuildTilePool(64),
-      () => paintStaticLayers(),
+      ['Waking the audio graph', 1, () => warmAudio()],
+      ['Building the voices',    4, () => preloadInstrument(queue)],
+      ['Preparing tiles',        2, () => prebuildTilePool(poolSizeFor(queue))],
+      ['Decoding icons',         1, () => warmSprites()],
+      ['Warming effects',        1, () => warmEffects()],
+      ['Laying out the board',   1, () => paintStaticLayers()],
     ];
+    const totalWeight = tasks.reduce((n, t) => n + t[1], 0);
+
+    const bar   = document.getElementById('load-bar-fill');
+    const stepL = document.getElementById('load-step');
+    let doneWeight = 0;
+    const report = (label) => {
+      if (bar)   bar.style.width = Math.round((doneWeight / totalWeight) * 100) + '%';
+      if (stepL) stepL.textContent = label;
+    };
+    report('Starting');
 
     const queueDone = (async () => {
-      for (const task of tasks) {
-        try { task(); } catch (e) { /* a warm step must never block play */ }
+      for (const [label, weight, fn] of tasks) {
+        report(label);
+        // Yield first so the label paints before the work blocks.
+        await yieldToPaint();
+        try { fn(); } catch (e) { /* a warm step must never block play */ }
+        doneWeight += weight;
+        report(label);
         await yieldToPaint();
       }
+      report('Ready');
     })();
 
     // ── Tier 2 only if the work outlasts the card ──

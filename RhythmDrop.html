@@ -250,6 +250,27 @@ body {
   filter:brightness(var(--app-brightness, 1));
 }
 
+/* ── Loading progress ──
+   The bar tracks the preload queue, not a timer: each step reports as
+   it completes and the label names what is running. */
+#load-bar {
+  width:190px; height:3px; border-radius:2px; margin:14px 0 7px;
+  background:var(--panel-deep);
+  box-shadow:inset 0 1px 2px var(--bevel-shade);
+  overflow:hidden;
+}
+#load-bar-fill {
+  width:0; height:100%; border-radius:2px;
+  background:linear-gradient(90deg,var(--tap),var(--accent));
+  box-shadow:0 0 8px color-mix(in srgb,var(--accent) 60%,transparent);
+  transition:width .18s ease;
+}
+#load-step {
+  font-family:var(--font-data); font-size:9px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--muted); min-height:11px;
+}
+body.reduce-motion #load-bar-fill { transition:none; }
+
 /* ── Shop: effect previews ──
    A name and a price said nothing about what you were buying. Each card
    runs the effect on a loop, driven by the item's own data through the
@@ -744,8 +765,29 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
 #adv-panel {
   border-top:1px solid var(--border); background:var(--bg2);
   padding:10px 14px; display:none; flex-direction:column; gap:8px;
+  /* Held to the window space it was given (see fitPanelToExpansion) and
+     scrolled inside it, so opening it never shrinks the grid. */
+  flex-shrink:0; overflow-y:auto; overscroll-behavior:contain;
 }
 #adv-panel.open { display:flex; }
+
+/* Preview button — pinned to the top of the panel so it stays reachable
+   however far the rest of the panel is scrolled. */
+.adv-preview {
+  position:sticky; top:-10px; z-index:3; align-self:stretch;
+  display:flex; align-items:center; gap:7px;
+  padding:8px 10px; margin:-2px 0 2px;
+  border:1px solid var(--tap); border-radius:9px;
+  background:var(--bg3); color:var(--tap);
+  font-family:var(--font-body); font-size:11px; font-weight:700;
+  cursor:pointer; transition:background .12s,color .12s,border-color .12s;
+}
+.adv-preview:hover { background:var(--tap); color:var(--bg); }
+.adv-preview.playing { background:var(--tap); color:var(--bg); }
+.adv-preview-sub {
+  margin-left:auto; font-family:var(--font-data); font-size:9px;
+  font-weight:700; letter-spacing:.5px; text-transform:uppercase; opacity:.75;
+}
 .adv-section { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px; }
 
 /* per-lane note picker */
@@ -3243,6 +3285,9 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
   <symbol id="ic-note" viewBox="0 0 24 24">
     <path d="M9 18V6l10-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="16.5" cy="16" r="2.5"/>
   </symbol>
+  <symbol id="ic-play" viewBox="0 0 24 24">
+    <path d="M8 5.5v13l10.5-6.5z" stroke-linejoin="round"/>
+  </symbol>
 </defs></svg>
 
 <!-- ══════════ BOOT SPLASH ══════════ -->
@@ -3591,6 +3636,12 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 
   <!-- Advanced panel -->
   <div id="adv-panel">
+    <button class="adv-preview" id="adv-preview">
+      <svg class="ic"><use href="#ic-play"/></svg>
+      <span>Preview sound</span>
+      <span class="adv-preview-sub" id="adv-preview-sub">synth</span>
+    </button>
+
     <div class="adv-section">Theme</div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:5px;">Sets the palette, texture, scale and instruments your song plays in</div>
     <div class="theme-pick" id="adv-theme-pick"></div>
@@ -3663,6 +3714,10 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 <div id="load-veil">
   <div id="load-title"></div>
   <div id="load-meta"></div>
+  <!-- Real progress: the bar is driven by the preload steps finishing,
+       and the label names the step actually running. -->
+  <div id="load-bar"><div id="load-bar-fill"></div></div>
+  <div id="load-step"></div>
   <div id="load-ball-wrap">
     <div id="load-ball-stage"><div id="load-ball"></div></div>
     <div id="load-tiles">
@@ -5958,6 +6013,58 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
     if (hud) void hud.getBoundingClientRect();
   }
 
+  // ── Decode the sprites the board will use ──────────────────
+  // The lane keycaps, HUD icons and pips all reference symbols from the
+  // inline sheet. Touching them here forces the raster before the first
+  // frame instead of during it.
+  function warmSprites() {
+    const seen = new Set();
+    document.querySelectorAll('#game svg use').forEach(u => {
+      const href = u.getAttribute('href') || u.getAttribute('xlink:href') || '';
+      if (!href || seen.has(href)) return;
+      seen.add(href);
+      const sym = document.getElementById(href.replace('#', ''));
+      if (sym) void sym.getBoundingClientRect();
+    });
+    return seen.size;
+  }
+
+  // ── Warm the trail and hit-effect layers ───────────────────
+  // Both are CSS-driven and their first use compiles a filter or a
+  // shadow. Spawning one off-screen pays that cost up front.
+  function warmEffects() {
+    const host = document.getElementById('lane0');
+    if (!host) return;
+    const fx = document.createElement('div');
+    fx.className = 'hit-fx';
+    fx.style.cssText = 'position:absolute;opacity:0;pointer-events:none;';
+    host.appendChild(fx);
+    void fx.getBoundingClientRect();
+    setTimeout(() => { if (fx.parentNode) fx.parentNode.removeChild(fx); }, 0);
+  }
+
+  // ── Size the pool to the chart ─────────────────────────────
+  // A dense chart can have far more tiles alive at once than a sparse
+  // one. Guessing 64 every time meant long levels allocated mid-song,
+  // which is exactly when it is most visible.
+  function poolSizeFor(queue) {
+    if (!queue || !queue.length) return 64;
+    // Peak concurrency: notes whose spawn windows overlap. Four lanes
+    // and a fall of roughly four beats, so a beat window of five is a
+    // safe upper bound, plus headroom.
+    let peak = 0;
+    for (let i = 0; i < queue.length; i++) {
+      let n = 0;
+      for (let j = i; j < queue.length; j++) {
+        if (queue[j].beatIdx - queue[i].beatIdx > 5) break;
+        n++;
+      }
+      if (n > peak) peak = n;
+      i += 3;                       // sampling is enough for a bound
+    }
+    return Math.max(64, Math.min(220, peak + 24));
+  }
+
   // ═══════════════════════════════════════════
   //  The bouncing ball (tier 2)
   // ═══════════════════════════════════════════
@@ -6025,28 +6132,43 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 
       const beat = Math.max(300, Math.min(700, Math.round(60000 / (bpm || 120))));
       wrap.classList.add('show');
-      let n = 3;
 
-      function tick() {
-        num.textContent = n;
+      // The count is derived from the wall clock, not from a chain of
+      // setTimeouts. A chained timer drifts under load and can land two
+      // firings inside one beat, which is how the same number ended up
+      // on screen twice; here the elapsed time decides which number is
+      // current, and a number is only painted when it actually changes.
+      const COUNT = 3;
+      const t0 = performance.now();
+      let shown = null;
+      let raf = 0;
+
+      const paint = v => {
+        num.textContent = v;
         num.classList.remove('tick');
         void num.offsetWidth;              // restart the animation
         num.classList.add('tick');
         if (window.RD_playNoteFreq) {
-          try { window.RD_playNoteFreq(n === 1 ? 523.25 : 392.00, false, 0); } catch (e) {}
+          try { window.RD_playNoteFreq(v === 1 ? 523.25 : 392.00, false, 0); } catch (e) {}
         }
-        n--;
-        if (n >= 1) {
-          setTimeout(tick, beat);
-        } else {
-          setTimeout(() => {
-            wrap.classList.remove('show');
-            num.classList.remove('tick');
-            resolve();
-          }, beat);
-        }
-      }
-      tick();
+      };
+
+      const done = () => {
+        cancelAnimationFrame(raf);
+        wrap.classList.remove('show');
+        num.classList.remove('tick');
+        resolve();
+      };
+
+      const frame = () => {
+        const elapsed = performance.now() - t0;
+        const step = Math.floor(elapsed / beat);      // 0, 1, 2, then out
+        if (step >= COUNT) { done(); return; }
+        const value = COUNT - step;                   // 3, 2, 1
+        if (value !== shown) { shown = value; paint(value); }
+        raf = requestAnimationFrame(frame);
+      };
+      frame();
     });
   }
 
@@ -6105,19 +6227,40 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 
     const cardDone = new Promise(r => setTimeout(r, CARD_RISE + CARD_HOLD));
 
-    // ── The actual work, weighted by measured cost ──
+    // ── The actual work ──
+    // Each step is named and weighted by roughly what it costs, so the
+    // bar tracks real progress instead of counting to 100 on a timer.
+    // Every step is something the first frame would otherwise pay for.
     const tasks = [
-      () => warmAudio(),
-      () => preloadInstrument(queue),
-      () => prebuildTilePool(64),
-      () => paintStaticLayers(),
+      ['Waking the audio graph', 1, () => warmAudio()],
+      ['Building the voices',    4, () => preloadInstrument(queue)],
+      ['Preparing tiles',        2, () => prebuildTilePool(poolSizeFor(queue))],
+      ['Decoding icons',         1, () => warmSprites()],
+      ['Warming effects',        1, () => warmEffects()],
+      ['Laying out the board',   1, () => paintStaticLayers()],
     ];
+    const totalWeight = tasks.reduce((n, t) => n + t[1], 0);
+
+    const bar   = document.getElementById('load-bar-fill');
+    const stepL = document.getElementById('load-step');
+    let doneWeight = 0;
+    const report = (label) => {
+      if (bar)   bar.style.width = Math.round((doneWeight / totalWeight) * 100) + '%';
+      if (stepL) stepL.textContent = label;
+    };
+    report('Starting');
 
     const queueDone = (async () => {
-      for (const task of tasks) {
-        try { task(); } catch (e) { /* a warm step must never block play */ }
+      for (const [label, weight, fn] of tasks) {
+        report(label);
+        // Yield first so the label paints before the work blocks.
+        await yieldToPaint();
+        try { fn(); } catch (e) { /* a warm step must never block play */ }
+        doneWeight += weight;
+        report(label);
         await yieldToPaint();
       }
+      report('Ready');
     })();
 
     // ── Tier 2 only if the work outlasts the card ──
@@ -10471,7 +10614,12 @@ function openCreator(idx) {
   setTool('tap');
   buildGrid();
   buildAdvPanel();
-  document.getElementById('adv-panel').classList.remove('open');
+  const advPanel = document.getElementById('adv-panel');
+  advPanel.classList.remove('open');
+  advPanel.style.maxHeight = '';
+  // The panel starts closed, so the window it grew must come back too —
+  // otherwise the next open is a no-op and the grid gets squeezed instead.
+  retractPanel();
 
   // Export button for existing levels
   const existingExpBtn = document.getElementById('cr-export-btn');
@@ -10703,10 +10851,14 @@ document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.addEventListene
 
 document.getElementById('adv-toggle').addEventListener('click', () => {
   crAdvOpen = !crAdvOpen;
+  if (!crAdvOpen) stopAdvPreview();
   document.getElementById('adv-panel').classList.toggle('open', crAdvOpen);
   // Grow the window for the panel rather than squeezing the grid,
-  // and give the space back when it closes.
-  if (crAdvOpen) expandForPanel(220, 'h'); else retractPanel();
+  // and give the space back when it closes. The panel wants far more
+  // room than any window can spare, so it is held to exactly the space
+  // the window gained and scrolls inside it — the grid keeps its size.
+  if (crAdvOpen) fitPanelToExpansion('adv-panel', ADV_PANEL_PX);
+  else { retractPanel(); document.getElementById('adv-panel').style.maxHeight = ''; }
   buildAdvPanel();
   buildGrid();
 });
@@ -10868,6 +11020,7 @@ function buildGrid() {
         // ── Normal / advanced-empty cell ──
         const el = document.createElement('div');
         el.className = 'cr-cell' + (type ? ' is-' + type : '');
+        el.title = type ? 'Click to change note' : 'Click to place note';
         wireCellSelection(el, ri, ci);
         el.addEventListener('click', () => {
           // Select and paste modes own the pointer; editing resumes
@@ -10875,15 +11028,24 @@ function buildGrid() {
           if (crTool === 'select' || crPasting) return;
           if (crTool === 'erase') {
             crGrid[ri][ci] = null;
-          } else if (crTool === 'tap') {
-            crGrid[ri][ci] = cellType(crGrid[ri][ci]) === 'tap'
-              ? null
-              : { type:'tap', freq: crLaneFreqs[ci], sustain: crDefaultSustain };
-          } else if (crTool === 'dtap') {
-            crGrid[ri][ci] = cellType(crGrid[ri][ci]) === 'dtap'
-              ? null
-              : { type:'dtap', freq: crLaneFreqs[ci], sustain: crDefaultSustain };
+            buildGrid();
+            return;
           }
+          const want = crTool === 'dtap' ? 'dtap' : 'tap';
+          if (cellType(crGrid[ri][ci]) === want) {
+            // Second click on a note you just placed: pick its pitch.
+            // (Clearing a note is the erase tool's job.)
+            openNotePickerModal(el, cellFreq(crGrid[ri][ci], ci), (newFreq) => {
+              crGrid[ri][ci] = {
+                type:    cellType(crGrid[ri][ci]) || want,
+                freq:    newFreq,
+                sustain: cellSustain(crGrid[ri][ci]),
+              };
+              buildGrid();
+            });
+            return;
+          }
+          crGrid[ri][ci] = { type: want, freq: crLaneFreqs[ci], sustain: crDefaultSustain };
           buildGrid();
         });
         g.appendChild(el);
@@ -10900,6 +11062,8 @@ document.getElementById('cr-add-rows').addEventListener('click', () => {
 });
 
 document.getElementById('cr-back').addEventListener('click', () => {
+  stopAdvPreview();
+  retractPanel();
   showScreen('home'); renderHome();
 });
 
@@ -10924,6 +11088,8 @@ document.getElementById('cr-save').addEventListener('click', () => {
   const arr = store.load();
   if (editIdx !== null && arr[editIdx]) arr[editIdx] = lvl; else arr.push(lvl);
   store.save(arr);
+  stopAdvPreview();
+  retractPanel();
   document.querySelectorAll('.hnav').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
   document.querySelector('.hnav[data-tab="custom"]').classList.add('active');
@@ -11140,6 +11306,7 @@ function runGenerate() {
 let creatorMode = 'custom';
 function setCreatorMode(m) {
   creatorMode = m;
+  if (m === 'generate') stopAdvPreview();
   document.querySelectorAll('.cr-mode-opt').forEach(o =>
     o.classList.toggle('on', o.dataset.mode === m));
   const gen = document.getElementById('gen-pane');
@@ -11176,6 +11343,10 @@ function setCreatorMode(m) {
 const WINDOW_CAP = { w: 700, h: 900 };
 let panelExpansion = null;   // { axis, amount } while a panel is open
 
+// A sliver of window is worse than none — a 10px panel is unusable, so
+// anything under this much growth takes the overlay path instead.
+const PANEL_MIN_PX = 140;
+
 function expandForPanel(px, axis) {
   if (panelExpansion) return panelExpansion;   // one at a time
   const root = document.documentElement;
@@ -11184,18 +11355,37 @@ function expandForPanel(px, axis) {
     : (parseInt(root.style.width, 10)  || currentSettings.width);
   const cap  = axis === 'h' ? WINDOW_CAP.h : WINDOW_CAP.w;
 
-  const room  = Math.max(0, cap - cur);
-  const grow  = Math.min(px, room);
+  const room = Math.max(0, cap - cur);
+  const want = Math.min(px, room);
+  const grow = want >= Math.min(px, PANEL_MIN_PX) ? want : 0;
 
   if (grow > 0) {
     root.style[axis === 'h' ? 'height' : 'width'] = (cur + grow) + 'px';
-    panelExpansion = { axis, amount: grow, overlay: grow < px };
+    // A partial grow is still a grow: the panel is held to whatever it
+    // got and scrolls inside it. Only a window with no room left at all
+    // has to fall back to floating the panel over the content.
+    panelExpansion = { axis, amount: grow, overlay: false };
   } else {
     // No room: the panel overlays and the content scrolls, as before.
     panelExpansion = { axis, amount: 0, overlay: true };
   }
   document.body.classList.toggle('panel-overlay', panelExpansion.overlay);
   return panelExpansion;
+}
+
+// How much window the advanced panel asks for. It is deliberately more
+// than the default window can give: expandForPanel takes what it can up
+// to the cap, and the panel is then held to that.
+const ADV_PANEL_PX = 320;
+
+// Opens a panel into freshly grown window space, and holds it to that
+// space so nothing already on screen has to shrink. Returns the
+// expansion so callers can tell growth from the overlay fallback.
+function fitPanelToExpansion(panelId, px) {
+  const exp = expandForPanel(px, 'h');
+  const el  = document.getElementById(panelId);
+  if (el) el.style.maxHeight = exp.amount > 0 ? exp.amount + 'px' : '';
+  return exp;
 }
 
 function retractPanel() {
@@ -11210,7 +11400,79 @@ function retractPanel() {
   panelExpansion = null;
 }
 
+// ── Advanced-panel sound preview ──────────
+// Plays the chart's own opening bars with the instrument, pitches,
+// sustain and background sound currently configured, so you can hear
+// an edit without leaving the creator. Clicking again stops it.
+let advPreviewTimers = [];
+function stopAdvPreview() {
+  advPreviewTimers.forEach(clearTimeout);
+  advPreviewTimers = [];
+  if (window.RD_stopBg) window.RD_stopBg();
+  const btn = document.getElementById('adv-preview');
+  if (btn) btn.classList.remove('playing');
+}
+
+function advPreviewRows() {
+  // Rows that actually contain notes, capped so the preview stays short.
+  const rows = [];
+  for (let ri = 0; ri < crGrid.length && rows.length < 8; ri++) {
+    const notes = [];
+    crGrid[ri].forEach((cell, ci) => {
+      if (cellType(cell)) {
+        notes.push({
+          freq:    cellFreq(cell, ci),
+          dtap:    cellType(cell) === 'dtap',
+          sustain: cellSustain(cell),
+        });
+      }
+    });
+    if (notes.length || rows.length) rows.push(notes);
+  }
+  while (rows.length && !rows[rows.length - 1].length) rows.pop();
+  if (rows.length) return rows;
+  // Empty chart: audition the four lane defaults instead.
+  return crLaneFreqs.map(f => [{ freq: f, dtap: false, sustain: crDefaultSustain }]);
+}
+
+function startAdvPreview() {
+  const btn = document.getElementById('adv-preview');
+  const bpm = parseInt(document.getElementById('cr-bpm').value, 10) || 120;
+  const beat = Math.max(120, Math.round(60000 / bpm));
+  const rows = advPreviewRows();
+  const inst = (window.RD_getInstrument && window.RD_getInstrument()) || 'synth';
+
+  if (btn) btn.classList.add('playing');
+  if (crBgMode !== 'none' && window.RD_startBg) {
+    window.RD_startBg(crBgMode, bpm, crBassSteps.map(s => s.active ? s.freq : 0));
+  }
+  rows.forEach((notes, i) => {
+    advPreviewTimers.push(setTimeout(() => {
+      notes.forEach(n => {
+        if (window.RD_playNoteFreq) window.RD_playNoteFreq(n.freq, n.dtap, n.sustain, inst);
+      });
+    }, i * beat));
+  });
+  // Let the tail of the last note ring out before releasing the button.
+  const tail = Math.max(...rows[rows.length - 1].map(n => n.sustain * 1000), 350);
+  advPreviewTimers.push(setTimeout(stopAdvPreview, rows.length * beat + tail));
+}
+
+function buildAdvPreview() {
+  const btn = document.getElementById('adv-preview');
+  if (!btn) return;
+  const inst = (window.RD_getInstrument && window.RD_getInstrument()) || 'synth';
+  const meta = (window.RD_INSTRUMENTS || []).find(i => i.id === inst);
+  const sub  = document.getElementById('adv-preview-sub');
+  if (sub) sub.textContent = meta ? meta.label : inst;
+  btn.onclick = () => {
+    if (advPreviewTimers.length) { stopAdvPreview(); return; }
+    startAdvPreview();
+  };
+}
+
 function buildAdvPanel() {
+  buildAdvPreview();
   buildThemePicker();
   buildLaneNoteGrid();
   buildBgRadio();
@@ -11244,6 +11506,7 @@ function buildAdvInstrumentRow() {
       currentSettings.instrument = inst.id;
       store.saveSettings(currentSettings);
       buildAdvInstrumentRow();
+      buildAdvPreview();
       // Preview note
       if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0);
     });

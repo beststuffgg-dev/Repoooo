@@ -3538,7 +3538,12 @@ function openCreator(idx) {
   setTool('tap');
   buildGrid();
   buildAdvPanel();
-  document.getElementById('adv-panel').classList.remove('open');
+  const advPanel = document.getElementById('adv-panel');
+  advPanel.classList.remove('open');
+  advPanel.style.maxHeight = '';
+  // The panel starts closed, so the window it grew must come back too —
+  // otherwise the next open is a no-op and the grid gets squeezed instead.
+  retractPanel();
 
   // Export button for existing levels
   const existingExpBtn = document.getElementById('cr-export-btn');
@@ -3770,10 +3775,14 @@ document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.addEventListene
 
 document.getElementById('adv-toggle').addEventListener('click', () => {
   crAdvOpen = !crAdvOpen;
+  if (!crAdvOpen) stopAdvPreview();
   document.getElementById('adv-panel').classList.toggle('open', crAdvOpen);
   // Grow the window for the panel rather than squeezing the grid,
-  // and give the space back when it closes.
-  if (crAdvOpen) expandForPanel(220, 'h'); else retractPanel();
+  // and give the space back when it closes. The panel wants far more
+  // room than any window can spare, so it is held to exactly the space
+  // the window gained and scrolls inside it — the grid keeps its size.
+  if (crAdvOpen) fitPanelToExpansion('adv-panel', ADV_PANEL_PX);
+  else { retractPanel(); document.getElementById('adv-panel').style.maxHeight = ''; }
   buildAdvPanel();
   buildGrid();
 });
@@ -3935,6 +3944,7 @@ function buildGrid() {
         // ── Normal / advanced-empty cell ──
         const el = document.createElement('div');
         el.className = 'cr-cell' + (type ? ' is-' + type : '');
+        el.title = type ? 'Click to change note' : 'Click to place note';
         wireCellSelection(el, ri, ci);
         el.addEventListener('click', () => {
           // Select and paste modes own the pointer; editing resumes
@@ -3942,15 +3952,24 @@ function buildGrid() {
           if (crTool === 'select' || crPasting) return;
           if (crTool === 'erase') {
             crGrid[ri][ci] = null;
-          } else if (crTool === 'tap') {
-            crGrid[ri][ci] = cellType(crGrid[ri][ci]) === 'tap'
-              ? null
-              : { type:'tap', freq: crLaneFreqs[ci], sustain: crDefaultSustain };
-          } else if (crTool === 'dtap') {
-            crGrid[ri][ci] = cellType(crGrid[ri][ci]) === 'dtap'
-              ? null
-              : { type:'dtap', freq: crLaneFreqs[ci], sustain: crDefaultSustain };
+            buildGrid();
+            return;
           }
+          const want = crTool === 'dtap' ? 'dtap' : 'tap';
+          if (cellType(crGrid[ri][ci]) === want) {
+            // Second click on a note you just placed: pick its pitch.
+            // (Clearing a note is the erase tool's job.)
+            openNotePickerModal(el, cellFreq(crGrid[ri][ci], ci), (newFreq) => {
+              crGrid[ri][ci] = {
+                type:    cellType(crGrid[ri][ci]) || want,
+                freq:    newFreq,
+                sustain: cellSustain(crGrid[ri][ci]),
+              };
+              buildGrid();
+            });
+            return;
+          }
+          crGrid[ri][ci] = { type: want, freq: crLaneFreqs[ci], sustain: crDefaultSustain };
           buildGrid();
         });
         g.appendChild(el);
@@ -3967,6 +3986,8 @@ document.getElementById('cr-add-rows').addEventListener('click', () => {
 });
 
 document.getElementById('cr-back').addEventListener('click', () => {
+  stopAdvPreview();
+  retractPanel();
   showScreen('home'); renderHome();
 });
 
@@ -3991,6 +4012,8 @@ document.getElementById('cr-save').addEventListener('click', () => {
   const arr = store.load();
   if (editIdx !== null && arr[editIdx]) arr[editIdx] = lvl; else arr.push(lvl);
   store.save(arr);
+  stopAdvPreview();
+  retractPanel();
   document.querySelectorAll('.hnav').forEach(x => x.classList.remove('active'));
   document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
   document.querySelector('.hnav[data-tab="custom"]').classList.add('active');
@@ -4207,6 +4230,7 @@ function runGenerate() {
 let creatorMode = 'custom';
 function setCreatorMode(m) {
   creatorMode = m;
+  if (m === 'generate') stopAdvPreview();
   document.querySelectorAll('.cr-mode-opt').forEach(o =>
     o.classList.toggle('on', o.dataset.mode === m));
   const gen = document.getElementById('gen-pane');
@@ -4243,6 +4267,10 @@ function setCreatorMode(m) {
 const WINDOW_CAP = { w: 700, h: 900 };
 let panelExpansion = null;   // { axis, amount } while a panel is open
 
+// A sliver of window is worse than none — a 10px panel is unusable, so
+// anything under this much growth takes the overlay path instead.
+const PANEL_MIN_PX = 140;
+
 function expandForPanel(px, axis) {
   if (panelExpansion) return panelExpansion;   // one at a time
   const root = document.documentElement;
@@ -4251,18 +4279,37 @@ function expandForPanel(px, axis) {
     : (parseInt(root.style.width, 10)  || currentSettings.width);
   const cap  = axis === 'h' ? WINDOW_CAP.h : WINDOW_CAP.w;
 
-  const room  = Math.max(0, cap - cur);
-  const grow  = Math.min(px, room);
+  const room = Math.max(0, cap - cur);
+  const want = Math.min(px, room);
+  const grow = want >= Math.min(px, PANEL_MIN_PX) ? want : 0;
 
   if (grow > 0) {
     root.style[axis === 'h' ? 'height' : 'width'] = (cur + grow) + 'px';
-    panelExpansion = { axis, amount: grow, overlay: grow < px };
+    // A partial grow is still a grow: the panel is held to whatever it
+    // got and scrolls inside it. Only a window with no room left at all
+    // has to fall back to floating the panel over the content.
+    panelExpansion = { axis, amount: grow, overlay: false };
   } else {
     // No room: the panel overlays and the content scrolls, as before.
     panelExpansion = { axis, amount: 0, overlay: true };
   }
   document.body.classList.toggle('panel-overlay', panelExpansion.overlay);
   return panelExpansion;
+}
+
+// How much window the advanced panel asks for. It is deliberately more
+// than the default window can give: expandForPanel takes what it can up
+// to the cap, and the panel is then held to that.
+const ADV_PANEL_PX = 320;
+
+// Opens a panel into freshly grown window space, and holds it to that
+// space so nothing already on screen has to shrink. Returns the
+// expansion so callers can tell growth from the overlay fallback.
+function fitPanelToExpansion(panelId, px) {
+  const exp = expandForPanel(px, 'h');
+  const el  = document.getElementById(panelId);
+  if (el) el.style.maxHeight = exp.amount > 0 ? exp.amount + 'px' : '';
+  return exp;
 }
 
 function retractPanel() {
@@ -4277,7 +4324,79 @@ function retractPanel() {
   panelExpansion = null;
 }
 
+// ── Advanced-panel sound preview ──────────
+// Plays the chart's own opening bars with the instrument, pitches,
+// sustain and background sound currently configured, so you can hear
+// an edit without leaving the creator. Clicking again stops it.
+let advPreviewTimers = [];
+function stopAdvPreview() {
+  advPreviewTimers.forEach(clearTimeout);
+  advPreviewTimers = [];
+  if (window.RD_stopBg) window.RD_stopBg();
+  const btn = document.getElementById('adv-preview');
+  if (btn) btn.classList.remove('playing');
+}
+
+function advPreviewRows() {
+  // Rows that actually contain notes, capped so the preview stays short.
+  const rows = [];
+  for (let ri = 0; ri < crGrid.length && rows.length < 8; ri++) {
+    const notes = [];
+    crGrid[ri].forEach((cell, ci) => {
+      if (cellType(cell)) {
+        notes.push({
+          freq:    cellFreq(cell, ci),
+          dtap:    cellType(cell) === 'dtap',
+          sustain: cellSustain(cell),
+        });
+      }
+    });
+    if (notes.length || rows.length) rows.push(notes);
+  }
+  while (rows.length && !rows[rows.length - 1].length) rows.pop();
+  if (rows.length) return rows;
+  // Empty chart: audition the four lane defaults instead.
+  return crLaneFreqs.map(f => [{ freq: f, dtap: false, sustain: crDefaultSustain }]);
+}
+
+function startAdvPreview() {
+  const btn = document.getElementById('adv-preview');
+  const bpm = parseInt(document.getElementById('cr-bpm').value, 10) || 120;
+  const beat = Math.max(120, Math.round(60000 / bpm));
+  const rows = advPreviewRows();
+  const inst = (window.RD_getInstrument && window.RD_getInstrument()) || 'synth';
+
+  if (btn) btn.classList.add('playing');
+  if (crBgMode !== 'none' && window.RD_startBg) {
+    window.RD_startBg(crBgMode, bpm, crBassSteps.map(s => s.active ? s.freq : 0));
+  }
+  rows.forEach((notes, i) => {
+    advPreviewTimers.push(setTimeout(() => {
+      notes.forEach(n => {
+        if (window.RD_playNoteFreq) window.RD_playNoteFreq(n.freq, n.dtap, n.sustain, inst);
+      });
+    }, i * beat));
+  });
+  // Let the tail of the last note ring out before releasing the button.
+  const tail = Math.max(...rows[rows.length - 1].map(n => n.sustain * 1000), 350);
+  advPreviewTimers.push(setTimeout(stopAdvPreview, rows.length * beat + tail));
+}
+
+function buildAdvPreview() {
+  const btn = document.getElementById('adv-preview');
+  if (!btn) return;
+  const inst = (window.RD_getInstrument && window.RD_getInstrument()) || 'synth';
+  const meta = (window.RD_INSTRUMENTS || []).find(i => i.id === inst);
+  const sub  = document.getElementById('adv-preview-sub');
+  if (sub) sub.textContent = meta ? meta.label : inst;
+  btn.onclick = () => {
+    if (advPreviewTimers.length) { stopAdvPreview(); return; }
+    startAdvPreview();
+  };
+}
+
 function buildAdvPanel() {
+  buildAdvPreview();
   buildThemePicker();
   buildLaneNoteGrid();
   buildBgRadio();
@@ -4311,6 +4430,7 @@ function buildAdvInstrumentRow() {
       currentSettings.instrument = inst.id;
       store.saveSettings(currentSettings);
       buildAdvInstrumentRow();
+      buildAdvPreview();
       // Preview note
       if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0);
     });
