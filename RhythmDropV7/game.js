@@ -3159,8 +3159,8 @@ function buildSettingsPanel() {
 
   const hzNote = document.createElement('div');
   hzNote.style.cssText = 'font-size:10px;color:var(--dim);margin:0 0 2px;line-height:1.5;';
-  hzNote.textContent = 'Draws the band a tap is counted in, with the perfect '
-    + 'zone marked inside it. A practice aid — it changes nothing about scoring.';
+  hzNote.textContent = 'Marks how far above the strike line a tap still counts, '
+    + 'so you can see the timing you have. A practice aid — it changes nothing about scoring.';
   panel.appendChild(hzNote);
 
   // Note speed is intentionally absent — see HIT_WINDOWS.
@@ -4702,7 +4702,10 @@ function applyHitZone() {
   const on = !!currentSettings.showHitZone;
   document.body.classList.toggle('show-hitzone', on);
   if (!on) return;
-  document.documentElement.style.setProperty('--hit-zone-h', (hitTol() * 2) + 'px');
+  // One side of the window, not both: the band is drawn upward from
+  // the strike plane, because the half below it is behind the keycaps
+  // where a tile is never visible anyway.
+  document.documentElement.style.setProperty('--hit-zone-h', hitTol() + 'px');
 }
 
 function buildQueue(lvl) {

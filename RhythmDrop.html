@@ -1031,43 +1031,26 @@ body.reduce-motion #combo-milestone.show { opacity:1; }
    you actually have. Off by default — it is a training aid. */
 .lane-hitzone {
   position:absolute; left:0; right:0;
-  /* Above the keycap on purpose. The window is centred on the strike
-     plane, which sits level with the top of the button, so half of it
-     is behind the cap — and that half is real: a tile is still
-     hittable once it is level with the key. Drawing it underneath
-     showed 51% of the truth. */
-  z-index:6;
+  /* Behind the falling tiles, in front of the lane floor. Drawn over
+     the tiles it tinted them, which is the one thing in the lane that
+     has to stay readable. */
+  z-index:2;
+  /* Sits on the strike plane and extends upward only. The window is
+     symmetric around that line, but its lower half is behind the
+     keycaps — a tile is never visible there, so drawing it added no
+     information and cost a washed-out row of buttons and a border
+     clipped off by the bottom of the lane. This is the approach
+     side: the half you can actually watch a tile cross. */
+  bottom:52px;
   height:var(--hit-zone-h,0px);
-  bottom:calc(52px - var(--hit-zone-h,0px) / 2);
   display:none;
-  /* No fill on the outer band: three stacked washes over a textured
-     lane turned to mud. The dashed rules carry it. */
-  border-top:1px dashed color-mix(in srgb,var(--tap) 60%,transparent);
-  border-bottom:1px dashed color-mix(in srgb,var(--tap) 60%,transparent);
+  background:linear-gradient(180deg,
+    transparent, color-mix(in srgb,var(--tap) 7%,transparent));
+  border-top:1px dashed color-mix(in srgb,var(--tap) 38%,transparent);
   pointer-events:none;
 }
 body.show-hitzone .lane-hitzone { display:block; }
 
-/* The three bands are the three scores, taken straight from hit():
-   inside 20% of the window is PERFECT, inside 60% is GREAT, the rest
-   is GOOD. As shares of the full band that is the middle 20% and the
-   middle 60%, which is what these two are. */
-.lane-hitzone::before,
-.lane-hitzone::after {
-  content:''; position:absolute; left:0; right:0;
-}
-.lane-hitzone::before {
-  top:20%; height:60%;
-  background:color-mix(in srgb,var(--good) 7%,transparent);
-  border-top:1px dotted color-mix(in srgb,var(--good) 55%,transparent);
-  border-bottom:1px dotted color-mix(in srgb,var(--good) 55%,transparent);
-}
-.lane-hitzone::after {
-  top:40%; height:20%;
-  background:color-mix(in srgb,var(--perfect) 22%,transparent);
-  border-top:1px solid color-mix(in srgb,var(--perfect) 85%,transparent);
-  border-bottom:1px solid color-mix(in srgb,var(--perfect) 85%,transparent);
-}
 /* lane flash: replaces background briefly on tap */
 .lane.glow-tap  { background:color-mix(in srgb,var(--tap) 22%,var(--panel-deep)) !important; }
 .lane.glow-dtap { background:color-mix(in srgb,var(--dtap) 22%,var(--panel-deep)) !important; }
@@ -10695,8 +10678,8 @@ function buildSettingsPanel() {
 
   const hzNote = document.createElement('div');
   hzNote.style.cssText = 'font-size:10px;color:var(--dim);margin:0 0 2px;line-height:1.5;';
-  hzNote.textContent = 'Draws the band a tap is counted in, with the perfect '
-    + 'zone marked inside it. A practice aid — it changes nothing about scoring.';
+  hzNote.textContent = 'Marks how far above the strike line a tap still counts, '
+    + 'so you can see the timing you have. A practice aid — it changes nothing about scoring.';
   panel.appendChild(hzNote);
 
   // Note speed is intentionally absent — see HIT_WINDOWS.
@@ -12238,7 +12221,10 @@ function applyHitZone() {
   const on = !!currentSettings.showHitZone;
   document.body.classList.toggle('show-hitzone', on);
   if (!on) return;
-  document.documentElement.style.setProperty('--hit-zone-h', (hitTol() * 2) + 'px');
+  // One side of the window, not both: the band is drawn upward from
+  // the strike plane, because the half below it is behind the keycaps
+  // where a tile is never visible anyway.
+  document.documentElement.style.setProperty('--hit-zone-h', hitTol() + 'px');
 }
 
 function buildQueue(lvl) {
