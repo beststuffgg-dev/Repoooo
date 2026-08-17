@@ -1,0 +1,17 @@
+{
+  "name": "rhythmdrop-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Test harnesses for the RhythmDrop V7 Chrome extension",
+  "scripts": {
+    "test": "node run-all.js",
+    "smoke": "node smoke.js",
+    "gameplay": "node smoke2.js",
+    "progression": "node progression.js",
+    "fidelity": "node fidelity.js",
+    "codec": "node codectest.js"
+  },
+  "dependencies": {
+    "jsdom": "^24.0.0"
+  }
+}
