@@ -503,14 +503,20 @@ function avatarById(id) { return ALL_AVATARS.find(a => a.id === id); }
 // default now that avatars are authored in colour, with each
 // sector sharing a palette. The tints remain for anyone who
 // wants a uniform set.
+// Ids are load-bearing — they are what a saved profile stores — so
+// they stay. The names and the hues do not: these were the stock
+// framework swatches (#22D3EE, #FB4F7D, #FBBF24, #34D399, #A78BFA)
+// under crayon names, which is the palette every generated dark UI
+// arrives with. Pigments instead, in the same desaturated register as
+// the rest of the app.
 const COLOURWAYS = [
   { id:'original', name:'As drawn', original:true },
-  { id:'cyan',   name:'Cyan',   p:'#22D3EE', s:'#0E7490', t:'#E8FBFF' },
-  { id:'rose',   name:'Rose',   p:'#FB4F7D', s:'#9D174D', t:'#FFE3EC' },
-  { id:'amber',  name:'Amber',  p:'#FBBF24', s:'#B45309', t:'#FFF3D0' },
-  { id:'mint',   name:'Mint',   p:'#34D399', s:'#047857', t:'#DFFBEF' },
-  { id:'violet', name:'Violet', p:'#A78BFA', s:'#5B21B6', t:'#EFE7FF' },
-  { id:'mono',   name:'Mono',   p:'#E6EAF2', s:'#6B7280', t:'#FFFFFF' },
+  { id:'cyan',   name:'Verdigris', p:'#6FA8B5', s:'#33606A', t:'#D6EAEE' },
+  { id:'rose',   name:'Rust',      p:'#B5695C', s:'#6B342C', t:'#F0DAD4' },
+  { id:'amber',  name:'Brass',     p:'#C7A241', s:'#75601F', t:'#F3E7C4' },
+  { id:'mint',   name:'Sage',      p:'#7FA06B', s:'#455B38', t:'#DDE8D4' },
+  { id:'violet', name:'Slate',     p:'#8189A8', s:'#414761', t:'#DFE2EC' },
+  { id:'mono',   name:'Bone',      p:'#DDE2E4', s:'#6C7376', t:'#FFFFFF' },
 ];
 
 function colourway(id) {
@@ -535,7 +541,7 @@ function renderAvatarInto(el, avatarId, cwId) {
     if (d) {
       const img = document.createElement('img');
       img.src = d;
-      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:6px;';
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:var(--r-1);';
       el.appendChild(img);
       return;
     }
@@ -2748,7 +2754,7 @@ function downscaleToSquare(dataUrl, size) {
     preview.innerHTML = '';
     const img = document.createElement('img');
     img.src = src;
-    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:6px;';
+    img.style.cssText = 'width:100%;height:100%;object-fit:cover;border-radius:var(--r-1);';
     preview.appendChild(img);
   };
 
@@ -2826,7 +2832,7 @@ function ensureImportBtn() {
   if (!document.getElementById('import-lvl-btn')) {
     const btn = document.createElement('button');
     btn.id = 'import-lvl-btn';
-    btn.style.cssText = 'width:100%;padding:11px;border-radius:12px;background:none;border:1px dashed var(--border2);color:var(--muted);font-size:13px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:border-color .15s,color .15s;margin-top:0;';
+    btn.style.cssText = 'width:100%;padding:11px;border-radius:var(--r-2);background:none;border:1px dashed var(--border2);color:var(--muted);font-size:13px;font-weight:600;font-family:var(--font-body);cursor:pointer;transition:border-color .15s,color .15s;margin-top:0;';
     btn.innerHTML = '<svg class="ic"><use href="#ic-import"/></svg><span>Import from code</span>';
     btn.style.display = 'flex'; btn.style.alignItems = 'center';
     btn.style.justifyContent = 'center'; btn.style.gap = '7px';
@@ -2923,7 +2929,9 @@ function buildSettingsPanel() {
   function sectionHead(text) {
     toTab(SETTINGS_SECTION_TAB[text] || 'play');
     const d = document.createElement('div');
-    d.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);font-family:var(--font-data);text-transform:uppercase;margin:14px 0 6px;';
+    // A label with a rule running off to the edge — the way a section
+    // is marked on an instrument panel, rather than floating in space.
+    d.className = 'sec-head';
     d.textContent = text;
     return d;
   }
@@ -2941,7 +2949,7 @@ function buildSettingsPanel() {
     lbl.textContent = name;
 
     const sel = document.createElement('select');
-    sel.style.cssText = 'flex:1;padding:6px 8px;border-radius:8px;border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:12px;font-family:var(--font-data);outline:none;cursor:pointer;';
+    sel.style.cssText = 'flex:1;padding:6px 8px;border-radius:var(--r-1);border:1px solid var(--border2);background:var(--bg3);color:var(--text);font-size:12px;font-family:var(--font-data);outline:none;cursor:pointer;';
     KEY_CODE_LABELS.forEach(code => {
       const opt = document.createElement('option');
       opt.value = code;
@@ -3189,7 +3197,7 @@ function buildSettingsPanel() {
     const btn = document.createElement('button');
     const isActive = curInstr === inst.id;
     btn.style.cssText = [
-      'padding:8px 4px;border-radius:9px;font-size:11px;font-weight:700;',
+      'padding:8px 4px;border-radius:var(--r-1);font-size:11px;font-weight:700;',
       'font-family:var(--font-body);cursor:pointer;',
       'display:flex;flex-direction:column;align-items:center;gap:3px;',
       'border:2px solid;transition:all .12s;',
@@ -3239,7 +3247,7 @@ function buildSettingsPanel() {
     const b = document.createElement('button');
     const on = (s.hitWindow || 'normal') === key;
     b.textContent = w.label;
-    b.style.cssText = 'padding:8px 4px;border-radius:8px;font-size:11px;font-weight:700;'
+    b.style.cssText = 'padding:8px 4px;border-radius:var(--r-1);font-size:11px;font-weight:700;'
       + 'font-family:var(--font-body);cursor:pointer;border:2px solid;transition:all .12s;'
       + (on ? 'border-color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);'
             : 'border-color:var(--border2);background:var(--bg3);color:var(--muted);');
@@ -3330,7 +3338,7 @@ function buildSettingsPanel() {
 
   if (window.RD_canPickOutput && window.RD_canPickOutput()) {
     const sel = document.createElement('select');
-    sel.style.cssText = 'width:100%;padding:7px 8px;border-radius:8px;border:1px solid var(--border2);'
+    sel.style.cssText = 'width:100%;padding:7px 8px;border-radius:var(--r-1);border:1px solid var(--border2);'
       + 'background:var(--bg3);color:var(--text);font-size:12px;font-family:var(--font-body);cursor:pointer;';
     const def = document.createElement('option');
     def.value = ''; def.textContent = 'System default';
@@ -3382,7 +3390,7 @@ function buildSettingsPanel() {
 
   const calBtn = document.createElement('button');
   calBtn.textContent = 'Calibrate — tap along to 8 beats';
-  calBtn.style.cssText = 'width:100%;padding:9px;border-radius:9px;border:1px dashed var(--border2);'
+  calBtn.style.cssText = 'width:100%;padding:9px;border-radius:var(--r-1);border:1px dashed var(--border2);'
     + 'background:none;color:var(--muted);font-size:12px;font-weight:600;'
     + 'font-family:var(--font-body);cursor:pointer;transition:all .15s;';
   calBtn.addEventListener('click', () => runCalibration(calBtn));
@@ -3394,7 +3402,7 @@ function buildSettingsPanel() {
   // It shows once on first launch; this is how you get it back.
   const tutBtn = document.createElement('button');
   tutBtn.textContent = 'How to play';
-  tutBtn.style.cssText = 'width:100%;margin-bottom:6px;padding:9px;border-radius:9px;'
+  tutBtn.style.cssText = 'width:100%;margin-bottom:6px;padding:9px;border-radius:var(--r-1);'
     + 'border:1px dashed var(--border2);background:none;color:var(--muted);font-size:12px;'
     + 'font-weight:600;font-family:var(--font-body);cursor:pointer;transition:all .15s;';
   tutBtn.addEventListener('click', openTutorial);
@@ -3403,7 +3411,7 @@ function buildSettingsPanel() {
   toTab('data');
   // ── Reset button ──
   const resetBtn = document.createElement('button');
-  resetBtn.style.cssText = 'width:100%;margin-top:8px;padding:9px;border-radius:9px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;transition:border-color .15s,color .15s;';
+  resetBtn.style.cssText = 'width:100%;margin-top:8px;padding:9px;border-radius:var(--r-1);border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;transition:border-color .15s,color .15s;';
   resetBtn.textContent = '↺ Reset to defaults';
   resetBtn.onmouseenter = () => { resetBtn.style.borderColor='var(--miss)'; resetBtn.style.color='var(--miss)'; };
   resetBtn.onmouseleave = () => { resetBtn.style.borderColor='var(--border2)'; resetBtn.style.color='var(--muted)'; };
@@ -3509,7 +3517,7 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   modal.style.cssText = [
     'position:fixed;z-index:9999;',
     'background:var(--bg2);border:1px solid var(--border2);',
-    'border-radius:14px;padding:12px;gap:0;',
+    'border-radius:var(--r-2);padding:12px;gap:0;',
     'box-shadow:0 8px 32px rgba(0,0,0,.85);',
     'width:288px;',
     'font-family:var(--font-body);',
@@ -3548,7 +3556,7 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:stretch;';
 
   const BTN = [
-    'width:100%;padding:8px 4px;border-radius:8px;',
+    'width:100%;padding:8px 4px;border-radius:var(--r-1);',
     'border:1px solid var(--border2);',
     'background:var(--bg3);color:var(--text);',
     'font-size:13px;font-weight:600;cursor:pointer;',
@@ -3688,7 +3696,7 @@ function openCreator(idx) {
   if (editIdx !== null) {
     const expBtn = document.createElement('button');
     expBtn.id = 'cr-export-btn';
-    expBtn.style.cssText = 'font-size:11px;font-weight:700;padding:6px 11px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--muted);cursor:pointer;font-family:var(--font-body);';
+    expBtn.style.cssText = 'font-size:11px;font-weight:700;padding:6px 11px;border-radius:var(--r-1);border:1px solid var(--border2);background:none;color:var(--muted);cursor:pointer;font-family:var(--font-body);';
     expBtn.innerHTML = '<svg class="ic"><use href="#ic-export"/></svg> Export';
     expBtn.addEventListener('click', () => {
       const arr = store.load();
@@ -4592,7 +4600,7 @@ function buildAdvInstrumentRow() {
     const btn = document.createElement('button');
     const active = cur === inst.id;
     btn.style.cssText = [
-      'padding:5px 8px;border-radius:7px;font-size:10px;font-weight:700;',
+      'padding:5px 8px;border-radius:var(--r-1);font-size:10px;font-weight:700;',
       'font-family:var(--font-body);cursor:pointer;',
       'display:flex;flex-direction:column;align-items:center;gap:1px;',
       'border:2px solid;transition:all .12s;',
@@ -4649,7 +4657,7 @@ function buildLaneNoteGrid() {
     const noteName = freqToName(freq);
     const badge    = document.createElement('div');
     badge.style.cssText = [
-      'padding:4px 6px;border-radius:6px;border:1px solid var(--border2);',
+      'padding:4px 6px;border-radius:var(--r-1);border:1px solid var(--border2);',
       'background:var(--bg3);color:var(--text);font-size:10px;font-weight:700;',
       'font-family:var(--font-data);cursor:pointer;text-align:center;',
       'transition:border-color .1s,color .1s;',
@@ -4705,7 +4713,7 @@ function buildBassNotePicker() {
   const noteName = freqToName(_bassPickerFreq);
   const badge    = document.createElement('div');
   badge.style.cssText = [
-    'display:inline-block;padding:4px 10px;border-radius:6px;border:1px solid var(--border2);',
+    'display:inline-block;padding:4px 10px;border-radius:var(--r-1);border:1px solid var(--border2);',
     'background:var(--bg3);color:var(--text);font-size:11px;font-weight:700;',
     'font-family:var(--font-data);cursor:pointer;',
     'transition:border-color .1s,color .1s;',
