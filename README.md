@@ -50,7 +50,20 @@ Three ways, all from the same source, no build step:
 2. **Unzip and load** — `RhythmDropV7-Final.zip` is the same folder, zipped, for handing to someone else.
 3. **Just open it** — `RhythmDrop.html` is the entire game as one self-contained file. Double-click it, or open it on a phone. No dependencies, nothing to install, nothing to fetch over the network.
 
-`RhythmDrop.html` is *generated* from `RhythmDropV7/` — every script inlined in place. Never edit it directly; edit the source folder and rebuild.
+`RhythmDrop.html` is *generated* from `RhythmDropV7/` — every script inlined in place. Never edit it directly; edit the source folder and rebuild:
+
+```
+node tools/build-single.js
+```
+
+### The Redesign variant
+
+There's a second, visual-only build alongside the first: same JS, same features, same tests, only the stylesheet differs. It adds a film-grain overlay that stops large flat panels reading as vector fills, and a "ghost lane" perspective strip tilted away behind the home-screen wordmark, echoing the play board. It ships in all three forms — `RhythmDropV7-Redesign/`, `RhythmDropV7-Redesign.zip`, `RhythmDrop-Redesign.html` — and names itself **RhythmDrop (Redesign)** so both can be loaded side by side without confusion. It's a second version, not a replacement; pick whichever you prefer.
+
+| | |
+|---|---|
+| ![Standard](docs/screenshots/home.png) | ![Redesign](docs/screenshots/redesign-home.png) |
+| Standard | Redesign — grain, and lanes tilted behind the wordmark |
 
 ## Repo layout
 
@@ -64,19 +77,28 @@ RhythmDropV7/          the source — load this directly as an unpacked extensio
   loading.js               the real weighted preload pipeline
   lighting.js               cursor-tilt lighting effects
   edge.js                    Edge-only compatibility layer (inert elsewhere)
+RhythmDropV7-Redesign/  the alternate look — same game, film grain + ghost lanes
 RhythmDrop.html         the whole game as one file — generated, not hand-edited
+RhythmDrop-Redesign.html  the same, for the Redesign build
 RhythmDropV7-Final.zip  RhythmDropV7/ zipped for distribution
+RhythmDropV7-Redesign.zip
+tools/build-single.js   inlines the source folder into one .html
 rhythmdrop-tests/       the test suite — `node run-all.js`
+docs/screenshots/       the images above
 HANDOFF.md              full feature inventory, architecture, and design reference
 ```
 
 ## Testing
 
 ```
-cd rhythmdrop-tests && node run-all.js
+cd rhythmdrop-tests && npm install && node run-all.js
 ```
 
-Five harnesses covering UI smoke tests, XP/coin economy correctness, audio rendering fidelity, and codec round-tripping. See [`HANDOFF.md`](HANDOFF.md#6-testing) for the full test breakdown.
+**22 harnesses, ~450 probes** — UI and gameplay smoke tests, XP/coin economy, audio rendering fidelity, codec round-tripping, harmonic correctness across all 150 charts, material rendering, and the creator.
+
+Two of them launch real Chromium rather than jsdom, deliberately: *jsdom has no layout engine, so it structurally cannot catch a layout bug*. `visualverify` compares rendered pixel positions against the numbers the engine actually judges with, at six screen sizes — that's what caught the strike line sitting 12–19px off the bar it was drawn on. `touchverify` covers whole-lane taps and simultaneous-finger chords.
+
+Point the whole suite at the other build with `APP_DIR=../RhythmDropV7-Redesign node run-all.js`. See [`HANDOFF.md`](HANDOFF.md#6-testing) for the full breakdown.
 
 ---
 

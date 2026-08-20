@@ -1,12 +1,15 @@
 const {chromium}=require('playwright');const path=require('path');const fs=require('fs');
+const {chromeExe}=require('./browser');
 // This sandbox ships a browser at a fixed path; anywhere else, let
 // playwright resolve its own. Without the fallback these suites only
 // run on the machine they were written on.
-const PW_EXE='/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
+const PW_EXE=chromeExe();
 const LAUNCH=fs.existsSync(PW_EXE)
   ? {executablePath:PW_EXE,args:['--no-sandbox']}
   : {args:['--no-sandbox']};
-const DIR=path.join(__dirname,'..','RhythmDropV7');
+// APP_DIR lets the same suite run against a variant build (e.g. the
+// Redesign folder) instead of only the shipping one.
+const DIR=process.env.APP_DIR||path.join(__dirname,'..','RhythmDropV7');
 let fail=0,pass=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  FAIL: '+m));};
 
