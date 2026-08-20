@@ -5304,7 +5304,16 @@ function tapLane(lane) {
     if (t.lane !== lane || t.done) continue;
     // Shift the judged position by the measured audio latency so
     // the hit lines up with what the player actually heard.
-    const offsetPx = ((currentSettings.audioOffset || 0) / currentBeatMs) * (TILE_H * 4);
+    // Convert the measured audio latency into the distance a tile
+    // covers in that time. That distance depends on how fast tiles
+    // actually fall — laneH per TILE_TRAVEL_BEATS — not on a constant.
+    // Using TILE_H * 4 (152px) happened to be right at one specific
+    // lane height (~610px) and drifted everywhere else: on a tall
+    // phone a beat of travel is over 200px, so a calibrated offset was
+    // applied about a third short. Anyone who ran the calibration tool
+    // got a hit window quietly shifted off where they had put it.
+    const beatPx   = laneH() / TILE_TRAVEL_BEATS;
+    const offsetPx = ((currentSettings.audioOffset || 0) / currentBeatMs) * beatPx;
     const d = Math.abs((t.y + (t.h || TILE_H) / 2) - hl + offsetPx);
     if (d < bestDist) { bestDist = d; best = t; }
   }

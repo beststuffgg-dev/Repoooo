@@ -4855,6 +4855,7 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
     // everywhere.
     const PHRASE = opts.phrase || 4;
     const grid = [];
+    let restedLastBar = false;
 
     for (let bar = 0; bar < bars; bar++) {
       const posInPhrase = (bar % PHRASE) / PHRASE;
@@ -4863,13 +4864,26 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 
       // Rests land at phrase ends, where music actually breathes,
       // instead of at random points mid-line.
+      //
+      // Never two bars running, though. A rest bar is completely
+      // empty, so back-to-back rests read as the game having stopped
+      // rather than the music breathing — measured at up to 13 beats
+      // of unbroken silence, 5.6 seconds mid-song, and a median
+      // longest gap of 6 beats across the campaign. One bar of air is
+      // phrasing; two is a bug report.
       const restChance = (cadenceBar ? 0.22 : 0.05) * (2 - st.density) / intensity;
-      const rest = !isLastBar && bar > 0 && rnd() < restChance;
+      const rest = !isLastBar && bar > 0 && !restedLastBar && rnd() < restChance;
+      restedLastBar = rest;
 
-      const rows = [
-        [null, null, null, null], [null, null, null, null],
-        [null, null, null, null], [null, null, null, null],
-      ];
+      // A bar is as many beats as the meter says. This used to push
+      // four rows whatever the style, and merely decline to place
+      // notes past the meter — so a 3/4 waltz was really 4/4 with a
+      // silent fourth beat, and a 2/4 march was 4/4 half empty.
+      // Measured across the 150 campaign charts: styles with meter 3
+      // put 0% of their notes on beat 4, and the march put 0% on
+      // beats 3 AND 4, i.e. half of every bar was structurally
+      // silent. 39 of 150 levels were affected.
+      const rows = Array.from({ length: meter }, () => [null, null, null, null]);
 
       // The scale degree sounding on each beat of this bar, so the
       // chord step can harmonise against the melody rather than
@@ -4889,21 +4903,24 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
         // Dense is genuinely denser and Sparse genuinely sparser
         // rather than only differing in how often bars rest.
         let beats = pat.beats.slice();
+        // Patterns are written in four. Trim to the meter first, so
+        // the density pass below adds and removes beats within the
+        // bar that actually exists — trimming afterwards threw away
+        // part of the density a dense style had just asked for.
+        if (meter < 4) beats = beats.filter(([b]) => b < meter);
         if (st.density < 1 && beats.length > 2) {
           const drop = Math.round(beats.length * (1 - st.density) * 0.6);
           for (let i = 0; i < drop; i++) beats.splice(Math.floor(rnd() * beats.length), 1);
         } else if (st.density > 1) {
           const add = Math.round(beats.length * (st.density - 1));
           for (let i = 0; i < add; i++) {
-            const b = Math.floor(rnd() * 4);
+            const b = Math.floor(rnd() * meter);
             const taken = beats.filter(x => x[0] === b).map(x => x[1]);
             const free  = [0, 1, 2, 3].filter(l => !taken.includes(l));
             if (free.length) beats.push([b, free[Math.floor(rnd() * free.length)]]);
           }
           beats.sort((x, y) => x[0] - y[0]);
         }
-
-        if (meter < 4) beats = beats.filter(([b]) => b < meter);
 
         beats.forEach(([b, lane], i) => {
           const L = (lane + rotate) % 4;
@@ -5230,17 +5247,20 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
   //
   //  Seeded from the song, so every device ornaments identically.
   // ══════════════════════════════════════
-  function varyRows(rows, seed, musicId, d) {
+  function varyRows(rows, seed, musicId, d, meter) {
     const rnd = mulberry32(seed >>> 0);
     const mus = MUSIC[musicId] || MUSIC[1];
-    const bars = Math.floor(rows.length / 4);
+    // Bars are `meter` rows now, so walking them four at a time would
+    // ornament across bar lines in a waltz.
+    const m    = meter || 4;
+    const bars = Math.floor(rows.length / m);
 
     for (let b = 0; b < bars; b++) {
       if (rnd() > 0.28) continue;          // most bars return untouched
-      const base = b * 4;
+      const base = b * m;
 
       const cells = [];
-      for (let r = base; r < base + 4 && r < rows.length; r++) {
+      for (let r = base; r < base + m && r < rows.length; r++) {
         for (let l = 0; l < 4; l++) if (rows[r][l]) cells.push([r, l]);
       }
       if (!cells.length) continue;
@@ -5480,10 +5500,11 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 
   // Beat offsets of each section, for anything that wants to
   // display structure.
-  function sectionMapFor(bars, seed, shapeName) {
+  function sectionMapFor(bars, seed, shapeName, meter) {
     let at = 0;
+    const m = meter || 4;
     return sectionPlan(bars, seed, shapeName).map(([name, len]) => {
-      const start = at; at += len * 4;
+      const start = at; at += len * m;
       return { name, startBeat: start, endBeat: at };
     });
   }
@@ -5511,6 +5532,11 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
     const phrase = [4, 4, 4, 4, 3, 6][
       Math.floor(mulberry32(((seed | 0) ^ 0x9F2A5E) >>> 0)() * 6)] || 4;
 
+    // The song's meter. Every section runs in it — a role may swap the
+    // style but never the meter, or a waltz stops being in three
+    // halfway through — so bar arithmetic anywhere below uses this.
+    const songMeter = (MIX_STYLES[style] || MIX_STYLES.B).meter || 4;
+
     function sectionFor(name, len, index, isLast) {
       const role = SECTION_ROLES[name] || SECTION_ROLES.Verse;
 
@@ -5529,12 +5555,12 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
       // every occurrence of a repeating section the same size, and if
       // that ever stops being true we regenerate rather than hand back
       // a section that doesn't fill its bars.
-      if (role.repeat && cache[name] && cache[name].length === len * 4) {
+      if (role.repeat && cache[name] && cache[name].length === len * songMeter) {
         const back = cache[name].map(r => r.map(c => (c ? Object.assign({}, c) : null)));
         // Same chorus, different fills. `index` makes each return
         // ornament differently from the last.
         return tagVoice(
-          varyRows(back, seed ^ hashName(name) ^ (0x5B * (index + 1)), musicId, d),
+          varyRows(back, seed ^ hashName(name) ^ (0x5B * (index + 1)), musicId, d, songMeter),
           voice);
       }
 
@@ -5546,8 +5572,7 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
       // waltz stops being in three halfway through.
       let useStyle = role.style || style;
       if (role.style) {
-        const songMeter = (MIX_STYLES[style] || MIX_STYLES.B).meter || 4;
-        const roleSt    = MIX_STYLES[role.style] || MIX_STYLES.B;
+        const roleSt = MIX_STYLES[role.style] || MIX_STYLES.B;
         if ((roleSt.meter || 4) !== songMeter) {
           MIX_STYLES['_role_' + role.style] =
             Object.assign({}, roleSt, { meter: songMeter });
@@ -5651,8 +5676,11 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
   const SONG_MIN_SEC = 90;
   const SONG_MAX_SEC = 180;
 
-  function barsForSeconds(seconds, bpm) {
-    return Math.max(8, Math.round((seconds * bpm) / 60 / 4));
+  function barsForSeconds(seconds, bpm, meter) {
+    // A bar is `meter` beats, so a 3/4 song needs more bars than a 4/4
+    // one to last the same time. Dividing by a fixed 4 made every
+    // waltz and march a quarter to a half shorter than its target.
+    return Math.max(8, Math.round((seconds * bpm) / 60 / (meter || 4)));
   }
 
   function songSeconds(progress01) {
@@ -5969,12 +5997,15 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 
     const levelIdx = d.endless ? null : campaignIndexFor(d.areaId, d.seed);
     const bpm  = tempoFor(area, d.seed, d.difficulty, levelIdx);
-    // Procedural songs run 1m30 to 3m by difficulty.
-    const bars = barsForSeconds(songSeconds((d.difficulty - 1) / 8), bpm);
+    // Procedural songs run 1m30 to 3m by difficulty. Bars are as long
+    // as the meter, so the meter has to be in the sum or a waltz comes
+    // out short of its target.
+    const meter = st.meter || 4;
+    const bars = barsForSeconds(songSeconds((d.difficulty - 1) / 8), bpm, meter);
     const chartSeed = isDouble ? (d.seed ^ 0xD0B) : d.seed;
     // The section plan is cheap, so the exact length is known
     // without placing a single note.
-    const rows = planBars(bars, chartSeed) * 4;
+    const rows = planBars(bars, chartSeed) * meter;
 
     return {
       id:         'code-' + d.code,
@@ -13037,7 +13068,16 @@ function tapLane(lane) {
     if (t.lane !== lane || t.done) continue;
     // Shift the judged position by the measured audio latency so
     // the hit lines up with what the player actually heard.
-    const offsetPx = ((currentSettings.audioOffset || 0) / currentBeatMs) * (TILE_H * 4);
+    // Convert the measured audio latency into the distance a tile
+    // covers in that time. That distance depends on how fast tiles
+    // actually fall — laneH per TILE_TRAVEL_BEATS — not on a constant.
+    // Using TILE_H * 4 (152px) happened to be right at one specific
+    // lane height (~610px) and drifted everywhere else: on a tall
+    // phone a beat of travel is over 200px, so a calibrated offset was
+    // applied about a third short. Anyone who ran the calibration tool
+    // got a hit window quietly shifted off where they had put it.
+    const beatPx   = laneH() / TILE_TRAVEL_BEATS;
+    const offsetPx = ((currentSettings.audioOffset || 0) / currentBeatMs) * beatPx;
     const d = Math.abs((t.y + (t.h || TILE_H) / 2) - hl + offsetPx);
     if (d < bestDist) { bestDist = d; best = t; }
   }

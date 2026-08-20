@@ -399,11 +399,27 @@ probe('voices survive the codec',()=>{
   notes.push(n+' notes kept their voice through export');
 });
 
-probe('classical meters drop the fourth beat',()=>{
+probe('classical meters are actually in three',()=>{
+  // This probe used to assert that a 3/4 style never put a note on
+  // row index 3 of every four. That was testing the bug: bars were
+  // always four rows long and the meter only suppressed the *note*,
+  // so a waltz was really 4/4 with a silent fourth beat and a march
+  // was 4/4 half empty — 39 of the 150 campaign levels had a
+  // structurally dead beat in every bar. Bars are now `meter` rows
+  // long, so the right thing to check is that the bar itself is in
+  // three, and that no position inside it is systematically silent.
   ['W','U','G'].forEach(k=>{
+    const m=C.MIX_STYLES[k].meter;
     const l=C.buildCodeLevel(C.encodeLevelCode(6,3,55555,k));
-    const b4=l.grid.filter((r,i)=>i%4===3&&r.some(c=>c)).length;
-    if(b4>0)throw new Error(C.MIX_STYLES[k].name+' has '+b4+' bars using beat 4');
+    if(l.grid.length%m!==0)
+      throw new Error(C.MIX_STYLES[k].name+' grid is '+l.grid.length+' rows, not whole bars of '+m);
+    // Every beat of the bar has to carry some of the music.
+    const perBeat=new Array(m).fill(0);
+    l.grid.forEach((r,i)=>{perBeat[i%m]+=r.filter(c=>c).length;});
+    const dead=perBeat.findIndex(n=>n===0);
+    if(dead>=0)
+      throw new Error(C.MIX_STYLES[k].name+' never uses beat '+(dead+1)+' of '+m+' ['+perBeat+']');
+    notes.push(C.MIX_STYLES[k].name+' in '+m+': notes per beat ['+perBeat+']');
   });
   const march=C.buildCodeLevel(C.encodeLevelCode(6,3,55555,'M'));
   const baroque=C.buildCodeLevel(C.encodeLevelCode(6,3,55555,'R'));
