@@ -201,6 +201,19 @@ function isExtensionPopup() {
 }
 if (isExtensionPopup()) document.documentElement.classList.add('as-popup');
 
+// ── Low-power devices ──
+// backdrop-filter is the most expensive thing in the stylesheet, and
+// the two bars that frame every menu screen sit over scrolling
+// content, so their blur is recomposited all the way down a list.
+// edge.js already dropped the blurs below a hardware floor, but only
+// in Edge — the cost is a property of the device, not the browser, and
+// phones were never covered. Same floor, every browser.
+(function detectLowPower() {
+  const cores = navigator.hardwareConcurrency || 4;
+  const mem   = navigator.deviceMemory || 4;
+  if (cores <= 4 || mem <= 4) document.documentElement.classList.add('low-power');
+})();
+
 // ── Profile state ──────────────────────────────
 let profile  = store.loadProfile() || { username: null, coins: 0, bestScore: 0 };
 let progress = store.loadProgress();
@@ -4762,11 +4775,26 @@ function buildBassEditor() {
 // ══════════════════════════════════════
 const TILE_H     = 38;
 const HIT_BOTTOM = 52;
-const HIT_TOL_BASE = TILE_H * 1.8;
+
+// ── The judged window ──
+// A tile crosses the whole lane in TILE_TRAVEL_BEATS, so its speed in
+// pixels-per-second is a function of lane height. A tolerance fixed in
+// pixels therefore buys less and less *time* the taller the screen
+// gets: the old flat 68.4px was a 246ms window in the 420x640 popup
+// but only 164ms on a tall phone — the same chart, judged a third
+// more strictly, purely because of the display it landed on.
+//
+// Expressed as a fraction of a beat instead, the window is the same
+// musical duration everywhere and scales itself to any screen. 0.49
+// beats reproduces the old 68.4px at the popup's own lane height, so
+// the reference difficulty is unchanged and only other sizes move.
+const TILE_TRAVEL_BEATS = 4;
+const HIT_TOL_BEATS     = 0.49;
+
 // Widened or tightened by the hit-window setting.
 function hitTol() {
   const w = HIT_WINDOWS[currentSettings.hitWindow] || HIT_WINDOWS.normal;
-  return HIT_TOL_BASE * w.mult;
+  return laneH() * (HIT_TOL_BEATS / TILE_TRAVEL_BEATS) * w.mult;
 }
 const DTAP_MS    = 320;
 const SPEED_INC  = 0.10 / 60;
@@ -4808,13 +4836,55 @@ const spdBadge= document.getElementById('speed-badge');
 // frame. It only actually changes when the window does, so measure it
 // then and cache it.
 let _laneH = 0;
+
+// Tiles and the strike bar are absolutely positioned inside the lane,
+// so the box they are laid out against is the lane's *padding* box —
+// clientHeight. getBoundingClientRect() returns the border box, which
+// is 2px taller here, and mixing the two put the judged line and the
+// bar the player aims at in slightly different coordinate spaces.
+function setLaneH(h) {
+  if (!(h > 0) || h === _laneH) return;
+  _laneH = h;
+  // The drawn hit window is sized from hitTol(), which is sized from
+  // this. Refresh it here or the band keeps whatever width it was
+  // given the first time — which was computed from the 380px fallback
+  // while the lane was still hidden, so it rendered 46.5px wide on
+  // every screen no matter what the engine was actually judging.
+  if (typeof applyHitZone === 'function') applyHitZone();
+}
 function measureLanes() {
-  _laneH = (laneEls[0] && laneEls[0].getBoundingClientRect().height) || 380;
-  return _laneH;
+  const el = laneEls[0];
+  // A hidden lane measures 0. Don't cache that — it would freeze the
+  // judged line at the fallback and silently mis-time every hit.
+  if (el) setLaneH(el.clientHeight);
+  return _laneH || 380;
 }
 function laneH() { return _laneH || measureLanes(); }
 function hitY()  { return laneH() - HIT_BOTTOM; }
 window.addEventListener('resize', measureLanes);
+
+// The lane changes height for more reasons than the window resizing:
+// a phone hiding its URL bar, an orientation flip, the safe-area
+// insets resolving, the advanced panel growing the popup, even a late
+// webfont reflowing the HUD above it. None of those fire `resize`, so
+// the height was measured once before layout settled and then kept,
+// leaving the judged line 14-21px above the bar the player is aiming
+// at on every screen size tested.
+//
+// The observer hands the fresh size to the callback in contentRect,
+// and that is the only trustworthy reading of it: called during the
+// same layout pass, getBoundingClientRect() on the very same element
+// still returns the *previous* box (measured: contentRect 759 while
+// the rect said 741.98). Re-measuring here instead of using what was
+// handed over is what kept the stale value. The observer also
+// coalesces, so there is no later event to correct it.
+if (typeof ResizeObserver === 'function' && laneEls[0]) {
+  new ResizeObserver(entries => {
+    // The lane carries no padding, so the content box the observer
+    // reports and the padding box the tiles live in are the same.
+    setLaneH(entries[entries.length - 1].contentRect.height);
+  }).observe(laneEls[0]);
+}
 
 // Draws the band taps are actually judged in. Sized from hitTol()
 // itself rather than a hand-tuned constant, so it cannot drift out of
@@ -5183,7 +5253,7 @@ function loop(now) {
   }
 
   const th  = laneH();
-  const spd = th / (currentBeatMs * 4);
+  const spd = th / (currentBeatMs * TILE_TRAVEL_BEATS);
 
   beatAccum += dt;
   if (beatAccum >= currentBeatMs) {
@@ -5844,10 +5914,60 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyQ' && onBoard) quitToMenu();
 });
 
+// When a touch was handled, the browser still sends a compatibility
+// mouse click afterwards. Normally preventDefault() on touchstart
+// suppresses it — but the board sets touch-action:none, and Chromium
+// dispatches touchstart as *non-cancelable* when it has already ruled
+// out every default gesture. preventDefault() is then a silent no-op,
+// the click arrives as a genuine trusted event on the keycap, and the
+// lane fires twice for one tap. Measured: [0,0] for a single tap.
+//
+// So the click path ignores anything landing in the shadow of a
+// touch. On a mouse-only machine no touch ever sets this and clicks
+// behave exactly as before.
+let lastTouchAt = 0;
+const GHOST_CLICK_MS = 700;
+
+// Mouse keeps the keycap as its target — it is a precise pointer and
+// the cap is what looks clickable.
 btnEls.forEach((el, i) => {
-  el.addEventListener('click',      ()  => tapLane(i));
-  el.addEventListener('touchstart', ev => { ev.preventDefault(); tapLane(i); });
+  el.addEventListener('click', () => {
+    if (performance.now() - lastTouchAt < GHOST_CLICK_MS) return;
+    tapLane(i);
+  });
 });
+
+// ── Touch ──
+// A finger is not a mouse. The keycap is 50px tall, which on a phone
+// is a small target to hit repeatedly and accurately while reading
+// notes at the top of the screen — and the several hundred pixels of
+// lane above it, the part you are actually looking at, did nothing at
+// all. On touch the whole lane column is the button.
+//
+// Delegated to the container rather than bound per lane so that two
+// or three fingers landing in the same frame are all handled: the
+// browser coalesces simultaneous touches into one event, and only
+// changedTouches lists them individually. Binding per element saw
+// just the first, so chords were dropped on touch but not on
+// keyboard.
+(function wireLaneTouch() {
+  const wrap = document.getElementById('g-lanes');
+  if (!wrap) return;
+  wrap.addEventListener('touchstart', ev => {
+    lastTouchAt = performance.now();
+    // Kept for the cancelable case (a browser that has not ruled out
+    // gestures yet) — it stops text selection and any scroll. The
+    // ghost-click guard above covers the non-cancelable case, where
+    // this call does nothing.
+    if (ev.cancelable) ev.preventDefault();
+    for (let i = 0; i < ev.changedTouches.length; i++) {
+      const t  = ev.changedTouches[i];
+      const el = document.elementFromPoint(t.clientX, t.clientY);
+      const ln = el && el.closest && el.closest('.lane');
+      if (ln && ln.dataset.lane !== undefined) tapLane(+ln.dataset.lane);
+    }
+  }, { passive: false });
+})();
 
 // Avatar click -> full profile
 const pbarAvatar = document.getElementById('pbar-avatar');

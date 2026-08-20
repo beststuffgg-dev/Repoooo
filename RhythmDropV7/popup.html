@@ -1079,7 +1079,16 @@ body.reduce-motion #combo-milestone.show { opacity:1; }
 
 .hud-lives { font-size:15px; letter-spacing:4px; }
 
-#g-lanes { flex:1; display:flex; gap:6px; padding:0 12px; }
+#g-lanes {
+  flex:1; display:flex; gap:6px; padding:0 12px;
+  /* `manipulation` (set globally on html) still lets the browser watch
+     for pan and pinch before it commits a touch. Over the board there
+     is nothing to pan or pinch, and that watching is latency in a game
+     judged in milliseconds — `none` hands the touch straight to the
+     handler. Also stops a fast run of taps being read as a drag. */
+  touch-action:none;
+  user-select:none; -webkit-user-select:none;
+}
 
 /* Lanes: RECESSED wells.
    Inner shadow at the top so notes emerge from a slot
@@ -3224,19 +3233,29 @@ body.reduce-motion .box-reveal.show { animation:none; }
    the compositing Edge charges more for on integrated GPUs.
 ══════════════════════════════════════ */
 
-/* Below the hardware floor edge.js checks for, drop the blurs and
-   pay for the effect with opacity instead. */
+/* Below the hardware floor, drop the blurs and pay for the effect
+   with opacity instead. `edge-cheap-blur` is set by edge.js; the
+   `low-power` twin is set by game.js on any browser, because the cost
+   is a property of the device, not of Edge — and a phone, which is
+   the likeliest machine to be under the floor, was never covered by
+   the Edge-only check. */
 html.edge-cheap-blur .tb-veil,
 html.edge-cheap-blur #box-modal,
 html.edge-cheap-blur #tut-modal,
-html.edge-cheap-blur #load-veil {
+html.edge-cheap-blur #load-veil,
+html.low-power .tb-veil,
+html.low-power #box-modal,
+html.low-power #tut-modal,
+html.low-power #load-veil {
   backdrop-filter:none; -webkit-backdrop-filter:none;
   background:color-mix(in srgb,var(--panel-deep) 95%,transparent);
 }
 /* Blurring a whole locked area block is the single most expensive
    thing on the campaign screen; dim it instead. */
 html.edge-cheap-blur .theme-block.locked .tb-body,
-html.edge-cheap-blur .theme-block.locked .tb-head { filter:none; opacity:.5; }
+html.edge-cheap-blur .theme-block.locked .tb-head,
+html.low-power .theme-block.locked .tb-body,
+html.low-power .theme-block.locked .tb-head { filter:none; opacity:.5; }
 
 /* Edge on Windows reserves a wider classic scrollbar than Chrome,
    which clipped the campaign rows. */

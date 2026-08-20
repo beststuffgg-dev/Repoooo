@@ -38,12 +38,14 @@ A fourth, **in-progress** variant exists: `RhythmDropV7-Redesign/` — see [§4]
 
 ### Core gameplay
 - Four lanes, two note types: **tap** (single hit) and **double-tap** (×2, needs two hits, worth more)
-- Three hit windows — **Strict / Normal / Forgiving** — chosen in Settings, scales the timing tolerance around a fixed judging line; note *speed* is locked per-level (changing it would make scores incomparable)
+- Three hit windows — **Strict / Normal / Forgiving** — chosen in Settings, scales the timing tolerance around the judging line; note *speed* is locked per-level (changing it would make scores incomparable)
+- The timing window is expressed **in beats, not pixels** (`HIT_TOL_BEATS`). Tiles cross the lane in a fixed number of beats, so a pixel tolerance buys less time the taller the screen — the old flat 68.4px was a 246ms window in the 420x640 popup but only 164ms on a tall phone, i.e. the same chart judged a third more strictly purely because of the display. As a fraction of a beat it is the same duration on every screen
 - Scoring: PERFECT/GREAT/GOOD tiers by timing accuracy, a combo multiplier (+8%/hit) and a streak multiplier (+5%/hit) that compound
 - Combo escalates through three visual tiers past 50 (hot → blaze → nova) — color/glow only, never moves the badge or disrupts the board
 - Lives system, with a results screen showing score, XP, and coins earned
 - **The Double**: replay any cleared level at **2× speed** — genuinely harder (the XP and coin formulas both key off actual speed, so it pays double, not as a bonus but because the formula treats speed honestly). Cannot be used to clear a level you haven't already cleared — it's a harder run at something you've finished, not a shortcut around finishing it
-- Optional hit-window visualizer: draws the actual timing band above the strike line, sized directly from the same constant the judging code reads, so what you see is never able to drift from what actually counts
+- Optional hit-window visualizer: draws the actual timing band above the strike line, sized directly from `hitTol()` itself, so what you see cannot drift from what counts
+- Lane height is measured from the lane's **padding box** (`clientHeight`) — the box absolutely-positioned tiles and the strike bar are actually laid out against — and kept current by a `ResizeObserver`, which catches URL-bar hides, orientation flips, safe-area insets resolving, panel-driven window growth and late webfont reflow. None of those fire `resize`. Note the observer's `contentRect` is the only trustworthy reading inside the callback: `getBoundingClientRect()` on the same element still returns the *previous* box during that layout pass
 
 ### Campaign — 10 areas × 15 levels, fully deterministic
 - Every level is generated from `mulberry32(seed)` — **never `Math.random()`** anywhere in generation — so the same seed produces the identical chart on every device, every time
@@ -91,6 +93,8 @@ A fourth, **in-progress** variant exists: `RhythmDropV7-Redesign/` — see [§4]
 
 ### Platform
 - **Edge compatibility layer** — `edge.js`, a separate file that's completely inert unless the browser is actually Edge (detected via `userAgentData` brands or UA sniffing as fallback); when active it trims blur costs on low-core machines, thins scrollbars, and adds a visibility-change audio-resume nudge (Edge's Efficiency Mode throttles background tabs harder than Chrome)
+- **Touch** — the whole lane column is the tap target, not just the 50px keycap (which on a phone was a small thing to hit repeatedly while reading notes at the top of the screen). Delegated at the lanes container and driven from `changedTouches`, so two or three fingers landing in the same frame all register — the browser coalesces simultaneous touches into one event, and per-element binding saw only the first, which silently dropped chords on touch but not on keyboard. `#g-lanes` sets `touch-action:none`, which removes gesture-recognition latency but also makes Chromium dispatch `touchstart` as **non-cancelable** — `preventDefault()` becomes a no-op and the compatibility click still fires, so the click path carries an explicit ghost-click guard instead
+- **Low-power devices** — `html.low-power`, set by `game.js` from the same hardware floor `edge.js` uses (≤4 cores or ≤4GB), drops full-screen `backdrop-filter` blurs on modals and veils. The Edge-only check never covered phones, which are the likeliest machines to be under that floor
 - First-run tutorial (localStorage-gated, shows once)
 - "Update 7" label under the wordmark; small "made by Claude" credit
 
@@ -161,6 +165,8 @@ Two suites, both must pass before shipping any change:
 - `phase1test`–`phase6`-adjacent tests — one per roadmap phase (settings tabs/audio config, shop tabs/previews, real loading, creator two-stage notes/panel resize, chord generation/density penalty, materials/hit-window/combo/jingles)
 - `econtest` — flat coin economy + two-click purchase flow
 - `combotest` — combo tiers, milestones, hit-window visualizer geometry (drawn band matches `hitTol()` exactly at all three settings)
+- `visualverify` — **browser-driven**: compares rendered pixel positions against the numbers the engine judges with, at six screen sizes. Catches the class of bug jsdom structurally cannot see (it has no layout engine). Found the strike line sitting 12-19px off the bar it was drawn on, and the drawn window frozen at 46.5px on every screen
+- `touchverify` — **browser-driven**: whole-lane taps, simultaneous-finger chords, and no ghost double-fire on the keycap
 - `mattest` — material tokens render measurably different edges/highlights across all 6 base themes
 - `csscheck` — stylesheet parses cleanly, no orphaned rules from a stray `/* */`
 - `chordtest` — harmonic correctness across all 150 campaign charts (zero minor seconds verified)
