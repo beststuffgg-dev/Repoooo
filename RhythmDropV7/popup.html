@@ -178,9 +178,16 @@
       bevels, visible grain, warm throughout. ── */
 body.theme-walnut {
   --mat-spec:.25; --mat-gloss:.45; --mat-bevel:.5; --mat-blur:0px;
-  --mat-grain:repeating-linear-gradient(94deg,
-    rgba(0,0,0,.055) 0px, rgba(0,0,0,.055) 1px,
-    rgba(255,255,255,.018) 2px, transparent 5px, transparent 11px);
+  /* Two soft, asymmetrically-placed knots on top of the directional
+     streak so the board reads as a cut of real timber rather than a
+     perfectly repeating pattern — real grain is directional but never
+     uniform. */
+  --mat-grain:
+    radial-gradient(ellipse 13px 44px at 77% 20%, rgba(0,0,0,.11), transparent 72%),
+    radial-gradient(ellipse 9px 28px at 16% 66%, rgba(0,0,0,.08), transparent 72%),
+    repeating-linear-gradient(94deg,
+      rgba(0,0,0,.055) 0px, rgba(0,0,0,.055) 1px,
+      rgba(255,255,255,.018) 2px, transparent 5px, transparent 11px);
   --panel-deep:#1A1008; --panel:#2A1B0E; --panel-raised:#3B2814;
   --bevel-lit:#6B4A28; --bevel-shade:#0D0804;
   --bg:#1A1008; --bg2:#2A1B0E; --bg3:#3B2814; --bg4:#4A3319;
@@ -196,7 +203,10 @@ body.theme-walnut {
       near-flat bevels, LEDs read as gel filters. ── */
 body.theme-bone {
   --mat-spec:.18; --mat-gloss:.3; --mat-bevel:.35; --mat-blur:0px;
-  --mat-grain:radial-gradient(circle at 30% 20%, rgba(0,0,0,.02) 1px, transparent 1px);
+  /* A repeating dot grid read as a screen-print pattern, not paper.
+     Real fractal noise, at low frequency (coarse fiber) and very low
+     opacity — felt more than seen, the way paper tooth actually is. */
+  --mat-grain:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><filter id=%22bnp%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.75%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2290%22 height=%2290%22 filter=%22url(%23bnp)%22 opacity=%220.09%22/></svg>');
   --panel-deep:#DED8CC; --panel:#EDE8DE; --panel-raised:#F7F3EB;
   --bevel-lit:#FFFFFF; --bevel-shade:#B8AF9F;
   --bg:#DED8CC; --bg2:#EDE8DE; --bg3:#F7F3EB; --bg4:#FFFDF8;
@@ -212,7 +222,14 @@ body.theme-bone {
       high gloss, but warm rather than cool. ── */
 body.theme-amber {
   --mat-spec:1.3; --mat-gloss:1.25; --mat-bevel:1.15; --mat-blur:0px;
-  --mat-grain:none;
+  /* Brushed brass: a tight, consistently-directional light/dark pitch
+     rather than the smooth-metal "no grain" it had before. Real
+     brushed metal genuinely is this regular at the micro scale — the
+     realism is in adding it, not in making it irregular. */
+  --mat-grain:repeating-linear-gradient(90deg,
+    rgba(255,255,255,.05) 0px, rgba(255,255,255,.05) .5px,
+    rgba(0,0,0,.05) .5px, rgba(0,0,0,.05) 1px,
+    transparent 1px, transparent 2px);
   --panel-deep:#120C04; --panel:#1F1508; --panel-raised:#31220D;
   --bevel-lit:#8A6420; --bevel-shade:#080502;
   --bg:#120C04; --bg2:#1F1508; --bg3:#31220D; --bg4:#412D12;
@@ -228,7 +245,12 @@ body.theme-amber {
       softest bevels, low body contrast. ── */
 body.theme-vapor {
   --mat-spec:1.5; --mat-gloss:.7; --mat-bevel:.45; --mat-blur:3px;
-  --mat-grain:linear-gradient(135deg, rgba(255,255,255,.04), transparent 60%);
+  /* The diagonal sheen is the glass highlight; frosted/etched glass
+     also has a fine random micro-texture underneath it, which a
+     gradient alone can't fake. */
+  --mat-grain:
+    linear-gradient(135deg, rgba(255,255,255,.04), transparent 60%),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2270%22><filter id=%22vpf%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%221.1%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2270%22 height=%2270%22 filter=%22url(%23vpf)%22 opacity=%220.09%22/></svg>');
   --panel-deep:#120A22; --panel:#1D1136; --panel-raised:#2B1B4D;
   --bevel-lit:#7C5BC4; --bevel-shade:#0A0516;
   --bg:#120A22; --bg2:#1D1136; --bg3:#2B1B4D; --bg4:#3A2566;
@@ -244,10 +266,13 @@ body.theme-vapor {
       no sheen. Proves the layout works without depth. ── */
 body.theme-blueprint {
   --mat-spec:.12; --mat-gloss:.15; --mat-bevel:.25; --mat-blur:0px;
+  /* It's still printed on paper — the grid is drawn on it, not
+     etched into a vector plane. */
   --mat-grain:repeating-linear-gradient(0deg,
       rgba(120,180,255,.05) 0 1px, transparent 1px 22px),
     repeating-linear-gradient(90deg,
-      rgba(120,180,255,.05) 0 1px, transparent 1px 22px);
+      rgba(120,180,255,.05) 0 1px, transparent 1px 22px),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><filter id=%22blp%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.7%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2290%22 height=%2290%22 filter=%22url(%23blp)%22 opacity=%220.07%22/></svg>');
   --panel-deep:#071A2E; --panel:#0B2440; --panel-raised:#103055;
   --bevel-lit:#2D5F94; --bevel-shade:#04101C;
   --bg:#071A2E; --bg2:#0B2440; --bg3:#103055; --bg4:#164070;
@@ -263,7 +288,10 @@ body.theme-blueprint {
       Greyscale body with one LED colour. ── */
 body.theme-mono {
   --mat-spec:.1; --mat-gloss:.2; --mat-bevel:.4; --mat-blur:0px;
-  --mat-grain:none;
+  /* Matte rubber's "orange peel" — a fine, high-frequency stipple.
+     Kept a touch more visible than the other themes' grain since this
+     material is defined by its texture, not by any highlight. */
+  --mat-grain:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><filter id=%22mnr%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%221.4%22 numOctaves=%223%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2260%22 height=%2260%22 filter=%22url(%23mnr)%22 opacity=%220.12%22/></svg>');
   --panel-deep:#0A0A0A; --panel:#141414; --panel-raised:#1E1E1E;
   --bevel-lit:#3A3A3A; --bevel-shade:#000000;
   --bg:#0A0A0A; --bg2:#141414; --bg3:#1E1E1E; --bg4:#2A2A2A;
@@ -281,7 +309,15 @@ body.theme-mono {
    app to a 420x640 box in the top-left and leaves the rest black, so
    there it fills the viewport instead and centres in a readable column.
    html.as-popup is set by game.js when the protocol is chrome-extension:. */
-html { width:100%; height:100%; overflow:hidden; }
+html { width:100%; height:100%; overflow:hidden;
+  /* Removes the ~300ms double-tap-to-zoom detection delay on touch
+     devices — a real cost in a game built on fast repeated taps —
+     without disabling pinch-zoom or scrolling, which "manipulation"
+     still allows. Global and harmless on desktop, where it does
+     nothing at all. */
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:transparent;
+}
 html.as-popup {
   width:420px; height:640px; resize:both;
   min-width:360px; min-height:520px; max-width:700px; max-height:900px;
@@ -289,6 +325,14 @@ html.as-popup {
 html:not(.as-popup) body {
   max-width:520px; margin:0 auto;
   box-shadow:0 0 0 1px var(--bevel-shade);
+  /* Only the served-as-a-page path needs this — the extension popup
+     never runs full-bleed against a phone's notch or home-indicator
+     bar. box-sizing:border-box (above) keeps this inside body's own
+     100% box rather than growing past it. Needs viewport-fit=cover
+     in the <meta> tag (already set) or these env() calls resolve to
+     zero and this is a no-op. */
+  padding:env(safe-area-inset-top) env(safe-area-inset-right)
+          env(safe-area-inset-bottom) env(safe-area-inset-left);
 }
 body {
   width:100%; height:100%; overflow:hidden;
@@ -299,6 +343,7 @@ body {
      including the board, without any element opting in. */
   filter:brightness(var(--app-brightness, 1));
 }
+
 
 /* ── Loading progress ──
    The bar tracks the preload queue, not a timer: each step reports as
@@ -3371,6 +3416,19 @@ body.panel-overlay .cr-grid-wrap { padding-bottom:8px; }
 .endless-block { border-color:var(--dtap); }
 .endless-block .tb-emblem { color:var(--dtap); }
 .endless-block .tb-count { color:var(--dtap); font-size:14px; }
+
+/* ── Touch-only text sizing ──
+   iOS Safari zooms the whole page in when a focused input's font-size
+   is under 16px, regardless of device — these four sat between 10px
+   and 15px, so tapping the level-code box, the creator's BPM field,
+   the level-name field, or the sync-code box on a phone zoomed the
+   entire 420px popup in and left it that way. Scoped to
+   (pointer:coarse) — an actual touchscreen — rather than a width
+   breakpoint, so a desktop window resized narrow (or the popup
+   itself) keeps its tighter sizing exactly as designed. */
+@media (pointer:coarse) {
+  .code-in, .cr-title-input, .bpm-input, .sync-box { font-size:16px; }
+}
 </style>
 </head>
 <body>
