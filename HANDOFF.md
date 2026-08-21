@@ -9,7 +9,7 @@ This document is the single reference for what's built, how it's built, and what
 1. [Overview & artifacts](#1-overview--artifacts)
 2. [Feature inventory](#2-feature-inventory)
 3. [Visual design system](#3-visual-design-system-the-look)
-4. [The Redesign variant](#4-the-redesign-variant-in-progress)
+4. [The Redesign variant](#4-the-redesign-variant)
 5. [Architecture](#5-architecture)
 6. [Testing](#6-testing)
 7. [Open items](#7-open-items)
@@ -26,15 +26,20 @@ RhythmDrop is a tap-to-the-beat game: four lanes (keys **A S D F**), notes fall 
 |---|---|
 | `RhythmDropV7/` | The real source — a folder of separate `.js`/`.html` files, loadable directly as an unpacked Chrome extension |
 | `RhythmDropV7-Final.zip` | The same folder, zipped, for distribution |
-| `RhythmDrop.html` | The entire game as one self-contained file — every script inlined into `popup.html` by `build-single.js`, so it opens and runs from a double-click, a phone browser, or any static host, with zero network requests |
+| `RhythmDrop.html` | The entire game as one self-contained file — every script inlined into `popup.html` by `tools/build-single.js`, so it opens and runs from a double-click, a phone browser, or any static host, with zero network requests |
 
-The single-file build is **generated, not hand-maintained** — running `build-single.js` against `RhythmDropV7/` reproduces it exactly. Never hand-edit `RhythmDrop.html` directly; edit the source folder and rebuild.
+The single-file build is **generated, not hand-maintained** — running `node tools/build-single.js` reproduces it exactly. Never hand-edit `RhythmDrop.html` directly; edit the source folder and rebuild.
 
-A fourth, **in-progress** variant exists: `RhythmDropV7-Redesign/` — see [§4](#4-the-redesign-variant-in-progress).
+**The Redesign variant ships in the same three forms**, kept alongside the originals rather than replacing them — `RhythmDropV7-Redesign/`, `RhythmDropV7-Redesign.zip`, `RhythmDrop-Redesign.html`. Same JS, same features, same tests; only `popup.html` differs. See [§4](#4-the-redesign-variant).
+
+    node tools/build-single.js                                             # -> RhythmDrop.html
+    node tools/build-single.js RhythmDropV7-Redesign RhythmDrop-Redesign.html
 
 ---
 
 ## 2. Feature inventory
+
+**Five screens**, all in the one popup: `username-screen` (first run only) → `home` (profile bar, hero, and five tabs — Levels / Custom / Shop / Themes / Settings) → `profile-screen`, `creator`, and `game`. Everything below hangs off those.
 
 ### Core gameplay
 - Four lanes, two note types: **tap** (single hit) and **double-tap** (×2, needs two hits, worth more)
@@ -55,6 +60,12 @@ A fourth, **in-progress** variant exists: `RhythmDropV7-Redesign/` — see [§4]
 - **Chord generation**: notes sharing a beat stack in thirds above the first note present (scale degree *i*, *i+2*, *i+4*) rather than being independently walked — this is what makes simultaneous hits sound like actual harmony instead of whatever interval the melody walker happened to land on. Verified across all 150 charts: zero minor seconds, thirds/fifths dominant
 - **Density anti-farm**: past 85% of a chart's grid filled, additional notes pay only 15% of normal XP — closes a bug in the old build where a solid wall of notes was the fastest possible farming pattern. No generated campaign chart comes near the threshold; this only bites custom charts built to exploit it
 - Campaign levels are built **through their own share code** (`buildCampaignLevel → codeForCampaign → buildCodeLevel`) — a load-bearing invariant. Don't special-case campaign generation outside that path or codes and gameplay will silently diverge
+
+### Endless mode — the eleventh tab
+- Sits alongside the ten era tabs in the campaign browser, **locked until every campaign theme is cleared**; the locked card names how many themes are left rather than just refusing
+- Three difficulty bands — **Casual (1–4), Standard (4–7), Punishing (7–9)** — each rolling a brand-new song per run
+- `rollEndlessCode(lo, hi)` is the **one deliberate exception** to the no-`Math.random()` rule, and the distinction matters: random picks the *seed, difficulty and style*; the chart is then generated deterministically from that seed like any other. So an endless run is reproducible — it has a real share code you can keep and replay — while still being different every time you press it. 8 base36 chars of seed space, so it doesn't start repeating charts after a few hundred runs
+- Rendered as a `theme-block` like any era, so it inherits the same list language rather than being a bolted-on panel
 
 ### Level creator
 - Grid-based chart editor: click a tool (tap / double-tap / erase / select), draw the chart
@@ -83,6 +94,28 @@ A fourth, **in-progress** variant exists: `RhythmDropV7-Redesign/` — see [§4]
 - Custom avatar upload (stored downscaled, not full-resolution, to keep localStorage sane)
 - Theme system: 10 area themes (unlocked by playing that area, not purchased) + 6 base "material" themes (walnut/bone/amber/vapor/blueprint/mono), each declaring a full material (specular strength, gloss, bevel hardness, grain texture) — not just a palette swap
 
+### Custom levels
+- A **Custom** tab beside the campaign holding every level you've made or imported by code, each launchable, editable and re-shareable
+- Custom charts run through exactly the same `buildCodeLevel` path as campaign levels, so a level you wrote and a level the campaign generated are the same kind of object to the rest of the app
+
+### Profile screen
+- Its own screen (not a modal), reached from the profile bar: large avatar, name, coins, and lifetime stats
+- **Rename** yourself at any time; the name is only cosmetic and lives in `rd_profile`
+- **Avatar slots** — pick from everything owned, with the **colourway row** applying tint palettes live to the selected avatar
+- **Recent runs** list, so the last few results stay visible without opening each level
+
+### Custom theme builder
+- Beyond the 16 built-in themes, a form that builds **your own theme**: background, text, tap and double-tap colours, plus the three material controls — **bevel hardness, glow strength, and tilt depth** — and a base **material** picker (the same six walnut/bone/amber/vapor/blueprint/mono grains)
+- A live preview box updates as you drag, so you're never guessing what a value does
+- Saved to `rd_custom_theme` and carried in sync codes like any other setting
+
+### Audio engine (`audio.js`)
+- 12 instruments synthesized from oscillators and envelopes — no samples, no network fetches, which is why the whole game is one file with zero requests
+- A **limiter on the master bus**: four lanes can fire together and a chord stacks three notes on one beat, so the naive sum clips constantly. The limiter holds the sum without ducking individual hits
+- **Output device picker** via `AudioContext.setSinkId` (Chrome 110+), feature-detected — where it's missing the control simply isn't offered rather than failing on click
+- Per-note **sustain**, and a **background layer** (drum and bass loops) that the creator can configure per chart
+- Volume is applied on the master gain, so it scales everything uniformly including the background layer
+
 ### Settings
 - Tabbed: **Play / Audio / Look / Data**
 - Key remapping per lane, starting lives, hit window
@@ -95,6 +128,7 @@ A fourth, **in-progress** variant exists: `RhythmDropV7-Redesign/` — see [§4]
 - **Edge compatibility layer** — `edge.js`, a separate file that's completely inert unless the browser is actually Edge (detected via `userAgentData` brands or UA sniffing as fallback); when active it trims blur costs on low-core machines, thins scrollbars, and adds a visibility-change audio-resume nudge (Edge's Efficiency Mode throttles background tabs harder than Chrome)
 - **Touch** — the whole lane column is the tap target, not just the 50px keycap (which on a phone was a small thing to hit repeatedly while reading notes at the top of the screen). Delegated at the lanes container and driven from `changedTouches`, so two or three fingers landing in the same frame all register — the browser coalesces simultaneous touches into one event, and per-element binding saw only the first, which silently dropped chords on touch but not on keyboard. `#g-lanes` sets `touch-action:none`, which removes gesture-recognition latency but also makes Chromium dispatch `touchstart` as **non-cancelable** — `preventDefault()` becomes a no-op and the compatibility click still fires, so the click path carries an explicit ghost-click guard instead
 - **Low-power devices** — `html.low-power`, set by `game.js` from the same hardware floor `edge.js` uses (≤4 cores or ≤4GB), drops full-screen `backdrop-filter` blurs on modals and veils. The Edge-only check never covered phones, which are the likeliest machines to be under that floor
+- **Lighting** (`lighting.js`) — **one** pointer listener for the entire app. It writes cursor position and panel tilt to four `:root` custom properties (`--mx/--my`, `--tilt-x/--tilt-y`) and CSS reads them; JS never touches individual elements on pointer move. That's what keeps a cursor-reactive 3D surface off the frame budget
 - First-run tutorial (localStorage-gated, shows once)
 - "Update 7" label under the wordmark; small "made by Claude" credit
 
@@ -123,7 +157,7 @@ The full token system, component inventory, and screen-by-screen hierarchy is wr
 
 ---
 
-## 4. The Redesign variant (in progress)
+## 4. The Redesign variant
 
 `RhythmDropV7-Redesign/` is a **visual-only alternate build**, kept as a second copy alongside the original `RhythmDropV7/` rather than replacing it — same JS, same features, same tests, only `popup.html` differs. It exists to explore a look sourced from an uploaded Claude Design mockup (`RhythmDrop.dc.html`) without putting the shipping build at risk.
 
@@ -131,9 +165,15 @@ The full token system, component inventory, and screen-by-screen hierarchy is wr
 - A **film-grain overlay** (`body::after`, a static fractal-noise SVG data-URI, `mix-blend-mode:overlay`, ~5% opacity) across the whole popup — doesn't tint or darken anything (overlay blending only nudges existing pixels toward/away from mid-grey), just breaks up large flat panels so they don't read as vector fills
 - A **decorative "ghost lane" perspective strip** behind the home-screen wordmark: four faintly tinted lanes tilted away in 3D (`perspective` + `rotateX`), echoing the actual play board. The source mockup ran this at a steep 64° tilt; **this was implemented at 25% of that — 16°** — per the explicit ask, so the grid stays legibly rectangular rather than dominating the masthead. Purely decorative: `pointer-events:none`, no gameplay involvement, `aria-hidden`, and hidden entirely under reduced-motion
 
-**Status: not finalized.** The perspective strip was bleeding past the hero section's bounds into the nav bar and song list below — `overflow:hidden` on the ancestor wasn't clipping it, most likely because `#home` already carries its own subtle 3D tilt (from `lighting.js`), and nesting a second `perspective`/`rotateX` inside an already-3D-transformed ancestor is a known spot where Chromium's overflow clipping can miss. The fix in progress: stop relying on ancestor clipping entirely — size the strip to actually fit within the hero's own box (92px, `bottom:0` instead of a taller box hanging past `bottom:-6px`) and add a `mask-image` fade on both edges so there's nothing left needing to be clipped. This edit was applied to `RhythmDropV7-Redesign/popup.html` but **has not yet been screenshotted to confirm it holds, and the Redesign build has not been run through the regression suite.** See [§7](#7-open-items).
+**Status: verified and packaged.**
 
-No single-file or zip build has been generated for the Redesign variant yet — only the source folder exists.
+The perspective strip *was* bleeding past the hero's bounds into the nav bar and song list below — `overflow:hidden` on the ancestor wasn't clipping it, because `#home` already carries its own subtle 3D tilt (from `lighting.js`), and nesting a second `perspective`/`rotateX` inside an already-3D-transformed ancestor is a spot where Chromium's overflow clipping misses. The fix stops relying on ancestor clipping at all: the strip is sized to fit inside the hero's own box (`bottom:0`, `height:92px`, rather than a taller box hanging past `bottom:-6px`) with a `mask-image` fade at both edges, so there is nothing left needing to be clipped.
+
+That fix is now confirmed by measurement, not by eye. At 420x700, 390x844, 360x640 and 900x1000, the painted bottom of the tilted lanes lands *above* the nav's top edge every time (e.g. 180.6 vs 181.6 at 420px), and `elementFromPoint` at the nav's centre returns the nav itself, never the strip. The strip also computes `pointer-events:none` and carries `aria-hidden="true"` at all four sizes. The same check against the generated single-file build gives 178.5 vs 179.5 — the containment survives inlining.
+
+**Identity.** So the two builds can't be confused — and can be loaded as unpacked extensions side by side — the Redesign carries its own name: manifest `name` `RhythmDrop (Redesign)`, `version_name` `UPD7 Beta 14 — Redesign`, and `<title>` `RhythmDrop — Redesign`. Nothing in the JS reads the manifest, so this is presentation only.
+
+**Regression.** All 22 suites pass against `RhythmDropV7-Redesign/` (`APP_DIR=../RhythmDropV7-Redesign node run-all.js`), identically to the shipping build. The `popup.html` diff against `RhythmDropV7/` is exactly the two blocks above plus `body{position:relative}` (which the film grain's `position:absolute` needs as a containing block) and the strip's markup — no other divergence, which is what keeps the two builds' behaviour identical.
 
 ---
 
@@ -147,38 +187,50 @@ No single-file or zip build has been generated for the Redesign variant yet — 
 
 **localStorage keys**: `rd_profile`, `rd_progress`, `rd_shop`, `rd_settings`, `rd_scores`, `rd_levels`, `rd_daily`, `rd_theme`, `rd_custom_theme`, `rd_custom_av`, `rd_bests`, `rd_tutorial`, `rd_bests_migrated`.
 
-**No build step**: `RhythmDropV7/` is loaded directly as an unpacked extension. `RhythmDrop.html` is generated from it by `build-single.js` (in the working scratchpad, not committed — it walks `popup.html`'s `<script src="...">` tags and inlines each file's contents in place). Re-run it after any source change to keep the single-file build in sync; never hand-edit `RhythmDrop.html`.
+**No build step**: `RhythmDropV7/` is loaded directly as an unpacked extension. `RhythmDrop.html` is generated from it by `tools/build-single.js` (now committed — it walks `popup.html`'s `<script src="...">` tags and inlines each file's contents in place, and throws rather than writing a broken file if no tag matches or one survives the pass). It takes an optional source folder and output path, which is how the Redesign's bundle is built. Re-run it after any source change to keep the single-file builds in sync; never hand-edit either `.html`.
 
 ---
 
 ## 6. Testing
 
-Two suites, both must pass before shipping any change:
+**One suite now, not two.** Everything lives in `rhythmdrop-tests/` and runs from one command:
 
-**`rhythmdrop-tests/`** (user-supplied, now committed to the repo) — run with `node run-all.js` from that directory:
-- `smoke.js` / `smoke2.js` — broad UI smoke tests (screens, shop, avatars, themes, key handling, contrast)
-- `progression.js` — XP/level/coin economy correctness, including the Double's payout math
-- `fidelity.js` — audio rendering correctness (OfflineAudioContext-based)
-- `codectest.js` — codec round-tripping, LZW/varint edge cases, unicode, size
+    cd rhythmdrop-tests && npm install && node run-all.js
 
-**Session-authored suites** (Playwright + jsdom, not yet copied into `rhythmdrop-tests/` — they live in the working scratchpad and should be moved into the repo if kept long-term):
-- `phase1test`–`phase6`-adjacent tests — one per roadmap phase (settings tabs/audio config, shop tabs/previews, real loading, creator two-stage notes/panel resize, chord generation/density penalty, materials/hit-window/combo/jingles)
-- `econtest` — flat coin economy + two-click purchase flow
-- `combotest` — combo tiers, milestones, hit-window visualizer geometry (drawn band matches `hitTol()` exactly at all three settings)
-- `visualverify` — **browser-driven**: compares rendered pixel positions against the numbers the engine judges with, at six screen sizes. Catches the class of bug jsdom structurally cannot see (it has no layout engine). Found the strike line sitting 12-19px off the bar it was drawn on, and the drawn window frozen at 46.5px on every screen
-- `touchverify` — **browser-driven**: whole-lane taps, simultaneous-finger chords, and no ghost double-fire on the keycap
-- `mattest` — material tokens render measurably different edges/highlights across all 6 base themes
-- `csscheck` — stylesheet parses cleanly, no orphaned rules from a stray `/* */`
-- `chordtest` — harmonic correctness across all 150 campaign charts (zero minor seconds verified)
-- `selecttest`, `beststest`, `doubletest`, `edgetest`, `jingletest`, `avtest` — creator multi-select, per-level bests, the Double, Edge layer, instrument jingles, avatar upload
+That is **22 harnesses, ~450 probes**, and it exits non-zero if any suite fails, so it drops straight into CI or a pre-commit hook. The session-authored tests that used to live only in a scratchpad are now committed alongside the original five.
 
-All suites were re-run against the single-file build (`RhythmDrop.html`) after the last several changes to confirm the inlining process didn't change behavior — this should continue as a standard step after any `build-single.js` run.
+`APP_DIR` picks which build to test — unset it's the shipping one:
+
+    APP_DIR=../RhythmDropV7-Redesign node run-all.js
+
+**Core** — `smoke.js`, `smoke2.js` (screens, shop, avatars, themes, key handling, contrast; scoring, lives, tile pool, migration), `progression.js` (XP/level/coin economy, the Double's payout math), `fidelity.js` (audio rendering under `OfflineAudioContext`), `codectest.js` (codec round-tripping, LZW/varint edge cases, unicode, size).
+
+**Generation & economy** — `chordtest.js` (harmonic correctness across all 150 campaign charts — zero minor seconds verified), `econtest.js` (flat coin rewards, two-click purchase flow), `doubletest.js`, `beststest.js`.
+
+**UI & features** — `phase1test.js`–`phase4test.js` (one per roadmap phase: settings tabs/audio config/brightness, shop tabs/previews/mystery boxes, real weighted loading and the time-based count-in, creator sound preview and panel resizing), `selecttest.js` (creator multi-select and cut/copy/paste), `avtest.js`, `jingletest.js`, `edgetest.js`.
+
+**Presentation** — `csscheck.js` (stylesheet parses clean, no rules orphaned by a stray `/* */`), `mattest.js` (all 6 base themes render measurably different edges and highlights), `combotest.js` (combo tiers, milestones, and the hit-window visualizer's drawn band matching `hitTol()` exactly at all three settings).
+
+**Browser-driven — the two that matter most.** `visualverify.js` and `touchverify.js` launch real Chromium rather than jsdom, because *jsdom has no layout engine and structurally cannot catch a layout bug*. `visualverify` compares rendered pixel positions against the numbers the engine actually judges with, at six screen sizes; it is what found the strike line sitting 12–19px off the bar it was drawn on, and the drawn hit window frozen at 46.5px on every screen. `touchverify` covers whole-lane taps, simultaneous-finger chords, and the ghost double-fire on the keycap.
+
+`browser.js` resolves which Chromium to launch (newest installed build, `PW_CHROME` to override) — Playwright's own default asks for a headless-shell build that isn't always installed next to the full browser.
+
+**Standard step after any change**: re-run the suite against the generated single-file build too, to confirm inlining didn't change behaviour.
 
 ---
 
 ## 7. Open items
 
-- **Finish the Redesign perspective-strip fix** (§4): the containment/mask edit is written but unverified — screenshot it, confirm the strip no longer bleeds into the nav/song-list, then run the full regression suite against `RhythmDropV7-Redesign/`.
-- **Package the Redesign build**: once visually confirmed, generate its single-file HTML and a zip, following the same `build-single.js` pattern used for the main build. Title/name it so it's clearly distinguishable from the shipping build (the user asked for it to be named "Redesign" and kept as a second version, not a replacement).
-- **Move the session-authored test files** out of the scratchpad and into `rhythmdrop-tests/` (or a separate `tests/` directory) if they should be preserved long-term — right now they only exist in the working environment, not in the repo.
-- **Commit this handoff doc and the outline→shadow sweep** (§3) to `main` if not already committed — check `git status` before assuming either landed.
+Everything previously listed here has landed — the Redesign is verified, packaged and committed (§4), the build script and all session-authored tests are in the repo (§5, §6), and the handoff doc and outline-to-shadow sweep are on `main`. What's left is genuine open work:
+
+- **Two live layout bugs, diagnosed and measured, not yet fixed** — the user reported both and I confirmed both before the work was paused:
+
+  **(a) Shrinking the window crushes the list instead of just making the window shorter.** The campaign list lives in `#cam-scroll`, a `flex:1; overflow-y:auto` scroller *nested inside* `.tab-pane`, which is itself `flex:1; overflow-y:auto`. The inner scroller absorbs all the shrink while its siblings — the code-entry box (69px), the era tabs (41px) and the prize track (107px) — hold their full size. Measured at a 520px window: pane 301px, of which the actual list viewport is **39px** — less than one 48.7px row, so the levels tab renders zero level rows. The content itself is fine (`scrollHeight` is a constant 798px at every window height, so nothing is being truncated); it's purely that the viewport onto it collapses.
+    *Intended fix*: make the pane the single scroller — `.cam-scroll` at natural height (`flex:0 0 auto`, no `overflow`) and `.tab-pane > * { flex-shrink:0 }` — so a shorter window means more scrolling rather than a smaller window onto the same list. Verified-by-measurement target: list viewport height should stop tracking window height, and `scrollHeight` should stay constant.
+
+  **(b) The compact header snaps instead of animating.** `body.compact #home-hero` sets `max-height:0`, but no base `max-height` is declared, so the property animates *from* `none` — which is not an interpolable value, so it jumps rather than transitions despite the `transition:max-height .22s` sitting right above it. Separately, collapsing the hero removes ~119px from above the scroll container, so the pane's top edge moves up while `scrollTop` stays put and the content visibly shifts. Naive `scrollTop` compensation is a trap here: subtracting the collapsed height drives `scrollTop` below the `RELEASE = 12` threshold, which re-expands the header, which re-collapses it — an oscillation.
+    *Intended fix*: replace the binary `compact` class toggle with a **continuous, scroll-linked collapse** — measure the total collapsible height `C` (hero + profile-bar delta + nav delta), then for scroll `y` collapse by exactly `min(y, C)`. Because every pixel of collapse is matched by a pixel of scroll, the content cannot shift at all; this is how iOS large-title headers avoid the same jump. Keep the `compact` class only for the cosmetic swaps (fonts, the inline level/coin strip, hiding the XP bar), which can no longer move layout once the bar's height is driven explicitly.
+
+- **Unresolved, needs the user**: they reported "the hit code is broken for all levels", and I could not reproduce it under either reading. Hit detection measures 100% via the autoplayer on every level tested, and share codes round-trip 150/150 with UI entry launching the right song and rejecting bad codes cleanly. Both apparent failures during investigation turned out to be bugs in the test, not the game. **If this is still happening, the most likely cause is the audio-offset fix**: `offsetPx` is now derived from the real beat length rather than a fixed constant, so a device calibrated against the old behaviour would need re-calibrating in Settings. Ask what they're actually seeing before changing hit code.
+- **Tuning, not a bug**: the low-density styles leave levels 53–71% empty rows (Drone 0.55, Ballad 0.7, Lullaby 0.6, Nocturne 0.65). After the meter fix the median across the campaign is 29.9% (down from 38.6%) and the longest silence is 8 beats (down from 13), so nothing is structurally dead any more — these are just sparse by design. Worth a listen to decide whether sparse reads as "atmospheric" or "empty" before touching the numbers.
+- **Repo-side polish**: the GitHub About sidebar (short description, topics, homepage link) is still empty. No connected tool can set it — it's a one-click manual edit in repo Settings.
