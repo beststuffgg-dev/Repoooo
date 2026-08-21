@@ -3542,8 +3542,11 @@ body::after {
   position:absolute; left:0; right:0; bottom:0; height:92px;
   pointer-events:none; z-index:0; overflow:hidden;
   perspective:300px; perspective-origin:50% 100%;
-  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 20%,#000 80%,transparent 100%);
-  mask-image:linear-gradient(90deg,transparent 0%,#000 20%,#000 80%,transparent 100%);
+  -webkit-mask-image:linear-gradient(90deg,transparent 0%,#000 20%,#000 80%,transparent 100%),
+                     linear-gradient(180deg,transparent 0%,#000 45%);
+  mask-image:linear-gradient(90deg,transparent 0%,#000 20%,#000 80%,transparent 100%),
+             linear-gradient(180deg,transparent 0%,#000 45%);
+  -webkit-mask-composite:source-in; mask-composite:intersect;
 }
 #hero-ghost .gl-floor {
   position:absolute; inset:0 12px 0 12px;
@@ -3554,17 +3557,17 @@ body::after {
   flex:1; border-radius:4px 4px 0 0;
   background:linear-gradient(180deg,
     transparent 0%,
-    color-mix(in srgb,var(--tap) 8%,transparent) 55%,
-    color-mix(in srgb,var(--tap) 20%,transparent) 100%);
-  border:1px solid color-mix(in srgb,var(--tap) 11%,transparent);
+    color-mix(in srgb,var(--tap) 4%,transparent) 55%,
+    color-mix(in srgb,var(--tap) 10%,transparent) 100%);
+  border:1px solid color-mix(in srgb,var(--tap) 7%,transparent);
   border-bottom:none;
 }
 #hero-ghost .gl-floor i:nth-child(2n) {
   background:linear-gradient(180deg,
     transparent 0%,
-    color-mix(in srgb,var(--dtap) 8%,transparent) 55%,
-    color-mix(in srgb,var(--dtap) 18%,transparent) 100%);
-  border-color:color-mix(in srgb,var(--dtap) 10%,transparent);
+    color-mix(in srgb,var(--dtap) 4%,transparent) 55%,
+    color-mix(in srgb,var(--dtap) 9%,transparent) 100%);
+  border-color:color-mix(in srgb,var(--dtap) 6%,transparent);
 }
 /* The wordmark and the legend sit in front of it. */
 #home-hero .hero-row, #home-hero .legend-row { position:relative; z-index:1; }
