@@ -621,6 +621,9 @@ body.reduce-motion .lane-btn.pressed { transform:none; }
 /* tab panes */
 .tab-pane { display:none; flex:1; overflow-y:auto; padding:12px 14px; flex-direction:column; gap:8px; }
 .tab-pane.active { display:flex; }
+/* The pane scrolls; nothing inside it shrinks to fit. Without this a
+   short window squeezes the tallest child instead of scrolling. */
+.tab-pane > * { flex-shrink:0; }
 
 /* Level cards: RAISED.
    Lit bevel top-left, dark bottom-right, lift on hover.
@@ -2227,7 +2230,16 @@ body.reduce-motion .lane-btn::after { transition:none; }
    UPD7 — CAMPAIGN
 ══════════════════════════════════════ */
 #tab-levels { padding-bottom:0; }
-.cam-scroll { flex:1; overflow-y:auto; display:flex; flex-direction:column; gap:8px; }
+/* The pane is the ONLY scroller. This used to be flex:1;overflow-y:auto
+   nested inside .tab-pane, which is itself flex:1;overflow-y:auto — so
+   the inner scroller absorbed every pixel of shrink while its siblings
+   (the code box, the era tabs, the prize track) held their full size.
+   At a 520px window the list viewport measured 39px: less than one
+   48.7px row, so the levels tab rendered zero rows. The content was
+   never truncated (scrollHeight held at a constant 798px) — the
+   viewport onto it had simply collapsed. At natural height the pane
+   scrolls instead, so a shorter window means more scrolling. */
+.cam-scroll { flex:0 0 auto; display:flex; flex-direction:column; gap:8px; }
 /* Flex items shrink before their container overflows, so ten tall area
    blocks in a column were each squeezed down to a few pixels and then
    clipped by .theme-block's overflow:hidden — the whole campaign
@@ -3383,11 +3395,22 @@ html.edge-thin-scroll ::-webkit-scrollbar-track { background:transparent; }
    single short row — avatar, name, coins, level — so long lists
    get most of the window back. Expands again at the top.
 ══════════════════════════════════════ */
+/* Heights here are driven in pixels by the scroll-linked collapse in
+   game.js (wireCompactHeader). This used to be a binary `compact`
+   class that set max-height:0 with no base max-height declared — so
+   the property animated *from* `none`, which is not an interpolable
+   value, and it snapped despite the transition sitting right above it.
+   Worse, it removed ~119px from above the scroll container in one
+   frame while scrollTop stayed put, so the content visibly shifted.
+   Collapsing continuously, one header pixel per scroll pixel, means
+   there is no jump left to animate — and nothing to transition, since
+   the value is already following the finger. */
 #profile-bar, #home-hero, #home-nav {
-  transition:max-height .22s ease, opacity .18s ease, padding .22s ease;
-  overflow:hidden;
+  overflow:hidden; flex-shrink:0;
 }
-body.compact #home-hero {
+/* Fallback for the frames before the collapse is wired, and for any
+   path that sets the class without driving the heights. */
+body.compact:not(.hdr-driven) #home-hero {
   max-height:0; opacity:0; padding-top:0; padding-bottom:0; border:none;
 }
 body.compact #profile-bar {

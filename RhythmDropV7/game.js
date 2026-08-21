@@ -1000,8 +1000,10 @@ const SCREEN_DEPTH = { 'username-screen':0, home:1, 'profile-screen':2, creator:
 
 const showScreen = id => {
   // The compact strip only makes sense on the scrolling home
-  // screen; anywhere else it should start expanded.
-  if (id !== 'home') document.body.classList.remove('compact');
+  // screen; anywhere else it should start expanded. Coming back to
+  // home re-measures, since the header was zero-height while hidden.
+  if (id !== 'home') { if (window.RD_Header) window.RD_Header.reset(); document.body.classList.remove('compact'); }
+  else if (window.RD_Header) requestAnimationFrame(() => window.RD_Header.measure());
   // The daily pill is docked to the popup, so it would otherwise
   // float over the board and the editor too.
   const dock = document.getElementById('daily-dock');
@@ -1972,22 +1974,128 @@ function showBox(rarity, message) {
 //  Collapses the hero and shrinks the strip once a pane is
 //  scrolled, giving long lists most of the window back.
 // ══════════════════════════════════════
-(function wireCompactHeader() {
-  const THRESH = 34;   // px of scroll before collapsing
-  const RELEASE = 12;  // hysteresis, so it can't flicker on a wobble
+// The old version was a binary class toggle at a 34px threshold with a
+// 12px release. Two things were wrong with it. The class set
+// max-height:0 on a hero that declared no base max-height, so the
+// property animated from `none` — not an interpolable value — and
+// snapped. And collapsing removed ~119px from above the scroller in
+// one frame while scrollTop stayed where it was, so everything below
+// jumped by that much. Compensating scrollTop afterwards is a trap:
+// subtracting the collapsed height drives scrollTop under RELEASE,
+// which re-expands the header, which re-collapses it.
+//
+// So the collapse is continuous and scroll-linked instead. We keep our
+// own scroll position `v` for the pane; the first C pixels of it go
+// into collapsing the header and the pane itself stays pinned at
+// scrollTop 0, and only past C does the pane actually scroll. A row at
+// content offset d therefore renders at (H0 - c) + d - (v - c), which
+// is H0 + d - v: every pixel of collapse is paid for by a pixel of
+// scroll, so the content moves exactly 1:1 with the finger and cannot
+// shift at all. This is how iOS large-title headers avoid the jump.
+window.RD_Header = (function wireCompactHeader() {
+  const hero = document.getElementById('home-hero');
+  const pbar = document.getElementById('profile-bar');
+  const nav  = document.getElementById('home-nav');
 
-  function attach(pane) {
-    pane.addEventListener('scroll', () => {
-      const y = pane.scrollTop;
-      const on = document.body.classList.contains('compact');
-      if (!on && y > THRESH) document.body.classList.add('compact');
-      else if (on && y < RELEASE) document.body.classList.remove('compact');
-    }, { passive:true });
+  // Measured, not hard-coded: all three depend on the font that
+  // actually loaded, and on the window width.
+  let heroH = 0, pbFull = 0, pbC = 0, navFull = 0, navC = 0;
+  // The hero's own padding and hairline are its floor: box-sizing is
+  // border-box, so a height under padding-top + padding-bottom + border
+  // simply doesn't take, and the collapse stalls ~35px short. They come
+  // down with it.
+  let heroPadT = 0, heroPadB = 0, heroBorder = 0;
+  let C = 0;          // total collapsible height
+  let collapse = 0;   // how much of it is currently taken
+  const state = new WeakMap();  // pane -> { v, s }
+
+  function measure() {
+    if (!hero || !pbar || !nav) return;
+    // Heights are zero while the screen is hidden, which would set C
+    // to 0 and pin the header open forever.
+    if (hero.offsetParent === null) return;
+    document.body.classList.remove('hdr-driven', 'compact');
+    hero.style.height = ''; hero.style.opacity = '';
+    hero.style.paddingTop = ''; hero.style.paddingBottom = '';
+    hero.style.borderBottomWidth = '';
+    pbar.style.height = ''; nav.style.height = '';
+    const hs = getComputedStyle(hero);
+    heroPadT   = parseFloat(hs.paddingTop) || 0;
+    heroPadB   = parseFloat(hs.paddingBottom) || 0;
+    heroBorder = parseFloat(hs.borderBottomWidth) || 0;
+    heroH   = hero.getBoundingClientRect().height;
+    pbFull  = pbar.getBoundingClientRect().height;
+    navFull = nav.getBoundingClientRect().height;
+    // The compact variants of the bar and the nav, read the only way
+    // that can't drift from what the stylesheet actually does.
+    document.body.classList.add('compact');
+    pbC  = pbar.getBoundingClientRect().height;
+    navC = nav.getBoundingClientRect().height;
+    document.body.classList.remove('compact');
+    document.body.classList.add('hdr-driven');
+    C = heroH + Math.max(0, pbFull - pbC) + Math.max(0, navFull - navC);
+    apply(Math.min(collapse, C));
   }
 
-  document.querySelectorAll('.tab-pane, .cam-scroll').forEach(attach);
-  const cam = document.getElementById('cam-scroll');
-  if (cam) attach(cam);
+  function apply(c) {
+    if (!hero || !pbar || !nav) return;
+    collapse = c;
+    const heroCut = Math.min(c, heroH);
+    let rest = c - heroCut;
+    const pbCut = Math.min(rest, Math.max(0, pbFull - pbC));
+    rest -= pbCut;
+    const navCut = Math.min(rest, Math.max(0, navFull - navC));
+    // Cosmetic only now — fonts, the inline level/coin strip, hiding
+    // the XP bar. It can't move layout, because the outer heights are
+    // pinned in px on the next three lines whatever it does inside.
+    document.body.classList.toggle('compact', heroH > 0 && heroCut >= heroH - 0.5);
+    const f = heroH ? Math.max(0, 1 - heroCut / heroH) : 1;
+    hero.style.paddingTop        = (heroPadT * f) + 'px';
+    hero.style.paddingBottom     = (heroPadB * f) + 'px';
+    hero.style.borderBottomWidth = (heroBorder * f) + 'px';
+    hero.style.height  = (heroH - heroCut) + 'px';
+    hero.style.opacity = String(f);
+    pbar.style.height  = (pbFull - pbCut) + 'px';
+    nav.style.height   = (navFull - navCut) + 'px';
+  }
+
+  function onScroll(pane) {
+    const st = state.get(pane) || { v:0, s:0 };
+    const s = pane.scrollTop;
+    const d = s - st.s;
+    if (d === 0) return;
+    const v = Math.max(0, st.v + d);
+    apply(Math.min(v, C));
+    const want = Math.max(0, v - Math.min(v, C));
+    // Reading scrollTop back rather than trusting the assignment: the
+    // browser rounds to device pixels, and storing the rounded value
+    // is what keeps `d` from accumulating that rounding as drift.
+    if (pane.scrollTop !== want) pane.scrollTop = want;
+    state.set(pane, { v, s: pane.scrollTop });
+  }
+
+  function reset() {
+    document.querySelectorAll('.tab-pane').forEach(p => {
+      state.set(p, { v:0, s:p.scrollTop });
+    });
+    apply(0);
+  }
+
+  document.querySelectorAll('.tab-pane').forEach(pane => {
+    state.set(pane, { v:0, s:pane.scrollTop });
+    pane.addEventListener('scroll', () => onScroll(pane), { passive:true });
+  });
+
+  // The hero's height depends on wrapping, so a width change moves it;
+  // a webfont landing late moves it too, and neither fires anything
+  // else we already listen to.
+  window.addEventListener('resize', measure);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure).catch(() => {});
+  measure();
+
+  return { measure, reset, apply,
+    get total() { return C; },
+    get collapsed() { return collapse; } };
 })();
 
 function renderCompactStrip() {
@@ -2124,6 +2232,10 @@ document.querySelectorAll('.hnav').forEach(t => t.addEventListener('click', () =
   document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
   t.classList.add('active');
   document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+  // Each pane keeps its own scroll, but the header is shared — so a
+  // tab switch starts the new pane from an expanded header rather
+  // than inheriting a collapse the new pane never paid for.
+  if (window.RD_Header) window.RD_Header.reset();
   uiSound('detent');
   if (t.dataset.tab === 'shop') renderShop();
   // Rebuild on open so the panel can never show stale values after a
