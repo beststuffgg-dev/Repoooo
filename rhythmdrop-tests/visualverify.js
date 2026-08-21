@@ -2,14 +2,12 @@
 // Every probe compares a rendered pixel position against the number
 // the engine uses, rather than trusting either on its own.
 const {chromium}=require('playwright');const path=require('path');const fs=require('fs');
-// This sandbox ships a browser at a fixed path; anywhere else, let
-// playwright resolve its own. Without the fallback these suites only
-// run on the machine they were written on.
-const PW_EXE='/opt/pw-browsers/chromium-1194/chrome-linux/chrome';
-const LAUNCH=fs.existsSync(PW_EXE)
-  ? {executablePath:PW_EXE,args:['--no-sandbox']}
-  : {args:['--no-sandbox']};
-const DIR=path.join(__dirname,'..','RhythmDropV7');
+// Which Chromium to launch and which build to point at both live in
+// browser.js, so APP_DIR and PW_CHROME mean the same thing in every
+// suite instead of being re-derived per file.
+const {launchOpts,appDir}=require('./browser');
+const LAUNCH=launchOpts();
+const DIR=appDir();
 let fail=0,pass=0;
 const ok=(c,m)=>{c?pass++:(fail++,console.log('  FAIL: '+m));};
 
