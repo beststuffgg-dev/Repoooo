@@ -39,6 +39,8 @@ The single-file build is **generated, not hand-maintained** — running `node to
 
 ## 2. Feature inventory
 
+**Five screens**, all in the one popup: `username-screen` (first run only) → `home` (profile bar, hero, and five tabs — Levels / Custom / Shop / Themes / Settings) → `profile-screen`, `creator`, and `game`. Everything below hangs off those.
+
 ### Core gameplay
 - Four lanes, two note types: **tap** (single hit) and **double-tap** (×2, needs two hits, worth more)
 - Three hit windows — **Strict / Normal / Forgiving** — chosen in Settings, scales the timing tolerance around the judging line; note *speed* is locked per-level (changing it would make scores incomparable)
@@ -58,6 +60,12 @@ The single-file build is **generated, not hand-maintained** — running `node to
 - **Chord generation**: notes sharing a beat stack in thirds above the first note present (scale degree *i*, *i+2*, *i+4*) rather than being independently walked — this is what makes simultaneous hits sound like actual harmony instead of whatever interval the melody walker happened to land on. Verified across all 150 charts: zero minor seconds, thirds/fifths dominant
 - **Density anti-farm**: past 85% of a chart's grid filled, additional notes pay only 15% of normal XP — closes a bug in the old build where a solid wall of notes was the fastest possible farming pattern. No generated campaign chart comes near the threshold; this only bites custom charts built to exploit it
 - Campaign levels are built **through their own share code** (`buildCampaignLevel → codeForCampaign → buildCodeLevel`) — a load-bearing invariant. Don't special-case campaign generation outside that path or codes and gameplay will silently diverge
+
+### Endless mode — the eleventh tab
+- Sits alongside the ten era tabs in the campaign browser, **locked until every campaign theme is cleared**; the locked card names how many themes are left rather than just refusing
+- Three difficulty bands — **Casual (1–4), Standard (4–7), Punishing (7–9)** — each rolling a brand-new song per run
+- `rollEndlessCode(lo, hi)` is the **one deliberate exception** to the no-`Math.random()` rule, and the distinction matters: random picks the *seed, difficulty and style*; the chart is then generated deterministically from that seed like any other. So an endless run is reproducible — it has a real share code you can keep and replay — while still being different every time you press it. 8 base36 chars of seed space, so it doesn't start repeating charts after a few hundred runs
+- Rendered as a `theme-block` like any era, so it inherits the same list language rather than being a bolted-on panel
 
 ### Level creator
 - Grid-based chart editor: click a tool (tap / double-tap / erase / select), draw the chart
@@ -86,6 +94,28 @@ The single-file build is **generated, not hand-maintained** — running `node to
 - Custom avatar upload (stored downscaled, not full-resolution, to keep localStorage sane)
 - Theme system: 10 area themes (unlocked by playing that area, not purchased) + 6 base "material" themes (walnut/bone/amber/vapor/blueprint/mono), each declaring a full material (specular strength, gloss, bevel hardness, grain texture) — not just a palette swap
 
+### Custom levels
+- A **Custom** tab beside the campaign holding every level you've made or imported by code, each launchable, editable and re-shareable
+- Custom charts run through exactly the same `buildCodeLevel` path as campaign levels, so a level you wrote and a level the campaign generated are the same kind of object to the rest of the app
+
+### Profile screen
+- Its own screen (not a modal), reached from the profile bar: large avatar, name, coins, and lifetime stats
+- **Rename** yourself at any time; the name is only cosmetic and lives in `rd_profile`
+- **Avatar slots** — pick from everything owned, with the **colourway row** applying tint palettes live to the selected avatar
+- **Recent runs** list, so the last few results stay visible without opening each level
+
+### Custom theme builder
+- Beyond the 16 built-in themes, a form that builds **your own theme**: background, text, tap and double-tap colours, plus the three material controls — **bevel hardness, glow strength, and tilt depth** — and a base **material** picker (the same six walnut/bone/amber/vapor/blueprint/mono grains)
+- A live preview box updates as you drag, so you're never guessing what a value does
+- Saved to `rd_custom_theme` and carried in sync codes like any other setting
+
+### Audio engine (`audio.js`)
+- 12 instruments synthesized from oscillators and envelopes — no samples, no network fetches, which is why the whole game is one file with zero requests
+- A **limiter on the master bus**: four lanes can fire together and a chord stacks three notes on one beat, so the naive sum clips constantly. The limiter holds the sum without ducking individual hits
+- **Output device picker** via `AudioContext.setSinkId` (Chrome 110+), feature-detected — where it's missing the control simply isn't offered rather than failing on click
+- Per-note **sustain**, and a **background layer** (drum and bass loops) that the creator can configure per chart
+- Volume is applied on the master gain, so it scales everything uniformly including the background layer
+
 ### Settings
 - Tabbed: **Play / Audio / Look / Data**
 - Key remapping per lane, starting lives, hit window
@@ -98,6 +128,7 @@ The single-file build is **generated, not hand-maintained** — running `node to
 - **Edge compatibility layer** — `edge.js`, a separate file that's completely inert unless the browser is actually Edge (detected via `userAgentData` brands or UA sniffing as fallback); when active it trims blur costs on low-core machines, thins scrollbars, and adds a visibility-change audio-resume nudge (Edge's Efficiency Mode throttles background tabs harder than Chrome)
 - **Touch** — the whole lane column is the tap target, not just the 50px keycap (which on a phone was a small thing to hit repeatedly while reading notes at the top of the screen). Delegated at the lanes container and driven from `changedTouches`, so two or three fingers landing in the same frame all register — the browser coalesces simultaneous touches into one event, and per-element binding saw only the first, which silently dropped chords on touch but not on keyboard. `#g-lanes` sets `touch-action:none`, which removes gesture-recognition latency but also makes Chromium dispatch `touchstart` as **non-cancelable** — `preventDefault()` becomes a no-op and the compatibility click still fires, so the click path carries an explicit ghost-click guard instead
 - **Low-power devices** — `html.low-power`, set by `game.js` from the same hardware floor `edge.js` uses (≤4 cores or ≤4GB), drops full-screen `backdrop-filter` blurs on modals and veils. The Edge-only check never covered phones, which are the likeliest machines to be under that floor
+- **Lighting** (`lighting.js`) — **one** pointer listener for the entire app. It writes cursor position and panel tilt to four `:root` custom properties (`--mx/--my`, `--tilt-x/--tilt-y`) and CSS reads them; JS never touches individual elements on pointer move. That's what keeps a cursor-reactive 3D surface off the frame budget
 - First-run tutorial (localStorage-gated, shows once)
 - "Update 7" label under the wordmark; small "made by Claude" credit
 
@@ -191,6 +222,14 @@ That is **22 harnesses, ~450 probes**, and it exits non-zero if any suite fails,
 ## 7. Open items
 
 Everything previously listed here has landed — the Redesign is verified, packaged and committed (§4), the build script and all session-authored tests are in the repo (§5, §6), and the handoff doc and outline-to-shadow sweep are on `main`. What's left is genuine open work:
+
+- **Two live layout bugs, diagnosed and measured, not yet fixed** — the user reported both and I confirmed both before the work was paused:
+
+  **(a) Shrinking the window crushes the list instead of just making the window shorter.** The campaign list lives in `#cam-scroll`, a `flex:1; overflow-y:auto` scroller *nested inside* `.tab-pane`, which is itself `flex:1; overflow-y:auto`. The inner scroller absorbs all the shrink while its siblings — the code-entry box (69px), the era tabs (41px) and the prize track (107px) — hold their full size. Measured at a 520px window: pane 301px, of which the actual list viewport is **39px** — less than one 48.7px row, so the levels tab renders zero level rows. The content itself is fine (`scrollHeight` is a constant 798px at every window height, so nothing is being truncated); it's purely that the viewport onto it collapses.
+    *Intended fix*: make the pane the single scroller — `.cam-scroll` at natural height (`flex:0 0 auto`, no `overflow`) and `.tab-pane > * { flex-shrink:0 }` — so a shorter window means more scrolling rather than a smaller window onto the same list. Verified-by-measurement target: list viewport height should stop tracking window height, and `scrollHeight` should stay constant.
+
+  **(b) The compact header snaps instead of animating.** `body.compact #home-hero` sets `max-height:0`, but no base `max-height` is declared, so the property animates *from* `none` — which is not an interpolable value, so it jumps rather than transitions despite the `transition:max-height .22s` sitting right above it. Separately, collapsing the hero removes ~119px from above the scroll container, so the pane's top edge moves up while `scrollTop` stays put and the content visibly shifts. Naive `scrollTop` compensation is a trap here: subtracting the collapsed height drives `scrollTop` below the `RELEASE = 12` threshold, which re-expands the header, which re-collapses it — an oscillation.
+    *Intended fix*: replace the binary `compact` class toggle with a **continuous, scroll-linked collapse** — measure the total collapsible height `C` (hero + profile-bar delta + nav delta), then for scroll `y` collapse by exactly `min(y, C)`. Because every pixel of collapse is matched by a pixel of scroll, the content cannot shift at all; this is how iOS large-title headers avoid the same jump. Keep the `compact` class only for the cosmetic swaps (fonts, the inline level/coin strip, hiding the XP bar), which can no longer move layout once the bar's height is driven explicitly.
 
 - **Unresolved, needs the user**: they reported "the hit code is broken for all levels", and I could not reproduce it under either reading. Hit detection measures 100% via the autoplayer on every level tested, and share codes round-trip 150/150 with UI entry launching the right song and rejecting bad codes cleanly. Both apparent failures during investigation turned out to be bugs in the test, not the game. **If this is still happening, the most likely cause is the audio-offset fix**: `offsetPx` is now derived from the real beat length rather than a fixed constant, so a device calibrated against the old behaviour would need re-calibrating in Settings. Ask what they're actually seeing before changing hit code.
 - **Tuning, not a bug**: the low-density styles leave levels 53–71% empty rows (Drone 0.55, Ballad 0.7, Lullaby 0.6, Nocturne 0.65). After the meter fix the median across the campaign is 29.9% (down from 38.6%) and the longest silence is 8 beats (down from 13), so nothing is structurally dead any more — these are just sparse by design. Worth a listen to decide whether sparse reads as "atmospheric" or "empty" before touching the numbers.
