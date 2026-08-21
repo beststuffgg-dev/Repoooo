@@ -5,21 +5,9 @@ const {JSDOM}=require('jsdom');
 // download folder, or CI without editing anything.
 const path = require('path');
 const fs = require('fs');
-function findApp() {
-  if (process.env.APP_DIR) return process.env.APP_DIR;
-  const tries = [
-    path.join(__dirname, '..', 'RhythmDropV7'),
-    path.join(__dirname, 'RhythmDropV7'),
-    path.join(process.cwd(), 'RhythmDropV7'),
-    path.join(__dirname, '..'),
-  ];
-  for (const t of tries) {
-    if (fs.existsSync(path.join(t, 'popup.html'))) return t;
-  }
-  console.error('Could not find RhythmDropV7/popup.html.');
-  console.error('Put this folder beside the extension, or set APP_DIR=/path/to/RhythmDropV7');
-  process.exit(2);
-}
+// Resolving the build under test is browser.js's job — it is the one
+// file that knows the repo layout.
+const findApp = require('./browser').appDir;
 const DIR = findApp();
 
 const w=new JSDOM('<body></body>',{runScripts:'outside-only'}).window;

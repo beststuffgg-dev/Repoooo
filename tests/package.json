@@ -5,7 +5,7 @@
   "description": "Test harnesses for the RhythmDrop V7 Chrome extension",
   "scripts": {
     "test": "node run-all.js",
-    "test:redesign": "APP_DIR=../RhythmDropV7-Redesign node run-all.js",
+    "test:redesign": "APP_DIR=RhythmDropV7-Redesign node run-all.js",
     "smoke": "node smoke.js",
     "gameplay": "node smoke2.js",
     "progression": "node progression.js",

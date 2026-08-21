@@ -3,11 +3,11 @@
 # Run this after any source change: the single-file builds, the
 # Redesign variant and the zips are all generated, never hand-edited.
 set -euo pipefail
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
-node tools/build-redesign.js
-node tools/build-single.js
-node tools/build-single.js RhythmDropV7-Redesign RhythmDrop-Redesign.html
+node other/tools/build-redesign.js
+node other/tools/build-single.js
+node other/tools/build-single.js other/RhythmDropV7-Redesign htmls/RhythmDrop-Redesign.html
 
 python3 - <<'PY'
 import zipfile, os
@@ -30,7 +30,7 @@ def make(src, out):
                     z.writestr(info, fh.read())
     print('  %s (%s bytes)' % (out, format(os.path.getsize(out), ',')))
 print('zipping:')
-make('RhythmDropV7', 'RhythmDropV7-Final.zip')
-make('RhythmDropV7-Redesign', 'RhythmDropV7-Redesign.zip')
+make('other/RhythmDropV7', 'RhythmDropV7-Final.zip')
+make('other/RhythmDropV7-Redesign', 'RhythmDropV7-Redesign.zip')
 PY
-echo "done — now: cd rhythmdrop-tests && node run-all.js"
+echo "done — now: cd tests && node run-all.js"

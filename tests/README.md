@@ -20,19 +20,25 @@ drops straight into CI or a pre-commit hook.
 `APP_DIR` picks it. Unset, it's the shipping one:
 
 ```bash
-npm test                                          # RhythmDropV7/
-APP_DIR=../RhythmDropV7-Redesign npm test         # the Redesign variant
+npm test                                    # other/RhythmDropV7/
+APP_DIR=RhythmDropV7-Redesign npm test      # the Redesign variant
 ```
 
-Without `APP_DIR`, each suite finds `popup.html` by looking, in order:
-`../RhythmDropV7/`, `./RhythmDropV7/`, `RhythmDropV7/` under the cwd,
-then `../`. So the simplest layout is:
+`APP_DIR` accepts a bare folder name, or a path relative to this
+folder, to `other/`, or to the repo root — whichever you happen to
+type. Unset, it's `other/RhythmDropV7/`, with fallbacks for this
+folder sitting beside a bare extension (which is how it works if you
+unzip it on its own):
 
 ```
 somewhere/
-├── RhythmDropV7/        the unzipped extension
-└── rhythmdrop-tests/    this folder
+├── RhythmDropV7/     the unzipped extension
+└── tests/            this folder
 ```
+
+`browser.js` is the only file that knows any of that. Every suite asks
+it, so moving a folder is one edit rather than eight copies of the same
+path list going stale at different rates.
 
 `redesigntest` and `singlefiletest` test the generated artifacts
 directly rather than whatever `APP_DIR` points at, so they run once

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/screenshots/logo.png" width="72" alt="RhythmDrop">
+  <img src="other/docs/screenshots/logo.png" width="72" alt="RhythmDrop">
 </p>
 
 <h1 align="center">RhythmDrop</h1>
@@ -13,7 +13,7 @@
 
 <p align="center">
   <b>v7.1.4</b> · <code>UPD7 Beta 14</code> ·
-  <a href="HANDOFF.md">Full feature reference</a> ·
+  <a href="other/HANDOFF.md">Full feature reference</a> ·
   <a href="https://claude.ai/code/artifact/c0fa5f5f-4219-465b-a508-3eb080dc500a">Design system</a>
 </p>
 
@@ -23,12 +23,12 @@
 
 | | |
 |---|---|
-| ![Home](docs/screenshots/home.png) | ![Gameplay](docs/screenshots/gameplay.png) |
+| ![Home](other/docs/screenshots/home.png) | ![Gameplay](other/docs/screenshots/gameplay.png) |
 | Home — the campaign, ten eras deep | Play — combo lit, a ×2 slab incoming |
-| ![Shop](docs/screenshots/shop.png) | ![Settings](docs/screenshots/settings.png) |
+| ![Shop](other/docs/screenshots/shop.png) | ![Settings](other/docs/screenshots/settings.png) |
 | Shop — avatars, trails, effects, mystery boxes | Settings — hit window, key remap, a visible timing band |
 
-<p align="center"><img src="docs/screenshots/creator.png" width="360" alt="Level Creator"><br><sub>The level creator — two-stage note placement, multi-select cut/copy/paste, a live sound preview</sub></p>
+<p align="center"><img src="other/docs/screenshots/creator.png" width="360" alt="Level Creator"><br><sub>The level creator — two-stage note placement, multi-select cut/copy/paste, a live sound preview</sub></p>
 
 ## What it is
 
@@ -46,60 +46,66 @@ Hit **A · S · D · F** as slabs cross the strike line. Tap once for a single n
 
 Three ways, all from the same source, no build step:
 
-1. **As the extension it's meant to be** — go to `chrome://extensions`, enable Developer Mode, "Load unpacked," and select the `RhythmDropV7/` folder.
+1. **As the extension it's meant to be** — go to `chrome://extensions`, enable Developer Mode, "Load unpacked," and select `other/RhythmDropV7/`.
 2. **Unzip and load** — `RhythmDropV7-Final.zip` is the same folder, zipped, for handing to someone else.
-3. **Just open it** — `RhythmDrop.html` is the entire game as one self-contained file. Double-click it, or open it on a phone. No dependencies, nothing to install, nothing to fetch over the network.
+3. **Just open it** — `htmls/RhythmDrop.html` is the entire game as one self-contained file. Double-click it, or open it on a phone. No dependencies, nothing to install, nothing to fetch over the network.
 
-`RhythmDrop.html` is *generated* from `RhythmDropV7/` — every script inlined in place. Never edit it directly; edit the source folder and run `bash tools/package.sh`.
+`htmls/RhythmDrop.html` is *generated* from `other/RhythmDropV7/` — every script inlined in place. Never edit it directly; edit the source folder and run `bash other/tools/package.sh`.
 
-There's also a **Redesign** variant — the same game with a film-grain overlay and a decorative ghost-lane strip behind the wordmark, shipped in the same three forms (`RhythmDropV7-Redesign/`, `RhythmDropV7-Redesign.zip`, `RhythmDrop-Redesign.html`). It carries its own extension name, so both can be loaded side by side.
+There's also a **Redesign** variant — the same game with a film-grain overlay and a decorative ghost-lane strip behind the wordmark, shipped in the same three forms (`other/RhythmDropV7-Redesign/`, `RhythmDropV7-Redesign.zip`, `htmls/RhythmDrop-Redesign.html`). It carries its own extension name, so both can be loaded side by side.
 
 ## Repo layout
 
 ```
-RhythmDropV7/               the source — load this directly as an unpacked extension
-  popup.html                  markup + all styling + the design token system
-  game.js                     screens, input, scoring, shop, settings, the creator
-  campaign.js                 deterministic chart generation, XP/coin economy
-  audio.js                    12-instrument synth engine, jingles, master limiter
-  codec.js                    share/sync code compression (LZW + varint + base64url)
-  loading.js                  the real weighted preload pipeline
-  lighting.js                 cursor-tilt lighting effects
-  edge.js                     Edge-only compatibility layer (inert elsewhere)
-RhythmDropV7-Redesign/      visual-only variant — same JS, film grain + ghost lanes
-tools/
-  build-single.js             inlines the modules into one .html
-  build-redesign.js           regenerates the Redesign folder from the source
-  package.sh                  runs both, then rebuilds the zips
-RhythmDrop.html             the whole game as one file — generated, not hand-edited
-RhythmDrop-Redesign.html    the same, for the Redesign variant
-RhythmDropV7-Final.zip      RhythmDropV7/ zipped for distribution
-RhythmDropV7-Redesign.zip   the Redesign, zipped
-rhythmdrop-tests/           the test suite — `node run-all.js`
-HANDOFF.md                  full feature inventory, architecture, and design reference
+RhythmDropV7-Final.zip      the extension, zipped — hand this to someone
+RhythmDropV7-Redesign.zip   the Redesign variant, zipped
+
+htmls/                      the whole game as one self-contained file
+  RhythmDrop.html             generated, not hand-edited
+  RhythmDrop-Redesign.html    the same, for the Redesign variant
+
+tests/                      the test suite — `node run-all.js`
+
+other/                      everything else
+  RhythmDropV7/               the source — load this as an unpacked extension
+    popup.html                  markup + all styling + the design token system
+    game.js                     screens, input, scoring, shop, settings, creator
+    campaign.js                 deterministic chart generation, XP/coin economy
+    audio.js                    12-instrument synth engine, jingles, limiter
+    codec.js                    share/sync codes (LZW + varint + base64url)
+    loading.js                  the real weighted preload pipeline
+    lighting.js                 cursor-tilt lighting effects
+    edge.js                     Edge-only compatibility layer (inert elsewhere)
+  RhythmDropV7-Redesign/      visual-only variant — same JS, film grain + ghost lanes
+  tools/
+    build-single.js             inlines the modules into one .html
+    build-redesign.js           regenerates the Redesign folder from the source
+    package.sh                  runs both, then rebuilds the zips
+  docs/screenshots/           the images in this README
+  HANDOFF.md                  full feature inventory, architecture, design reference
 ```
 
 Everything derived is regenerated by one command:
 
 ```
-bash tools/package.sh
+bash other/tools/package.sh
 ```
 
-Never hand-edit either `.html`, either `.zip`, or `RhythmDropV7-Redesign/` — they are all outputs.
+Never hand-edit anything in `htmls/`, either `.zip`, or `other/RhythmDropV7-Redesign/` — they are all outputs. `other/RhythmDropV7/` is the only thing you edit by hand.
 
 ## Testing
 
 ```
-cd rhythmdrop-tests && npm install && node run-all.js
+cd tests && npm install && node run-all.js
 ```
 
 Twenty-five harnesses, ~443 probes, covering UI smoke tests, chart generation and harmony across all 150 campaign levels, the XP/coin economy, audio synthesis, codec round-tripping, the stylesheet, and the platform layers. Five of them drive real Chromium rather than jsdom, because jsdom has no layout engine and structurally cannot catch a layout bug — those are the ones that found the strike line sitting 12–19px off the bar it was drawn on, and the campaign list collapsing to a 39px viewport on a short window.
 
 ```
-APP_DIR=../RhythmDropV7-Redesign node run-all.js   # the same suite against the variant
+APP_DIR=RhythmDropV7-Redesign node run-all.js   # the same suite against the variant
 ```
 
-See [`rhythmdrop-tests/README.md`](rhythmdrop-tests/README.md) for the per-suite breakdown, and [`HANDOFF.md`](HANDOFF.md#6-testing) for how it fits together.
+See [`tests/README.md`](tests/README.md) for the per-suite breakdown, and [`HANDOFF.md`](other/HANDOFF.md#6-testing) for how it fits together.
 
 ---
 

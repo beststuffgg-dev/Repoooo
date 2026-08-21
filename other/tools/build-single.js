@@ -4,18 +4,20 @@
 // from a double-click, a phone browser or any static host, and makes
 // zero network requests.
 //
-//   node tools/build-single.js                                             -> RhythmDrop.html
-//   node tools/build-single.js RhythmDropV7-Redesign RhythmDrop-Redesign.html
+//   node other/tools/build-single.js         -> htmls/RhythmDrop.html
+//   node other/tools/build-single.js other/RhythmDropV7-Redesign htmls/RhythmDrop-Redesign.html
 //
-// RhythmDrop.html is generated, never hand-maintained. Edit the source
-// folder and re-run this.
+// Both arguments are resolved from the repo root. The .html builds are
+// generated, never hand-maintained: edit the source folder and re-run
+// this (or tools/package.sh, which does everything).
 'use strict';
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..');
-const srcDir = path.resolve(ROOT, process.argv[2] || 'RhythmDropV7');
-const outFile = path.resolve(ROOT, process.argv[3] || 'RhythmDrop.html');
+// tools/ lives under other/, so the repo root is two levels up.
+const ROOT = path.join(__dirname, '..', '..');
+const srcDir = path.resolve(ROOT, process.argv[2] || 'other/RhythmDropV7');
+const outFile = path.resolve(ROOT, process.argv[3] || 'htmls/RhythmDrop.html');
 
 const SRC_TAG = /<script\s+src="([^"]+)"\s*><\/script>/g;
 
@@ -46,6 +48,7 @@ function build() {
   SRC_TAG.lastIndex = 0;
   if (SRC_TAG.test(out)) throw new Error('a <script src> tag survived inlining');
 
+  fs.mkdirSync(path.dirname(outFile), { recursive: true });
   fs.writeFileSync(outFile, out);
   return { inlined, bytes: Buffer.byteLength(out) };
 }

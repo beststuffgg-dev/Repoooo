@@ -10,13 +10,37 @@
 const fs = require('fs');
 const path = require('path');
 
+// The repo layout, in one place. Every suite asks here rather than
+// spelling out '../..' itself, so a move like the one that put the
+// source folders under other/ is a single edit.
 const ROOT = path.join(__dirname, '..');
+const SRC  = path.join(ROOT, 'other');    // the loadable extension folders
+const HTML = path.join(ROOT, 'htmls');    // the generated single-file builds
+
+const isBuild = d => fs.existsSync(path.join(d, 'popup.html'));
 
 function appDir() {
   const d = process.env.APP_DIR;
-  if (!d) return path.join(ROOT, 'RhythmDropV7');
-  return path.isAbsolute(d) ? d : path.resolve(__dirname, d);
+  // A bare name, a path relative to this folder, to the source folder,
+  // or to the repo root all resolve — APP_DIR is typed by hand often
+  // enough that being fussy about it only costs people time.
+  const tries = d
+    ? [path.resolve(d), path.resolve(__dirname, d), path.resolve(SRC, d), path.resolve(ROOT, d)]
+    : [path.join(SRC, 'RhythmDropV7'),
+       // Fallbacks for this folder sitting beside a bare extension,
+       // which is how it ships if someone unzips it on its own.
+       path.join(ROOT, 'RhythmDropV7'),
+       path.join(__dirname, 'RhythmDropV7'),
+       path.join(process.cwd(), 'RhythmDropV7'),
+       ROOT];
+  for (const t of tries) if (isBuild(t)) return t;
+  console.error('Could not find popup.html.' + (d ? ' APP_DIR=' + d + ' matched nothing.' : ''));
+  console.error('Looked in:\n  ' + tries.join('\n  '));
+  process.exit(2);
 }
+
+// The generated single-file builds, by the name they carry.
+const htmlBuild = name => path.join(HTML, name);
 
 function chromePath() {
   if (process.env.PW_CHROME) return process.env.PW_CHROME;
@@ -69,4 +93,4 @@ async function openApp(browser, viewport, opts = {}) {
   return { ctx, page, errors };
 }
 
-module.exports = { ROOT, appDir, chromePath, launchOpts, openApp };
+module.exports = { ROOT, SRC, HTML, appDir, htmlBuild, chromePath, launchOpts, openApp };
