@@ -9876,14 +9876,24 @@ function showBox(rarity, message) {
 // subtracting the collapsed height drives scrollTop under RELEASE,
 // which re-expands the header, which re-collapses it.
 //
-// So the collapse is continuous and scroll-linked instead. We keep our
-// own scroll position `v` for the pane; the first C pixels of it go
-// into collapsing the header and the pane itself stays pinned at
-// scrollTop 0, and only past C does the pane actually scroll. A row at
-// content offset d therefore renders at (H0 - c) + d - (v - c), which
-// is H0 + d - v: every pixel of collapse is paid for by a pixel of
-// scroll, so the content moves exactly 1:1 with the finger and cannot
-// shift at all. This is how iOS large-title headers avoid the jump.
+// So the collapse is continuous and scroll-linked instead: for scroll
+// y the header gives up exactly min(y, C) pixels, where C is measured.
+//
+// The trick that makes it not shift anything is the pane's padding.
+// Collapsing by c moves the pane's top edge up by c, which on its own
+// would move the content twice per scrolled pixel. Growing the pane's
+// own padding-top by the same c puts those pixels back inside the
+// scroller: a row at offset d renders at (top0 - c) + (pad0 + c) - y
+// + d, which is top0 + pad0 + d - y — independent of c. Every pixel of
+// collapse is paid for by a pixel of scroll, so the content moves
+// exactly 1:1 with the finger. This is how iOS large-title headers
+// avoid the same jump.
+//
+// Doing it in padding rather than by pinning scrollTop matters: a
+// pinned scroller sits at 0, and scrolling up from 0 fires no scroll
+// event at all, so the header could collapse and never come back.
+// Here scrollTop is never touched, so the browser drives both
+// directions natively.
 window.RD_Header = (function wireCompactHeader() {
   const hero = document.getElementById('home-hero');
   const pbar = document.getElementById('profile-bar');
@@ -9897,9 +9907,11 @@ window.RD_Header = (function wireCompactHeader() {
   // simply doesn't take, and the collapse stalls ~35px short. They come
   // down with it.
   let heroPadT = 0, heroPadB = 0, heroBorder = 0;
+  let panePad = 0;    // the panes' resting padding-top
   let C = 0;          // total collapsible height
   let collapse = 0;   // how much of it is currently taken
-  const state = new WeakMap();  // pane -> { v, s }
+
+  const panes = () => document.querySelectorAll('.tab-pane');
 
   function measure() {
     if (!hero || !pbar || !nav) return;
@@ -9911,6 +9923,7 @@ window.RD_Header = (function wireCompactHeader() {
     hero.style.paddingTop = ''; hero.style.paddingBottom = '';
     hero.style.borderBottomWidth = '';
     pbar.style.height = ''; nav.style.height = '';
+    panes().forEach(p => { p.style.paddingTop = ''; });
     const hs = getComputedStyle(hero);
     heroPadT   = parseFloat(hs.paddingTop) || 0;
     heroPadB   = parseFloat(hs.paddingBottom) || 0;
@@ -9918,6 +9931,8 @@ window.RD_Header = (function wireCompactHeader() {
     heroH   = hero.getBoundingClientRect().height;
     pbFull  = pbar.getBoundingClientRect().height;
     navFull = nav.getBoundingClientRect().height;
+    const anyPane = document.querySelector('.tab-pane');
+    panePad = anyPane ? (parseFloat(getComputedStyle(anyPane).paddingTop) || 0) : 0;
     // The compact variants of the bar and the nav, read the only way
     // that can't drift from what the stylesheet actually does.
     document.body.classList.add('compact');
@@ -9926,7 +9941,7 @@ window.RD_Header = (function wireCompactHeader() {
     document.body.classList.remove('compact');
     document.body.classList.add('hdr-driven');
     C = heroH + Math.max(0, pbFull - pbC) + Math.max(0, navFull - navC);
-    apply(Math.min(collapse, C));
+    sync();
   }
 
   function apply(c) {
@@ -9939,7 +9954,7 @@ window.RD_Header = (function wireCompactHeader() {
     const navCut = Math.min(rest, Math.max(0, navFull - navC));
     // Cosmetic only now — fonts, the inline level/coin strip, hiding
     // the XP bar. It can't move layout, because the outer heights are
-    // pinned in px on the next three lines whatever it does inside.
+    // pinned in px below whatever it does inside.
     document.body.classList.toggle('compact', heroH > 0 && heroCut >= heroH - 0.5);
     const f = heroH ? Math.max(0, 1 - heroCut / heroH) : 1;
     hero.style.paddingTop        = (heroPadT * f) + 'px';
@@ -9949,33 +9964,28 @@ window.RD_Header = (function wireCompactHeader() {
     hero.style.opacity = String(f);
     pbar.style.height  = (pbFull - pbCut) + 'px';
     nav.style.height   = (navFull - navCut) + 'px';
+    // The pixels the header gave up, handed to the scroller so the
+    // content stays exactly where the scroll position says it is.
+    panes().forEach(p => { p.style.paddingTop = (panePad + c) + 'px'; });
   }
 
-  function onScroll(pane) {
-    const st = state.get(pane) || { v:0, s:0 };
-    const s = pane.scrollTop;
-    const d = s - st.s;
-    if (d === 0) return;
-    const v = Math.max(0, st.v + d);
-    apply(Math.min(v, C));
-    const want = Math.max(0, v - Math.min(v, C));
-    // Reading scrollTop back rather than trusting the assignment: the
-    // browser rounds to device pixels, and storing the rounded value
-    // is what keeps `d` from accumulating that rounding as drift.
-    if (pane.scrollTop !== want) pane.scrollTop = want;
-    state.set(pane, { v, s: pane.scrollTop });
+  // Reads the collapse straight off the active pane's scroll position,
+  // so there is no state of our own to get out of step with it.
+  function sync() {
+    const pane = document.querySelector('.tab-pane.active') || document.querySelector('.tab-pane');
+    const y = pane ? pane.scrollTop : 0;
+    apply(Math.max(0, Math.min(y, C)));
   }
 
   function reset() {
-    document.querySelectorAll('.tab-pane').forEach(p => {
-      state.set(p, { v:0, s:p.scrollTop });
-    });
     apply(0);
   }
 
-  document.querySelectorAll('.tab-pane').forEach(pane => {
-    state.set(pane, { v:0, s:pane.scrollTop });
-    pane.addEventListener('scroll', () => onScroll(pane), { passive:true });
+  panes().forEach(pane => {
+    pane.addEventListener('scroll', () => {
+      if (!pane.classList.contains('active')) return;
+      apply(Math.max(0, Math.min(pane.scrollTop, C)));
+    }, { passive: true });
   });
 
   // The hero's height depends on wrapping, so a width change moves it;
@@ -9985,7 +9995,7 @@ window.RD_Header = (function wireCompactHeader() {
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure).catch(() => {});
   measure();
 
-  return { measure, reset, apply,
+  return { measure, reset, apply, sync,
     get total() { return C; },
     get collapsed() { return collapse; } };
 })();
@@ -10124,10 +10134,10 @@ document.querySelectorAll('.hnav').forEach(t => t.addEventListener('click', () =
   document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
   t.classList.add('active');
   document.getElementById('tab-' + t.dataset.tab).classList.add('active');
-  // Each pane keeps its own scroll, but the header is shared — so a
-  // tab switch starts the new pane from an expanded header rather
-  // than inheriting a collapse the new pane never paid for.
-  if (window.RD_Header) window.RD_Header.reset();
+  // Each pane keeps its own scroll, but the header is shared — so on a
+  // tab switch the header takes its state from the pane now on screen
+  // rather than inheriting a collapse that pane never paid for.
+  if (window.RD_Header) window.RD_Header.sync();
   uiSound('detent');
   if (t.dataset.tab === 'shop') renderShop();
   // Rebuild on open so the panel can never show stale values after a
