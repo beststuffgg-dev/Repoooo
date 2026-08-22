@@ -23,7 +23,7 @@ let advExpansion = 0;
 const store = {
   load:             ()  => { try { return JSON.parse(localStorage.getItem('rd_levels')||'[]'); } catch { return []; } },
   save:             a   => localStorage.setItem('rd_levels', JSON.stringify(a)),
-  loadTheme:        ()  => localStorage.getItem('rd_theme')||'dark',
+  loadTheme:        ()  => localStorage.getItem('rd_theme')||'graphite',
   saveTheme:        t   => localStorage.setItem('rd_theme', t),
   loadCustomTheme:  ()  => { try { return JSON.parse(localStorage.getItem('rd_custom_theme')||'null'); } catch { return null; } },
   saveCustomTheme:  t   => localStorage.setItem('rd_custom_theme', JSON.stringify(t)),
@@ -333,7 +333,8 @@ const showScreen = id => {
 //  THEMES
 // ══════════════════════════════════════
 const THEMES = [
-  { id:'dark',       name:'Dark',       subs:'Default',          dots:['#3B82F6','#FF3A6E','#0e0e1c'] },
+  { id:'graphite',   name:'Graphite',   subs:'Instrument panel', dots:['#6FA8B5','#C4854E','#121517'] },
+  { id:'dark',       name:'Dark',       subs:'Blue & Pink',      dots:['#3B82F6','#FF3A6E','#0e0e1c'] },
   { id:'forest',     name:'Forest',     subs:'Green & Orange',   dots:['#22c55e','#f97316','#081a0f'] },
   { id:'sunset',     name:'Sunset',     subs:'Amber & Pink',     dots:['#f59e0b','#ec4899','#1e1008'] },
   { id:'void',       name:'Void',       subs:'Monochrome',       dots:['#ffffff','#888','#111'] },
@@ -1248,7 +1249,32 @@ function buildSettingsAudio(panel) {
     if (window.RD_setMusicVolume) window.RD_setMusicVolume(v / 100);
   });
 
-  panel.appendChild(_settingsSectionHead('Instrument Sound'));
+  panel.appendChild(_settingsSectionHead('Song Instruments'));
+  {
+    const blurb = document.createElement('div');
+    blurb.style.cssText = 'font-size:10px;color:var(--muted);margin-bottom:6px;';
+    blurb.textContent = 'Campaign songs name their own instruments — Egypt is written for flute, '
+      + 'Greece for lyre. Turn this off to hear your own pick everywhere instead.';
+    panel.appendChild(blurb);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;margin-bottom:4px;';
+    [[true, "Each song's own"], [false, 'Always mine']].forEach(([val, label]) => {
+      const btn = document.createElement('button');
+      const on = (currentSettings.songVoices !== false) === val;
+      btn.className = 'bg-radio-btn' + (on ? ' sel' : '');
+      btn.style.cssText = 'flex:1;';
+      btn.textContent = label;
+      btn.addEventListener('click', () => {
+        currentSettings.songVoices = val;
+        store.saveSettings(currentSettings);
+        buildSettingsPanel();
+      });
+      row.appendChild(btn);
+    });
+    panel.appendChild(row);
+  }
+
+  panel.appendChild(_settingsSectionHead('Your Instrument'));
   const instrRow = document.createElement('div');
   instrRow.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;';
   const instruments = (window.RD_INSTRUMENTS) || [
@@ -1718,137 +1744,161 @@ function buildGrid() {
     row.forEach((cell, ci) => {
       const type = cellType(cell);
 
-      if (adv && type) {
-        // ── Advanced filled cell ──────────
-        const wrap = document.createElement('div');
-        wrap.style.cssText = 'display:flex;flex-direction:column;gap:2px;';
-
-        // Top bar: type toggle badge + erase button
-        const topBar = document.createElement('div');
-        topBar.style.cssText = 'display:flex;align-items:center;gap:3px;';
-
-        const typeBadge = document.createElement('div');
-        typeBadge.style.cssText = [
-          'flex:1;height:16px;border-radius:3px;font-size:8px;font-weight:700;',
-          'font-family:var(--font-data);display:flex;align-items:center;',
-          'justify-content:center;cursor:pointer;border:1px solid;',
-        ].join('');
-        typeBadge.textContent = type === 'tap' ? 'TAP' : '×2';
-        typeBadge.style.background  = type === 'tap' ? 'rgba(59,130,246,.4)' : 'rgba(255,58,110,.4)';
-        typeBadge.style.borderColor = type === 'tap' ? 'var(--tap)' : 'var(--dtap)';
-        typeBadge.style.color       = type === 'tap' ? 'var(--tap)' : 'var(--dtap)';
-        typeBadge.title = 'Click to toggle tap ↔ ×2';
-        typeBadge.addEventListener('click', () => {
-          const cur     = cellType(crGrid[ri][ci]);
-          const newType = cur === 'tap' ? 'dtap' : 'tap';
-          const freq    = cellFreq(crGrid[ri][ci], ci);
-          crGrid[ri][ci] = { type: newType, freq };
-          buildGrid();
-        });
-
-        const eraseBtn = document.createElement('button');
-        eraseBtn.textContent = '✕';
-        eraseBtn.style.cssText = 'background:none;border:1px solid var(--border2);border-radius:3px;color:var(--muted);font-size:7px;cursor:pointer;padding:0 3px;height:16px;';
-        eraseBtn.addEventListener('click', () => { crGrid[ri][ci] = null; buildGrid(); });
-
-        topBar.appendChild(typeBadge);
-        topBar.appendChild(eraseBtn);
-
-        // Note label badge — clicking THIS opens the picker
-        const freq     = cellFreq(cell, ci);
-        const noteName = freqToName(freq);
-        const noteBadge = document.createElement('div');
-        noteBadge.style.cssText = [
-          'width:100%;padding:2px 4px;border-radius:4px;border:1px solid var(--border2);',
-          'background:var(--bg3);color:var(--text);font-size:9px;font-weight:700;',
-          'font-family:var(--font-data);cursor:pointer;text-align:center;',
-          'transition:border-color .1s,color .1s;',
-        ].join('');
-        noteBadge.textContent = noteName;
-        noteBadge.title = 'Click to change note';
-        noteBadge.addEventListener('mouseenter', () => {
-          noteBadge.style.borderColor = 'var(--tap)';
-          noteBadge.style.color       = 'var(--tap)';
-        });
-        noteBadge.addEventListener('mouseleave', () => {
-          noteBadge.style.borderColor = 'var(--border2)';
-          noteBadge.style.color       = 'var(--text)';
-        });
-        noteBadge.addEventListener('click', (e) => {
-          e.stopPropagation();
-          openNotePickerModal(noteBadge, cellFreq(crGrid[ri][ci], ci), (newFreq) => {
-            crGrid[ri][ci] = { type: cellType(crGrid[ri][ci]) || 'tap', freq: newFreq, sustain: cellSustain(crGrid[ri][ci]) };
-            buildGrid();
-          });
-        });
-
-        // Sustain (pedal) selector
-        const sustainVal = cellSustain(cell);
-        const sustainRow = document.createElement('div');
-        sustainRow.style.cssText = 'display:flex;align-items:center;gap:2px;';
-
-        const sustainIcon = document.createElement('span');
-        sustainIcon.textContent = '🎹';
-        sustainIcon.style.cssText = 'font-size:7px;flex-shrink:0;opacity:.7;';
-
-        const sustainSel = document.createElement('select');
-        sustainSel.style.cssText = [
-          'flex:1;padding:1px 2px;border-radius:3px;border:1px solid var(--border2);',
-          'background:var(--bg3);color:var(--text);font-size:7px;',
-          'font-family:var(--font-data);outline:none;cursor:pointer;',
-          sustainVal > 0 ? 'border-color:var(--perfect);color:var(--perfect);' : '',
-        ].join('');
-
-        const sustainOptions = [
-          { v:0,   l:'off'  },
-          { v:0.5, l:'.5s'  },
-          { v:1.0, l:'1.0s' },
-          { v:1.5, l:'1.5s' },
-          { v:2.0, l:'2.0s' },
-          { v:2.5, l:'2.5s' },
-          { v:3.0, l:'3.0s' },
-        ];
-        sustainOptions.forEach(o => {
-          const opt = document.createElement('option');
-          opt.value = o.v; opt.textContent = o.l;
-          if (Math.abs(o.v - sustainVal) < 0.01) opt.selected = true;
-          sustainSel.appendChild(opt);
-        });
-        sustainSel.addEventListener('change', () => {
-          const sv = parseFloat(sustainSel.value);
-          crGrid[ri][ci] = { type: cellType(crGrid[ri][ci]) || 'tap', freq: cellFreq(crGrid[ri][ci], ci), sustain: sv };
-          buildGrid();
-        });
-        sustainRow.appendChild(sustainIcon);
-        sustainRow.appendChild(sustainSel);
-
-        wrap.appendChild(topBar);
-        wrap.appendChild(noteBadge);
-        wrap.appendChild(sustainRow);
-        g.appendChild(wrap);
-
-      } else {
-        // ── Normal / advanced-empty cell ──
-        const el = document.createElement('div');
-        el.className = 'cr-cell' + (type ? ' is-' + type : '');
-        el.addEventListener('click', () => {
-          if (crTool === 'erase') {
-            crGrid[ri][ci] = null;
-          } else if (crTool === 'tap') {
-            crGrid[ri][ci] = cellType(crGrid[ri][ci]) === 'tap'
-              ? null
-              : { type:'tap', freq: crLaneFreqs[ci], sustain: crDefaultSustain };
-          } else if (crTool === 'dtap') {
-            crGrid[ri][ci] = cellType(crGrid[ri][ci]) === 'dtap'
-              ? null
-              : { type:'dtap', freq: crLaneFreqs[ci], sustain: crDefaultSustain };
-          }
-          buildGrid();
-        });
-        g.appendChild(el);
+      // One chip per cell in every mode. Empty: the current tool fills
+      // it. Filled: the tool erases (erase tool) or the second tap opens
+      // the editor. That two-stage placement is why there are no inline
+      // dropdowns any more — note, type and sustain all live in the
+      // popup, so a cell stays a cell.
+      const el = document.createElement('div');
+      el.className = 'cr-cell' + (type ? ' is-' + type : '');
+      if (type && crAdvOpen) {
+        // In advanced mode the chip carries the note name, so a chart's
+        // pitches are legible at a glance without opening anything.
+        el.classList.add('cr-cell-named');
+        const name = document.createElement('span');
+        name.className = 'cr-cell-note';
+        name.textContent = freqToName(cellFreq(cell, ci));
+        el.appendChild(name);
+        if (cellSustain(cell) > 0) {
+          const dot = document.createElement('span');
+          dot.className = 'cr-cell-sus';
+          dot.title = 'sustain ' + cellSustain(cell).toFixed(1) + 's';
+          el.appendChild(dot);
+        }
       }
+      el.addEventListener('click', () => {
+        const cur = cellType(crGrid[ri][ci]);
+        if (crTool === 'erase') { crGrid[ri][ci] = null; buildGrid(); return; }
+        if (!cur) {
+          // First tap: place a note at the lane's default pitch.
+          crGrid[ri][ci] = { type: crTool === 'dtap' ? 'dtap' : 'tap',
+                             freq: crLaneFreqs[ci], sustain: crDefaultSustain };
+          buildGrid();
+        } else {
+          // Second tap on an existing note opens the editor.
+          openCellEditor(el, ri, ci);
+        }
+      });
+      g.appendChild(el);
     });
   });
+}
+
+// The whole note editor in one popup: type, pitch and sustain. This is
+// what replaced the inline type badge, note dropdown and sustain
+// dropdown that used to crowd every filled cell in advanced mode.
+function openCellEditor(anchorEl, ri, ci) {
+  document.querySelectorAll('.cr-cell-editor').forEach(e => e.remove());
+  const cell = crGrid[ri][ci];
+  if (!cell) return;
+
+  const pop = document.createElement('div');
+  pop.className = 'cr-cell-editor';
+
+  const write = patch => {
+    crGrid[ri][ci] = Object.assign({
+      type: cellType(crGrid[ri][ci]) || 'tap',
+      freq: cellFreq(crGrid[ri][ci], ci),
+      sustain: cellSustain(crGrid[ri][ci]),
+    }, patch);
+    buildGrid();
+    render();
+  };
+
+  function render() {
+    const c = crGrid[ri][ci];
+    if (!c) { pop.remove(); return; }
+    pop.innerHTML = '';
+
+    const head = document.createElement('div');
+    head.className = 'cce-head';
+    head.textContent = 'Edit note';
+    pop.appendChild(head);
+
+    // Type
+    const typeRow = document.createElement('div');
+    typeRow.className = 'cce-row';
+    [['tap', 'TAP'], ['dtap', '×2']].forEach(([t, label]) => {
+      const btn = document.createElement('button');
+      btn.className = 'cce-btn' + (cellType(c) === t ? ' on' : '') + (t === 'dtap' ? ' dtap' : '');
+      btn.textContent = label;
+      btn.addEventListener('click', () => write({ type: t }));
+      typeRow.appendChild(btn);
+    });
+    pop.appendChild(typeRow);
+
+    // Pitch — the existing note picker, opened from a button.
+    const pitchBtn = document.createElement('button');
+    pitchBtn.className = 'cce-pitch';
+    pitchBtn.textContent = '♪ ' + freqToName(cellFreq(c, ci));
+    pitchBtn.addEventListener('click', () => {
+      openNotePickerModal(pitchBtn, cellFreq(crGrid[ri][ci], ci), f => write({ freq: f }));
+    });
+    pop.appendChild(pitchBtn);
+
+    // Sustain — chips, not a dropdown.
+    const susLabel = document.createElement('div');
+    susLabel.className = 'cce-sublabel';
+    susLabel.textContent = 'Sustain';
+    pop.appendChild(susLabel);
+    const susRow = document.createElement('div');
+    susRow.className = 'cce-sus';
+    [[0, 'off'], [0.5, '.5'], [1, '1'], [1.5, '1.5'], [2, '2'], [2.5, '2.5'], [3, '3']].forEach(([v, label]) => {
+      const btn = document.createElement('button');
+      btn.className = 'cce-schip' + (Math.abs(cellSustain(c) - v) < 0.01 ? ' on' : '');
+      btn.textContent = label;
+      btn.addEventListener('click', () => write({ sustain: v }));
+      susRow.appendChild(btn);
+    });
+    pop.appendChild(susRow);
+
+    // Erase / done
+    const foot = document.createElement('div');
+    foot.className = 'cce-row';
+    const erase = document.createElement('button');
+    erase.className = 'cce-btn erase';
+    erase.textContent = '✕ Erase';
+    erase.addEventListener('click', () => { crGrid[ri][ci] = null; buildGrid(); pop.remove(); });
+    const done = document.createElement('button');
+    done.className = 'cce-btn done';
+    done.textContent = 'Done';
+    done.addEventListener('click', () => pop.remove());
+    foot.appendChild(erase); foot.appendChild(done);
+    pop.appendChild(foot);
+  }
+
+  render();
+  document.body.appendChild(pop);
+  positionPopup(pop, anchorEl);
+
+  // A tap anywhere else closes it, the same way the note picker does.
+  setTimeout(() => {
+    const close = ev => {
+      if (pop.contains(ev.target)) return;
+      if (ev.target.closest && ev.target.closest('#note-picker-modal')) return;
+      pop.remove();
+      document.removeEventListener('click', close, true);
+    };
+    document.addEventListener('click', close, true);
+  }, 0);
+}
+
+// Places a popup next to its anchor, nudged back on-screen if it would
+// spill off an edge.
+function positionPopup(pop, anchorEl) {
+  const a = anchorEl.getBoundingClientRect();
+  pop.style.visibility = 'hidden';
+  pop.style.left = '0px'; pop.style.top = '0px';
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  let left = a.left, top = a.bottom + 4;
+  const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+  if (left + w > vw - 6) left = vw - w - 6;
+  if (left < 6) left = 6;
+  if (top + h > vh - 6) top = a.top - h - 4;
+  if (top < 6) top = 6;
+  pop.style.left = Math.round(left) + 'px';
+  pop.style.top = Math.round(top) + 'px';
+  pop.style.visibility = 'visible';
 }
 
 document.getElementById('cr-add-rows').addEventListener('click', () => {
@@ -2138,24 +2188,40 @@ function laneH() { return laneEls[0].clientHeight || 380; }
 function hitY()  { return laneH() - HIT_BOTTOM; }
 
 function buildQueue(lvl) {
+  // Each campaign note names the voice it was composed for — an area's
+  // lead and its accompaniment are different instruments inside one
+  // song. Dropping `inst` here is what made every era sound the same:
+  // the twelve voices were synthesised, baked into all 150 charts, and
+  // then never reached the audio engine.
+  const fallbackFreqs = lvl.laneFreqs || [261.63,329.63,392.00,523.25];
+  const songInst = lvl.instrument || null;
   if (lvl.grid) {
     const q = [];
-    const fallbackFreqs = lvl.laneFreqs || [261.63,329.63,392.00,523.25];
     lvl.grid.forEach((row, ri) => row.forEach((cell, ci) => {
       if (!cell) return;
       const type    = typeof cell === 'string' ? cell : cell.type;
       const freq    = (typeof cell === 'object' && cell.freq) ? cell.freq : fallbackFreqs[ci];
       const sustain = (typeof cell === 'object' && cell.sustain) ? cell.sustain : 0;
-      q.push({ beatIdx:ri, lane:ci, type, freq, sustain });
+      const inst    = (typeof cell === 'object' && cell.inst) ? cell.inst : songInst;
+      q.push({ beatIdx:ri, lane:ci, type, freq, sustain, inst });
     }));
     return q.sort((a, b) => a.beatIdx - b.beatIdx);
   }
-  const fallbackFreqs = lvl.laneFreqs || [261.63,329.63,392.00,523.25];
   return lvl.notes.map(n => ({
     beatIdx: n.b, lane: n.l, type: n.t,
     freq: n.freq || fallbackFreqs[n.l],
     sustain: n.sustain || 0,
+    inst: n.inst || songInst,
   }));
+}
+
+// Which voice a note should sound in. The song names one; the player
+// can override that in Settings if they would rather hear their own
+// instrument everywhere. Off by default, because a chart written for a
+// lyre stops sounding like the place it is set when it isn't one.
+function voiceFor(note) {
+  if (currentSettings.songVoices === false) return null;   // player's choice wins
+  return (note && note.inst) || null;
 }
 
 function totalBeats(lvl) {
@@ -2337,19 +2403,19 @@ function processTap(best, bestDist, glowLane) {
     const tLane = best.lane;
     if (best.type === 'tap') {
       best.done = true; lastTapT[tLane] = 0;
-      if (window.RD_playNote) window.RD_playNote(tLane, false, best.freq, best.sustain || 0);
+      if (window.RD_playNote) window.RD_playNote(tLane, false, best.freq, best.sustain || 0, voiceFor(best));
       hit(tLane, bestDist);
     } else {
       if (!best.firstTapped) {
         best.firstTapped = true;
         best.el.classList.add('primed');
         lastTapT[tLane] = now;
-        if (window.RD_playNote) window.RD_playNote(tLane, false, best.freq, best.sustain || 0);
+        if (window.RD_playNote) window.RD_playNote(tLane, false, best.freq, best.sustain || 0, voiceFor(best));
       } else {
         const elapsed = now - lastTapT[tLane];
         if (elapsed <= DTAP_MS) {
           best.done = true; lastTapT[tLane] = 0;
-          if (window.RD_playNote) window.RD_playNote(tLane, true, best.freq, best.sustain || 0);
+          if (window.RD_playNote) window.RD_playNote(tLane, true, best.freq, best.sustain || 0, voiceFor(best));
           hit(tLane, bestDist);
         } else {
           best.firstTapped = false;
@@ -2533,6 +2599,7 @@ const GFX_STYLES = [
 const DEFAULT_SETTINGS = {
   keys: ['KeyA', 'KeyS', 'KeyD', 'KeyF'],
   gfx: 'modern',
+  songVoices: true,   // play each song in the instruments it was written for
   width: 420,
   height: 640,
   lives: 3,
@@ -2553,6 +2620,7 @@ function loadAndApplySettings() {
     if (saved.lives)      currentSettings.lives      = saved.lives;
     if (saved.instrument) currentSettings.instrument = saved.instrument;
     if (saved.gfx)            currentSettings.gfx        = saved.gfx;
+    if (typeof saved.songVoices === 'boolean') currentSettings.songVoices = saved.songVoices;
     if (saved.uiScale)        currentSettings.uiScale   = saved.uiScale;
     if (saved.masterVol != null) currentSettings.masterVol = saved.masterVol;
     if (saved.musicVol  != null) currentSettings.musicVol  = saved.musicVol;

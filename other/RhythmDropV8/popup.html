@@ -15,10 +15,12 @@
 
    It is also what makes "no network calls" true rather than aspirational. */
 :root {
-  --font-body: 'Outfit', 'Segoe UI Variable Text', 'Segoe UI',
-               -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
-  --font-data: 'Space Mono', ui-monospace, 'Cascadia Mono', 'Consolas',
-               'SF Mono', Menlo, monospace;
+  --font-display: 'Archivo', 'Segoe UI Variable Display', 'Segoe UI',
+                  system-ui, -apple-system, 'Roboto', 'Helvetica Neue', sans-serif;
+  --font-body:    'Inter Tight', 'Inter', 'Segoe UI Variable Text', 'Segoe UI',
+                  system-ui, -apple-system, 'Roboto', 'Helvetica Neue', Arial, sans-serif;
+  --font-data:    'Space Mono', ui-monospace, 'Cascadia Mono', 'Consolas',
+                  'SF Mono', Menlo, monospace;
 }
 
 /* ══════════════════════════════════════
@@ -128,6 +130,23 @@ body.theme-glass {
   --accent:#f0abfc;
   background:radial-gradient(1200px 800px at 20% -10%, #1b2740 0%, #0a0e16 60%) fixed;
 }
+/* ── GRAPHITE — the v7 faceplate look ──
+   Near-neutral graphite surfaces rather than blue-black, and two
+   desaturated LEDs (dusty teal + burnt amber) doing all the work, so
+   the board reads as an instrument panel instead of a stock dark-mode
+   template. This is the default theme; the twelve originals are all
+   still here, one tap away. */
+body.theme-graphite {
+  --bg:#0B0D0E; --bg2:#121517; --bg3:#191D20; --bg4:#232A2D;
+  --border:#1E2325; --border2:#2C3235;
+  --text:#DDE2E4; --muted:#838B8F; --dim:#4B5356;
+  --tap:#6FA8B5; --tap2:#9CC7D0; --dtap:#C4854E; --dtap2:#DEA97A;
+  --good:#7FA06B; --perfect:#C7A241; --miss:#B2564C;
+  --lane-flash:#1B282B;
+  --glow-tap:rgba(111,168,181,0.22); --glow-dtap:rgba(196,133,78,0.22);
+  --accent:#6FA8B5;
+}
+
 /* ── LIGHT THEME COMPATIBILITY VARIABLES ── */
 :root {
   --overlay-bg:    rgba(7,7,15,0.92);
@@ -314,6 +333,7 @@ body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var
 .tc-dots { display:flex; gap:5px; margin-top:8px; }
 .tc-dot  { width:18px; height:8px; border-radius:4px; }
 
+.theme-card[data-theme="graphite"] { background:#121517; border-color:#2C3235; }
 .theme-card[data-theme="dark"]    { background:#0e0e1c; border-color:#1f1f3a; }
 .theme-card[data-theme="forest"]  { background:#081a0f; border-color:#143020; }
 .theme-card[data-theme="sunset"]  { background:#1e1008; border-color:#3a2010; }
@@ -615,6 +635,10 @@ body.gfx-modern #pbar-avatar { box-shadow:0 3px 10px -4px rgba(0,0,0,.8); }
 body.gfx-modern .xp-fill { box-shadow:0 0 8px -1px var(--perfect); }
 
 /* ── Creator ── */
+body.gfx-modern .cr-cell-editor {
+  box-shadow:0 18px 40px -10px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.06);
+  background-image:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 60%);
+}
 body.gfx-modern .cr-cell.is-tap {
   box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 2px 9px -5px var(--glow-tap);
 }
@@ -716,6 +740,52 @@ body.gfx-modern.theme-arctic .lane::after {
 .cr-cell:hover { border-color:var(--border2); }
 .cr-cell.is-tap  { background:color-mix(in srgb,var(--tap) 40%,transparent); border-color:var(--tap); }
 .cr-cell.is-dtap { background:color-mix(in srgb,var(--dtap) 40%,transparent); border-color:var(--dtap); }
+
+/* Advanced mode: the chip shows its note name and a sustain dot, so a
+   chart reads at a glance. Everything else about the note is edited in
+   the popup that opens on a second tap. */
+.cr-cell-named {
+  height:auto; min-height:24px; display:flex; align-items:center; justify-content:center;
+  gap:3px; position:relative; font-family:var(--font-data); font-size:9px; font-weight:700;
+}
+.cr-cell.is-tap.cr-cell-named  .cr-cell-note { color:var(--tap); }
+.cr-cell.is-dtap.cr-cell-named .cr-cell-note { color:var(--dtap); }
+.cr-cell-sus {
+  position:absolute; top:2px; right:2px; width:5px; height:5px; border-radius:50%;
+  background:var(--perfect); box-shadow:0 0 3px var(--perfect);
+}
+
+/* ── The combined cell editor (type + pitch + sustain) ── */
+.cr-cell-editor {
+  position:fixed; z-index:120; width:172px;
+  background:var(--bg2); border:1px solid var(--border2); border-radius:11px;
+  box-shadow:0 14px 34px -10px rgba(0,0,0,.7); padding:10px; display:flex; flex-direction:column; gap:7px;
+}
+.cce-head { font-size:10px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase; color:var(--muted); font-family:var(--font-data); }
+.cce-row { display:flex; gap:6px; }
+.cce-btn {
+  flex:1; padding:7px 4px; border-radius:8px; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--muted); font-size:11px; font-weight:700;
+  font-family:var(--font-body); cursor:pointer; transition:all .12s;
+}
+.cce-btn.on { border-color:var(--tap); color:var(--tap); background:color-mix(in srgb,var(--tap) 12%,transparent); }
+.cce-btn.on.dtap { border-color:var(--dtap); color:var(--dtap); background:color-mix(in srgb,var(--dtap) 12%,transparent); }
+.cce-btn.erase:hover { border-color:var(--miss); color:var(--miss); }
+.cce-btn.done { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
+.cce-pitch {
+  width:100%; padding:9px; border-radius:8px; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--text); font-size:14px; font-weight:700;
+  font-family:var(--font-data); cursor:pointer; transition:border-color .12s;
+}
+.cce-pitch:hover { border-color:var(--tap); }
+.cce-sublabel { font-size:10px; color:var(--muted); font-family:var(--font-data); }
+.cce-sus { display:flex; gap:3px; flex-wrap:wrap; }
+.cce-schip {
+  flex:1 0 auto; min-width:26px; padding:5px 4px; border-radius:6px; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--muted); font-size:10px; font-weight:700;
+  font-family:var(--font-data); cursor:pointer; transition:all .12s;
+}
+.cce-schip.on { border-color:var(--perfect); color:var(--perfect); background:color-mix(in srgb,var(--perfect) 12%,transparent); }
 
 /* Per-note frequency selector inside cells (advanced mode) */
 .cr-cell.has-note-pick {
