@@ -1901,6 +1901,23 @@ function positionPopup(pop, anchorEl) {
   pop.style.visibility = 'visible';
 }
 
+(function wireGenerate() {
+  const btn = document.getElementById('gen-btn');
+  if (btn) btn.addEventListener('click', () => {
+    const band = (document.getElementById('gen-diff') || {}).value || '3-6';
+    playGenerated(band);
+  });
+  const endless = document.getElementById('endless-card');
+  if (endless) endless.addEventListener('click', () => {
+    const band = (document.getElementById('endless-diff') || {}).value || '4-7';
+    const lvl = generateLevel(band);
+    if (!lvl) return;
+    lvl.endless = true; lvl._band = band;
+    lastGenerated = lvl;
+    launchLevel(lvl);
+  });
+})();
+
 document.getElementById('cr-add-rows').addEventListener('click', () => {
   for (let i = 0; i < 4; i++) crGrid.push([null,null,null,null]);
   buildGrid();
@@ -2282,6 +2299,65 @@ function launchLevel(lvl) {
 
 function launchCustom(lvl) { launchLevel(lvl); }
 
+// ══════════════════════════════════════
+//  LIVE GENERATION
+//
+//  V8 ships a baked campaign, but V7's composer is bundled as
+//  RD_Generator so a fresh chart can still be rolled on the spot — for
+//  the Generate button and for endless runs. A generated level is a
+//  normal level object (grid, bpm, laneFreqs, per-note voices), so the
+//  rest of the game treats it like any other.
+// ══════════════════════════════════════
+const GEN = () => window.RD_Generator;
+
+// Turns a composer level into something launchLevel and the Custom tab
+// are happy with: a name, and a flag so it is never mistaken for a
+// campaign level (which would try to mark an area cleared).
+function _prepGenerated(lvl, label) {
+  lvl.campaign = false;
+  lvl.generated = true;
+  if (!lvl.name) lvl.name = label || 'Generated';
+  return lvl;
+}
+
+let lastGenerated = null;
+
+function generateLevel(band) {
+  const G = GEN();
+  if (!G) { showToast('Generator not available', true); return null; }
+  const [lo, hi] = (band || '3-6').split('-').map(Number);
+  const code = G.rollEndlessCode(lo, hi);
+  const lvl = _prepGenerated(G.buildCodeLevel(code), G.songTitle ? G.songTitle(code) : 'Generated');
+  lvl.shareCode = code;
+  return lvl;
+}
+
+function playGenerated(band) {
+  const lvl = generateLevel(band);
+  if (!lvl) return;
+  lastGenerated = lvl;
+  launchLevel(lvl);
+}
+
+// After a generated run the player can keep the chart as a custom level.
+function saveGenerated(lvl) {
+  if (!lvl) return;
+  const arr = store.load();
+  arr.push({
+    id: 'g' + Date.now(),
+    name: lvl.name || 'Generated',
+    bpm: lvl.bpm,
+    diff: lvl.diff || (lvl.difficulty <= 3 ? 'easy' : lvl.difficulty <= 6 ? 'medium' : 'hard'),
+    grid: lvl.grid.map(r => r.map(c => c ? { ...c } : null)),
+    bgMode: lvl.bgMode || 'none',
+    laneFreqs: lvl.laneFreqs ? [...lvl.laneFreqs] : undefined,
+    bassPattern: lvl.bassPattern || [],
+    generated: true, shareCode: lvl.shareCode || null,
+  });
+  store.save(arr);
+  showToast('Saved to your custom levels');
+}
+
 function startGame() {
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   maxLives = currentSettings.lives || 3;
@@ -2567,15 +2643,52 @@ function endGame(won) {
     ovStreak.textContent = parts.join(' · ');
   }
 
-  ovBtn.textContent = 'Play Again';
-  ovBtn.onclick = () => {
+  const hideRewards = () => {
     if (ovCurr) ovCurr.style.display = 'none';
     if (ovStreak) ovStreak.style.display = 'none';
     if (ovXp) ovXp.style.display = 'none';
     if (ovLv) ovLv.style.display = 'none';
-    overlay.classList.remove('show'); startGame();
   };
+
+  const gen = gameLevel && gameLevel.generated;
+  ovBtn.textContent = (gen && gameLevel.endless) ? 'Next song' : 'Play Again';
+  ovBtn.onclick = () => {
+    hideRewards();
+    overlay.classList.remove('show');
+    // Endless keeps rolling a new chart; everything else replays this one.
+    if (gen && gameLevel.endless) {
+      const nxt = generateLevel(gameLevel._band || '4-7');
+      if (nxt) { nxt.endless = true; nxt._band = gameLevel._band; lastGenerated = nxt; launchLevel(nxt); return; }
+    }
+    startGame();
+  };
+
+  // After a generated run, offer to keep the chart as a custom level.
+  syncGeneratedKeepBtn(gen && won);
   overlay.classList.add('show');
+}
+
+// A "Keep this level" button on the results overlay, shown only after a
+// generated run so the player can save a chart they liked. Built once,
+// on demand, so the overlay markup did not have to change.
+function syncGeneratedKeepBtn(show) {
+  let btn = document.getElementById('ov-keep-btn');
+  if (!show) { if (btn) btn.style.display = 'none'; return; }
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'ov-keep-btn';
+    btn.className = 'chaos-toggle';
+    btn.style.marginTop = '4px';
+    ovBtn.parentNode.insertBefore(btn, ovBtn);
+  }
+  btn.style.display = '';
+  btn.textContent = '💾 Keep this level';
+  btn.disabled = false;
+  btn.onclick = () => {
+    saveGenerated(lastGenerated || gameLevel);
+    btn.textContent = '✓ Saved to Custom';
+    btn.disabled = true;
+  };
 }
 
 function quitToMenu() {

@@ -24,7 +24,10 @@ console.log('== the graphics layer is strictly additive ==');
   // starting mid-comment leaves the stripper an unbalanced `*/` and it
   // hands the banner back as if it were a selector.
   const start = HTML.lastIndexOf('/*', at);
-  const end = HTML.lastIndexOf('/*', HTML.indexOf('CREATOR (standard)', at));
+  // The block is explicitly closed by a sentinel, so additive CSS added
+  // after it (the Generate/Endless styles) is not swept in.
+  const end = HTML.indexOf('END UPDATED GRAPHICS', at);
+  ok(end > start, 'the graphics block is closed by its sentinel');
   const block = HTML.slice(start, end);
 
   // Strip comments, then read every selector the block declares.

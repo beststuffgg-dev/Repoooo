@@ -47,7 +47,11 @@ Everything the v3.0 build had — four lanes on **A S D F**, tap and double-tap 
 - **Twelve instruments**, up from five — the campaign needs them, because a chart composed for a lyre that falls back to a guitar stops sounding like the place it is set.
 - **Two graphics styles.** *Modern* (default) gives the board depth, lit tile edges and a glowing strike line; *Classic* is the original flat look, kept as a real choice. See [§5](#5-graphics).
 
-Deliberately **not** ported from V7: share/sync codes, endless mode, the materials system, and the weighted loading pipeline.
+- **Live generation, and Endless.** V7's composer is bundled (see [§4a](#4a-live-generation)), so Generate rolls a fresh song on the spot and Endless rolls a new one every run. A generated chart can be kept as a custom level.
+- **Per-song instruments.** Each of the 150 songs plays in the voices it was composed for — Egypt on flute, Greece on lyre — with a Settings toggle to hear your own pick everywhere instead.
+- **Two-stage note placement in the creator.** First tap fills a cell; a second tap opens one popup with type, pitch and sustain, replacing the inline dropdowns.
+
+Deliberately **not** ported from V7: share/sync codes as a general import format, the materials system, and the weighted loading pipeline.
 
 ---
 
@@ -79,9 +83,24 @@ Why bake at all: a song that exists as a file can be read, diffed and reviewed. 
 
 ---
 
+## 4a. Live generation
+
+V8 ships a baked campaign, but V7's deterministic composer is bundled as `other/RhythmDropV8/generator.js` — the same file as `other/v7/RhythmDropV7/campaign.js`, verbatim but for exposing `window.RD_Generator` instead of `window.RD_Campaign` (V8 already has an `RD_Campaign`, its progression engine; the two do not collide). It loads after `audio.js` because it reads `window.RD_INSTRUMENTS` to resolve each area's voice.
+
+Two entry points use it:
+
+- **Generate** (Custom tab) rolls a random seed at the chosen difficulty band and launches the chart straight away. After a clear, a *Keep this level* button on the results screen saves it as a custom level.
+- **Endless** (a card under the ten campaign areas) does the same but flags the run endless, so the results button becomes *Next song* and rolls another chart in the same band.
+
+A generated chart is a normal level object — grid, tempo, lane pitches, per-note voices — flagged `generated` so it is never mistaken for a campaign level (a generated clear marks no area cleared and grants no campaign progress). `v8generate.js` asserts the bundle is V7's composer with only the banner and export name changed, that charts are real and deterministic and denser in the hard band, and that Generate / Keep / Endless all behave.
+
+`generator.js` is a copy — **re-copy it from v7 if the composer changes**, don't hand-edit.
+
+---
+
 ## 5. Graphics
 
-Two styles, chosen in Settings → Display: **Modern** (default) and **Classic**.
+Two styles, chosen in Settings → Display: **Modern** (default) and **Classic**. Separately, the default *theme* is now **Graphite** — V7's near-neutral faceplate palette (graphite surfaces, a dusty teal and a burnt amber doing the colour work) with V7's typography (Archivo display, Inter Tight body, Space Mono data). The twelve original themes are all still present, one tap away in the Themes tab.
 
 The whole updated look is one block of CSS scoped under `body.gfx-modern`, and it is **strictly additive** — it does not change a single rule above it. That is what makes "the old style is still available" a fact rather than a hope: with the class off there is nothing left to render differently. `v8graphics.js` parses the stylesheet and asserts every one of the 52 selectors in the block is scoped under that class, that its keyframes are uniquely named so they cannot shadow the originals, and that nothing outside the block mentions the class at all.
 
@@ -121,7 +140,7 @@ What Modern adds, all derived from the active theme's own tokens so every one of
 cd tests && npm install && node run-all.js
 ```
 
-30 suites. Five cover V8:
+32 suites. Seven cover V8:
 
 | Suite | Covers |
 |---|---|
@@ -129,6 +148,8 @@ cd tests && npm install && node run-all.js
 | `v8campaign.js` | Flat coins, partial runs, the XP curve and its linearity in speed, the density cap, unlock chaining, the seven-day daily and its lapse |
 | `v8audio.js` | Every instrument **rendered** through an OfflineAudioContext and measured — not just present. Peak, RMS, duration and brightness per voice, the double-tap fifth, sustain, the per-note override, the output ceiling and the volume controls |
 | `v8graphics.js` | That the graphics layer is strictly additive, that Classic and Modern really differ, and that the style survives all 13 theme switches |
+| `v8settings.js` | Every setting driven the way a player drives it, with the effect measured elsewhere — the engine's reported volume, the window's real width, the key that actually fires a lane — and all of it surviving a reload |
+| `v8generate.js` | The bundled composer is V7's verbatim, generated charts are real and deterministic, and Generate / Keep / Endless behave without touching campaign progress |
 | `v8ui.js` | Real Chromium: the pinned height, the side panel widening the window without moving the grid, the overlay fallback, and one whole run from the campaign list to the results screen |
 
 The remaining 25 are V7's, unchanged, running against `other/v7/`. `APP_DIR` selects which V7 build they test; `V8_DIR` overrides the V8 one.
@@ -139,7 +160,7 @@ The remaining 25 are V7's, unchanged, running against `other/v7/`. `APP_DIR` sel
 
 ## 8. Open items
 
-- **The campaign has no ending.** Clearing area 10 leaves you at the last song with nothing after it. V7 had an endless mode for this; it was not ported.
+- **After the campaign, there is Endless.** Clearing area 10 no longer dead-ends — the Endless card rolls fresh songs indefinitely. There is still no scored, ranked endless *ladder* the way some rhythm games have; it is practice, not a leaderboard.
 - **Difficulty is inherited, not tuned.** The 150 charts carry V7's difficulty curve. Nobody has played them in V8's engine end to end — V8's scoring has v3's lives-based multiplier, which V7 did not have, so the balance may not be the same game.
 - **The creator cannot make campaign-shaped levels.** It writes the same grid format, but nothing lets you save one into an area or share it.
 - **The 11 above-C8 notes** (§3) are worth a listen before deciding whether to leave them.
