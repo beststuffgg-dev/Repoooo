@@ -562,10 +562,17 @@ function renderCampaign() {
             : '<div class="song-best none">' + (unlocked ? 'No score yet' : 'Locked') + '</div>')
       + '</div>'
       + '<div class="song-right">'
+      +   (cleared ? '<span class="song-double" title="The Double — 2× speed">2×</span>' : '')
       +   '<span class="song-diff b-' + m.diff + '">' + m.diff + '</span>'
       +   (unlocked ? '' : '<span class="song-lock">🔒</span>')
       + '</div>';
     if (unlocked) row.addEventListener('click', () => launchCampaignLevel(camArea, m.levelIdx));
+    const dbl = row.querySelector('.song-double');
+    if (dbl) dbl.addEventListener('click', e => {
+      e.stopPropagation();
+      const lvl = CAM().levelAt(camArea, m.levelIdx);
+      if (lvl) launchLevel(lvl, true);
+    });
     list.appendChild(row);
   });
 }
@@ -1313,6 +1320,31 @@ function buildSettingsAudio(panel) {
 // ── Sub-menu: Gameplay ──
 function buildSettingsGameplay(panel) {
   const s = currentSettings;
+
+  panel.appendChild(_settingsSectionHead('Hit Window'));
+  {
+    const blurb = document.createElement('div');
+    blurb.style.cssText = 'font-size:10px;color:var(--muted);margin-bottom:6px;';
+    blurb.textContent = 'How tight the timing is. Note speed is fixed per song so scores stay comparable — this only moves the window.';
+    panel.appendChild(blurb);
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;margin-bottom:12px;';
+    [['strict', 'Strict'], ['normal', 'Normal'], ['forgiving', 'Forgiving']].forEach(([id, label]) => {
+      const btn = document.createElement('button');
+      const on = (currentSettings.hitWindow || 'normal') === id;
+      btn.className = 'bg-radio-btn' + (on ? ' sel' : '');
+      btn.style.cssText = 'flex:1;';
+      btn.textContent = label;
+      btn.addEventListener('click', () => {
+        currentSettings.hitWindow = id;
+        store.saveSettings(currentSettings);
+        buildSettingsPanel();
+      });
+      row.appendChild(btn);
+    });
+    panel.appendChild(row);
+  }
+
   panel.appendChild(_settingsSectionHead('Starting Lives'));
   _settingsSliderRow(panel, 'Lives', 1, 10, 1, s.lives || 3, '', v => {
     currentSettings.lives = v;
@@ -2159,7 +2191,14 @@ function buildBassEditor() {
 // ══════════════════════════════════════
 const TILE_H     = 38;
 const HIT_BOTTOM = 52;
-const HIT_TOL    = TILE_H * 1.8;
+// The timing tolerance is chosen in Settings: a stricter window scores
+// the same notes on a tighter beat. Kept in one place so the judging
+// and any on-screen band can never disagree.
+const HIT_WINDOWS = { strict: 0.7, normal: 1.0, forgiving: 1.45 };
+function hitTol() {
+  const mult = HIT_WINDOWS[currentSettings.hitWindow] || 1.0;
+  return TILE_H * 1.8 * mult;
+}
 const DTAP_MS    = 320;
 const SPEED_INC  = 0.10 / 60;
 
@@ -2177,6 +2216,13 @@ let running = false, lastT = 0, raf = null;
 let beatAccum = 0, beatIdx = 0;
 let baseBeatMs = 500, currentBeatMs = 500;
 let speedMult = 1, gameTimeMs = 0;
+// The Double: a cleared level replayed at twice the speed. It is a
+// harder run at something you have already finished, so it pays double
+// straight out of the XP and coin formulas (both key off actual speed)
+// rather than as a bolted-on bonus. runSpeedBase is 2 during a Double
+// and 1 otherwise; the in-run ramp multiplies on top of it.
+let doubleMode = false;
+let runSpeedBase = 1;
 let fbTimers  = [0,0,0,0];
 let lastTapT  = {0:0,1:0,2:0,3:0};
 let chaosMode = false;
@@ -2271,9 +2317,12 @@ function spawnTile(note) {
   return { el, lane:note.lane, chaosCode, y:-h, type:note.type, h, freq:note.freq||null, sustain:note.sustain||0, firstTapped:false, done:false };
 }
 
-function launchLevel(lvl) {
+function launchLevel(lvl, asDouble) {
   gameLevel = lvl;
-  lvlName.textContent = lvl.name;
+  // Only a Double launch keeps doubleMode set; every other launch path
+  // clears it so a normal run is never accidentally sped up.
+  doubleMode = !!asDouble;
+  lvlName.textContent = lvl.name + (asDouble ? '  ·  DOUBLE' : '');
   baseBeatMs = Math.round(60000 / lvl.bpm);
   ovTitle.innerHTML = 'Rhythm<span>Drop</span>';
   ovScore.style.display = 'none'; ovScLbl.style.display = 'none';
@@ -2366,8 +2415,10 @@ function startGame() {
                 : maxLives > 3 ? 1 - 0.10 * (maxLives - 3)
                 : 1;
   score = 0; combo = 0; lives = maxLives; streak = 0;
-  beatAccum = 0; beatIdx = 0; gameTimeMs = 0; speedMult = 1;
-  currentBeatMs = baseBeatMs;
+  beatAccum = 0; beatIdx = 0; gameTimeMs = 0;
+  runSpeedBase = doubleMode ? 2 : 1;
+  speedMult = runSpeedBase;
+  currentBeatMs = Math.round(baseBeatMs / speedMult);
   fbTimers = [0,0,0,0]; lastTapT = {0:0,1:0,2:0,3:0};
   gameQueue = buildQueue(gameLevel);
   notesHit = 0; notesTotal = gameQueue.length;
@@ -2396,8 +2447,9 @@ function loop(now) {
   const dt = Math.min(now - lastT, 80); lastT = now;
   gameTimeMs += dt;
 
-  // Speed ramp: +10% per 60 s
-  const newMult = 1 + Math.floor(gameTimeMs / 60000) * SPEED_INC * 60;
+  // Speed ramp: +10% per 60 s, on top of whatever the run started at
+  // (2x for a Double).
+  const newMult = runSpeedBase + Math.floor(gameTimeMs / 60000) * SPEED_INC * 60;
   if (newMult !== speedMult) {
     speedMult     = newMult;
     currentBeatMs = Math.round(baseBeatMs / speedMult);
@@ -2475,7 +2527,7 @@ function processTap(best, bestDist, glowLane) {
   laneEls[gl].classList.add(isDtap ? 'glow-dtap' : 'glow-tap');
   setTimeout(() => { laneEls[gl].classList.remove('glow-tap','glow-dtap'); }, 120);
 
-  if (best && bestDist < HIT_TOL) {
+  if (best && bestDist < hitTol()) {
     const tLane = best.lane;
     if (best.type === 'tap') {
       best.done = true; lastTapT[tLane] = 0;
@@ -2511,7 +2563,7 @@ function hit(lane, dist) {
   combo++;
   streak++;
   notesHit++;
-  const pct = dist / HIT_TOL;
+  const pct = dist / hitTol();
   let pts, label, color;
   if      (pct < 0.2) { pts = 300; label = 'PERFECT'; color = 'var(--perfect)'; }
   else if (pct < 0.6) { pts = 150; label = 'GREAT';   color = 'var(--good)'; }
@@ -2596,8 +2648,9 @@ function endGame(won) {
 
   let coinsEarned, xpGain = 0, xpRes = null;
   if (isCampaign) {
-    coinsEarned = CAM().coinsFor(gameLevel, { completed: won, progress: runProgress });
-    xpGain      = CAM().xpFor(gameLevel,    { completed: won, progress: runProgress });
+    const rewardOpts = { completed: won, progress: runProgress, speedMult: runSpeedBase };
+    coinsEarned = CAM().coinsFor(gameLevel, rewardOpts);
+    xpGain      = CAM().xpFor(gameLevel,    rewardOpts);
     addCoins(coinsEarned);
     xpRes = grantXp(xpGain);
     if (won) {
@@ -2665,7 +2718,32 @@ function endGame(won) {
 
   // After a generated run, offer to keep the chart as a custom level.
   syncGeneratedKeepBtn(gen && won);
+  // After clearing a campaign level, offer the Double — a 2x replay.
+  // Only off a real clear, and never chained out of a Double itself.
+  syncDoubleBtn(isCampaign && won && !doubleMode);
   overlay.classList.add('show');
+}
+
+// The Double button — a 2x replay of the level just cleared. Built on
+// demand so the overlay markup did not have to change, and it launches
+// the same level with doubleMode set.
+function syncDoubleBtn(show) {
+  let btn = document.getElementById('ov-double-btn');
+  if (!show) { if (btn) btn.style.display = 'none'; return; }
+  if (!btn) {
+    btn = document.createElement('button');
+    btn.id = 'ov-double-btn';
+    btn.className = 'chaos-toggle';
+    btn.style.marginTop = '4px';
+    ovBtn.parentNode.insertBefore(btn, ovBtn);
+  }
+  btn.style.display = '';
+  btn.textContent = '⚡ The Double — 2× speed, 2× reward';
+  btn.onclick = () => {
+    const lvl = gameLevel;
+    overlay.classList.remove('show');
+    launchLevel(lvl, true);   // relaunch this level as a Double
+  };
 }
 
 // A "Keep this level" button on the results overlay, shown only after a
@@ -2713,6 +2791,7 @@ const DEFAULT_SETTINGS = {
   keys: ['KeyA', 'KeyS', 'KeyD', 'KeyF'],
   gfx: 'modern',
   songVoices: true,   // play each song in the instruments it was written for
+  hitWindow: 'normal', // strict | normal | forgiving
   width: 420,
   height: 640,
   lives: 3,
@@ -2734,6 +2813,7 @@ function loadAndApplySettings() {
     if (saved.instrument) currentSettings.instrument = saved.instrument;
     if (saved.gfx)            currentSettings.gfx        = saved.gfx;
     if (typeof saved.songVoices === 'boolean') currentSettings.songVoices = saved.songVoices;
+    if (saved.hitWindow)      currentSettings.hitWindow  = saved.hitWindow;
     if (saved.uiScale)        currentSettings.uiScale   = saved.uiScale;
     if (saved.masterVol != null) currentSettings.masterVol = saved.masterVol;
     if (saved.musicVol  != null) currentSettings.musicVol  = saved.musicVol;

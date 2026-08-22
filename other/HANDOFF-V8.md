@@ -50,6 +50,8 @@ Everything the v3.0 build had — four lanes on **A S D F**, tap and double-tap 
 - **Live generation, and Endless.** V7's composer is bundled (see [§4a](#4a-live-generation)), so Generate rolls a fresh song on the spot and Endless rolls a new one every run. A generated chart can be kept as a custom level.
 - **Per-song instruments.** Each of the 150 songs plays in the voices it was composed for — Egypt on flute, Greece on lyre — with a Settings toggle to hear your own pick everywhere instead.
 - **Two-stage note placement in the creator.** First tap fills a cell; a second tap opens one popup with type, pitch and sustain, replacing the inline dropdowns.
+- **The Double.** Any cleared level can be replayed at 2× speed for 2× reward — offered on the results screen after a clear, and as a 2× badge on cleared song rows.
+- **Hit windows.** Strict / Normal / Forgiving, in Settings → Gameplay. Note *speed* stays fixed per song so scores remain comparable; only the timing tolerance moves.
 
 Deliberately **not** ported from V7: share/sync codes as a general import format, the materials system, and the weighted loading pipeline.
 
@@ -140,7 +142,7 @@ What Modern adds, all derived from the active theme's own tokens so every one of
 cd tests && npm install && node run-all.js
 ```
 
-32 suites. Seven cover V8:
+33 suites. Eight cover V8:
 
 | Suite | Covers |
 |---|---|
@@ -150,6 +152,7 @@ cd tests && npm install && node run-all.js
 | `v8graphics.js` | That the graphics layer is strictly additive, that Classic and Modern really differ, and that the style survives all 13 theme switches |
 | `v8settings.js` | Every setting driven the way a player drives it, with the effect measured elsewhere — the engine's reported volume, the window's real width, the key that actually fires a lane — and all of it surviving a reload |
 | `v8generate.js` | The bundled composer is V7's verbatim, generated charts are real and deterministic, and Generate / Keep / Endless behave without touching campaign progress |
+| `v8gameplay.js` | The hit window widens the tolerance in order and is applied to judging; the Double runs at half the beat, pays double, is offered only off a clear and never chains |
 | `v8ui.js` | Real Chromium: the pinned height, the side panel widening the window without moving the grid, the overlay fallback, and one whole run from the campaign list to the results screen |
 
 The remaining 25 are V7's, unchanged, running against `other/v7/`. `APP_DIR` selects which V7 build they test; `V8_DIR` overrides the V8 one.
