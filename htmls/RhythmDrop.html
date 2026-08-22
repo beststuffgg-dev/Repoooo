@@ -1633,7 +1633,14 @@ window.RD_Campaign = (function () {
 let _ctx = null;
 function ctx() {
   if (!_ctx) _ctx = new (window.AudioContext || window.webkitAudioContext)();
-  if (_ctx.state === 'suspended') _ctx.resume();
+  // Browsers start the context suspended until a gesture, so this nudge
+  // is load-bearing — but resume() also throws outright on a context
+  // that cannot be resumed (an offline render, a closed context), and an
+  // uncaught throw here takes the note with it. Waking the audio is
+  // never worth losing the sound.
+  if (_ctx.state === 'suspended' && typeof _ctx.resume === 'function') {
+    try { const r = _ctx.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* not resumable */ }
+  }
   return _ctx;
 }
 
@@ -1647,12 +1654,38 @@ if (isNaN(_musicVol)) _musicVol = 1;
 //  Four lanes can fire in the same frame and a campaign chord stacks
 //  three notes on one beat, so the naive sum clips constantly. The
 //  limiter holds the sum without ducking the individual hits.
-let _masterGain = null, _limiter = null;
+let _masterGain = null, _limiter = null, _ceiling = null;
+
+// A compressor is not a brick wall: it has a 3ms attack, so the leading
+// transient of a chord is already through before it reacts. Seven
+// simultaneous double-taps measured a peak of 1.32 — a third of the way
+// past full scale, which is audible crunch on the loudest moment of a
+// song. This curve is the ceiling: identity through the middle, a soft
+// knee near the top, and mathematically incapable of exceeding 1.0,
+// because a WaveShaper clamps anything past its ends to its endpoints.
+// CEIL is 0.97, not 1.0, on purpose: 2x oversampling reconstructs
+// through a filter that rings slightly past the sample it was given, so
+// a curve topping out at exactly 1.0 still measured 1.002. A quarter of
+// a decibel of headroom absorbs the ring and costs nothing audible.
+const CEIL = 0.97;
+function _ceilingCurve(n) {
+  const c = new Float32Array(n);
+  const k = 1.6, norm = Math.tanh(k);
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / (n - 1) - 1;
+    c[i] = (Math.tanh(x * k) / norm) * CEIL;
+  }
+  return c;
+}
+
 function masterGain() {
   if (!_masterGain) {
     const c = ctx();
     _masterGain = c.createGain();
     _masterGain.gain.value = _masterVol;
+    let tail = _masterGain;
+    // Four lanes can fire in one frame and a campaign chord stacks
+    // three notes on one beat, so the naive sum clips constantly.
     if (typeof c.createDynamicsCompressor === 'function') {
       _limiter = c.createDynamicsCompressor();
       _limiter.threshold.value = -8;
@@ -1660,11 +1693,19 @@ function masterGain() {
       _limiter.ratio.value     = 12;
       _limiter.attack.value    = 0.003;
       _limiter.release.value   = 0.18;
-      _masterGain.connect(_limiter);
-      _limiter.connect(c.destination);
-    } else {
-      _masterGain.connect(c.destination);
+      tail.connect(_limiter);
+      tail = _limiter;
     }
+    if (typeof c.createWaveShaper === 'function') {
+      _ceiling = c.createWaveShaper();
+      _ceiling.curve = _ceilingCurve(1024);
+      // 2x: soft clipping generates harmonics, and oversampling keeps
+      // the ones above Nyquist from folding back down as grit.
+      _ceiling.oversample = '2x';
+      tail.connect(_ceiling);
+      tail = _ceiling;
+    }
+    tail.connect(c.destination);
   }
   return _masterGain;
 }
