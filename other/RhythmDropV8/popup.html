@@ -1,0 +1,1214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>RhythmDrop</title>
+<style>
+/* ── Fonts ──
+   No @import here on purpose. This used to pull two families from
+   fonts.googleapis.com, which is a render-blocking request at the very
+   top of the sheet — so every open of the popup waited on the network,
+   and offline (or as a packed extension, where the fetch is blocked
+   outright) it waited and then fell back anyway. The stacks below name
+   the same faces first, so anyone who has them installed still gets
+   them, and everyone else gets a good local match immediately.
+
+   It is also what makes "no network calls" true rather than aspirational. */
+:root {
+  --font-body: 'Outfit', 'Segoe UI Variable Text', 'Segoe UI',
+               -apple-system, BlinkMacSystemFont, 'Helvetica Neue', Arial, sans-serif;
+  --font-data: 'Space Mono', ui-monospace, 'Cascadia Mono', 'Consolas',
+               'SF Mono', Menlo, monospace;
+}
+
+/* ══════════════════════════════════════
+   THEME VARIABLES — swapped by JS
+══════════════════════════════════════ */
+:root {
+  --bg:        #07070f;
+  --bg2:       #0e0e1c;
+  --bg3:       #14142a;
+  --bg4:       #1a1a35;
+  --border:    #1f1f3a;
+  --border2:   #2a2a50;
+  --text:      #e8e8ff;
+  --muted:     #5a5a8a;
+  --dim:       #2a2a4a;
+  --tap:       #3B82F6;
+  --tap2:      #60a5fa;
+  --dtap:      #FF3A6E;
+  --dtap2:     #ff6b95;
+  --good:      #10b981;
+  --perfect:   #f59e0b;
+  --miss:      #ef4444;
+  --lane-flash:#1a2a4a;
+  --glow-tap:  rgba(59,130,246,0.4);
+  --glow-dtap: rgba(255,58,110,0.4);
+  --accent:    #FF3A6E;
+}
+
+/* ── THEMES ── */
+body.theme-forest {
+  --bg:#04100a; --bg2:#081a0f; --bg3:#0d2415; --bg4:#11301c;
+  --border:#143020; --border2:#1f4830;
+  --text:#c8ffdd; --muted:#4a7a5a; --dim:#1a3020;
+  --tap:#22c55e; --tap2:#4ade80; --dtap:#f97316; --dtap2:#fb923c;
+  --lane-flash:#0d2a12; --glow-tap:rgba(34,197,94,0.4); --glow-dtap:rgba(249,115,22,0.4);
+  --accent:#22c55e;
+}
+body.theme-sunset {
+  --bg:#120a04; --bg2:#1e1008; --bg3:#2a160a; --bg4:#381e10;
+  --border:#3a2010; --border2:#4a3018;
+  --text:#ffe8c8; --muted:#7a5a3a; --dim:#3a2010;
+  --tap:#f59e0b; --tap2:#fbbf24; --dtap:#ec4899; --dtap2:#f472b6;
+  --lane-flash:#2a1800; --glow-tap:rgba(245,158,11,0.4); --glow-dtap:rgba(236,72,153,0.4);
+  --accent:#f59e0b;
+}
+body.theme-void {
+  --bg:#000000; --bg2:#080808; --bg3:#111; --bg4:#181818;
+  --border:#222; --border2:#333;
+  --text:#ffffff; --muted:#555; --dim:#222;
+  --tap:#ffffff; --tap2:#cccccc; --dtap:#888; --dtap2:#aaa;
+  --lane-flash:#1a1a1a; --glow-tap:rgba(255,255,255,0.25); --glow-dtap:rgba(150,150,150,0.3);
+  --accent:#ffffff;
+}
+body.theme-neon {
+  --bg:#000010; --bg2:#000820; --bg3:#001030; --bg4:#001840;
+  --border:#002050; --border2:#003080;
+  --text:#00ffff; --muted:#006080; --dim:#003050;
+  --tap:#00ffff; --tap2:#80ffff; --dtap:#ff00ff; --dtap2:#ff80ff;
+  --lane-flash:#002040; --glow-tap:rgba(0,255,255,0.5); --glow-dtap:rgba(255,0,255,0.5);
+  --accent:#00ffff;
+}
+/* Dune — spice sand & Fremen-blue eyes */
+body.theme-dune {
+  --bg:#140d04; --bg2:#1f1408; --bg3:#2c1d0c; --bg4:#3a2811;
+  --border:#3a2810; --border2:#4d3818;
+  --text:#f0d9a8; --muted:#8a6a3a; --dim:#2c1d0c;
+  --tap:#d9a441; --tap2:#e8c06a; --dtap:#5aa9e6; --dtap2:#86c4f0;
+  --lane-flash:#2c1d08; --glow-tap:rgba(217,164,65,0.45); --glow-dtap:rgba(90,169,230,0.5);
+  --accent:#d9a441;
+}
+/* Middle-earth — gold ring & forest green */
+body.theme-lotr {
+  --bg:#080a06; --bg2:#0f130c; --bg3:#171c12; --bg4:#1f261a;
+  --border:#1f261a; --border2:#2e3826;
+  --text:#e8e0c0; --muted:#6a7250; --dim:#1a2014;
+  --tap:#c9a227; --tap2:#e3c34e; --dtap:#6b8e4e; --dtap2:#8fb46e;
+  --lane-flash:#1a1c10; --glow-tap:rgba(201,162,39,0.45); --glow-dtap:rgba(107,142,78,0.45);
+  --accent:#c9a227;
+}
+/* Foundation — deep space, psychohistory cyan & gold */
+body.theme-foundation {
+  --bg:#04060c; --bg2:#080d18; --bg3:#0c1424; --bg4:#121d33;
+  --border:#0f1d33; --border2:#1a2c4d;
+  --text:#bfe9f5; --muted:#456080; --dim:#0c1424;
+  --tap:#5ad1e6; --tap2:#8ee3f2; --dtap:#e0b020; --dtap2:#f0cb52;
+  --lane-flash:#0a1830; --glow-tap:rgba(90,209,230,0.5); --glow-dtap:rgba(224,176,32,0.45);
+  --accent:#5ad1e6;
+}
+/* Nintendo — bold red & blue on black */
+body.theme-nintendo {
+  --bg:#0a0a0a; --bg2:#141414; --bg3:#1d1d1d; --bg4:#262626;
+  --border:#2a2a2a; --border2:#3a3a3a;
+  --text:#ffffff; --muted:#7a7a7a; --dim:#222;
+  --tap:#e60012; --tap2:#ff3346; --dtap:#00a0e9; --dtap2:#4cc2ff;
+  --lane-flash:#2a0006; --glow-tap:rgba(230,0,18,0.5); --glow-dtap:rgba(0,160,233,0.5);
+  --accent:#e60012;
+}
+/* Liquid Glass — frosted translucent panels; --glass-a controls opacity */
+body.theme-glass {
+  --glass-a:0.5;
+  --bg:#0a0e16; --text:#eaf2ff; --muted:#7d8aa8; --dim:rgba(255,255,255,.08);
+  --bg2:rgba(255,255,255,var(--glass-a)); --bg3:rgba(255,255,255,calc(var(--glass-a) * 0.7));
+  --bg4:rgba(255,255,255,calc(var(--glass-a) * 0.9));
+  --border:rgba(255,255,255,.18); --border2:rgba(255,255,255,.28);
+  --tap:#7dd3fc; --tap2:#bae6fd; --dtap:#f0abfc; --dtap2:#f5c2fd;
+  --lane-flash:rgba(255,255,255,.14); --glow-tap:rgba(125,211,252,0.5); --glow-dtap:rgba(240,171,252,0.5);
+  --accent:#f0abfc;
+  background:radial-gradient(1200px 800px at 20% -10%, #1b2740 0%, #0a0e16 60%) fixed;
+}
+/* ── LIGHT THEME COMPATIBILITY VARIABLES ── */
+:root {
+  --overlay-bg:    rgba(7,7,15,0.92);
+  --overlay-scrim: rgba(0,0,0,0.35);
+  --scanline-clr:  rgba(255,255,255,0.012);
+  --note-key-text: rgba(255,255,255,0.85);
+  --lane-hitglow-clr: rgba(59,130,246,0.07);
+  --cr-note-sel-border: rgba(255,255,255,0.15);
+  --cr-note-sel-bg:     rgba(0,0,0,0.35);
+  --input-text:    var(--text);
+}
+
+/* Paper — warm off-white, ink-black */
+body.theme-paper {
+  --bg:#f5f0e8; --bg2:#ede8dc; --bg3:#e4ddd0; --bg4:#dbd4c4;
+  --border:#ccc4b0; --border2:#b8ae98;
+  --text:#1a1510; --muted:#7a6e5a; --dim:#c0b89e;
+  --tap:#1a6bbf; --tap2:#2a85e0; --dtap:#c0392b; --dtap2:#e05444;
+  --lane-flash:#dde8f8; --glow-tap:rgba(26,107,191,0.25); --glow-dtap:rgba(192,57,43,0.25);
+  --accent:#c0392b;
+  --overlay-bg:rgba(245,240,232,0.95);
+  --overlay-scrim:rgba(200,190,170,0.5);
+  --scanline-clr:rgba(0,0,0,0.015);
+  --note-key-text:rgba(20,15,10,0.75);
+  --lane-hitglow-clr:rgba(26,107,191,0.07);
+  --cr-note-sel-border:rgba(0,0,0,0.15);
+  --cr-note-sel-bg:rgba(255,255,255,0.6);
+  --input-text:#1a1510;
+}
+
+/* Arctic — crisp white & ice-blue */
+body.theme-arctic {
+  --bg:#f0f6ff; --bg2:#e4eefa; --bg3:#d8e7f8; --bg4:#ccdff5;
+  --border:#b8d0ee; --border2:#9abce4;
+  --text:#0a1828; --muted:#4a6a8a; --dim:#a8c4e0;
+  --tap:#0070c0; --tap2:#0090e0; --dtap:#7b2fbe; --dtap2:#9b4fde;
+  --lane-flash:#d0e8ff; --glow-tap:rgba(0,112,192,0.25); --glow-dtap:rgba(123,47,190,0.25);
+  --accent:#0070c0;
+  --overlay-bg:rgba(240,246,255,0.96);
+  --overlay-scrim:rgba(180,210,240,0.5);
+  --scanline-clr:rgba(0,0,0,0.012);
+  --note-key-text:rgba(10,24,40,0.75);
+  --lane-hitglow-clr:rgba(0,112,192,0.07);
+  --cr-note-sel-border:rgba(0,0,0,0.15);
+  --cr-note-sel-bg:rgba(255,255,255,0.65);
+  --input-text:#0a1828;
+}
+
+/* Frost the key panels under the glass theme */
+body.theme-glass .level-card,
+body.theme-glass .avatar-card,
+body.theme-glass .theme-card,
+body.theme-glass #pbar,
+body.theme-glass .home-hero,
+body.theme-glass #tab-settings > div,
+body.theme-glass .lane { -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
+
+* { box-sizing:border-box; margin:0; padding:0; }
+/* Width is the only adjustable dimension. Vertical resizing never
+   really worked — the board, the creator grid and the campaign list
+   all size themselves off the height, and dragging it left them
+   half-laid-out — so the height is pinned and the corner grip only
+   moves horizontally. Everything vertical scrolls instead. */
+html {
+  width:420px; height:640px; overflow:hidden;
+  resize:horizontal; min-width:340px; max-width:1100px;
+}
+body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--font-body); transition:background .3s, color .3s; }
+.mono { font-family:var(--font-data); }
+
+/* ── SCREENS ── */
+.screen { width:100%; height:100%; display:none; flex-direction:column; overflow:hidden; position:relative; }
+.screen.active { display:flex; }
+
+/* ══════════════════════════════════════
+   HOME
+══════════════════════════════════════ */
+#home { background:var(--bg); }
+#home-hero {
+  padding:22px 22px 16px; border-bottom:1px solid var(--border);
+  background:linear-gradient(150deg,var(--bg3) 0%,var(--bg) 100%);
+  position:relative; overflow:hidden;
+}
+#home-hero::before {
+  content:''; position:absolute; top:-50px; right:-50px;
+  width:200px; height:200px; border-radius:50%;
+  background:radial-gradient(circle,var(--glow-dtap) 0%,transparent 70%);
+  pointer-events:none;
+}
+.hero-row { display:flex; align-items:center; gap:14px; }
+.logo-mark {
+  width:46px; height:46px; border-radius:12px; flex-shrink:0;
+  background:var(--bg2); border:1px solid var(--border2);
+  display:flex; align-items:center; justify-content:center;
+}
+.logo-mark svg { width:28px; height:28px; }
+.hero-text h1 { font-size:26px; font-weight:900; letter-spacing:-1.5px; line-height:1; }
+.hero-text h1 span { color:var(--dtap); }
+.hero-text p  { font-size:11px; color:var(--muted); letter-spacing:2px; margin-top:3px; }
+.legend-row { display:flex; gap:10px; margin-top:12px; }
+.leg-pill {
+  display:flex; align-items:center; gap:7px;
+  background:var(--bg3); border:1px solid var(--border);
+  border-radius:20px; padding:4px 11px 4px 7px; font-size:11px; color:var(--muted);
+}
+.leg-dot { width:14px; height:14px; border-radius:3px; flex-shrink:0; }
+.ld-tap  { background:var(--tap); }
+.ld-dtap { background:var(--dtap); border:2px solid var(--dtap2); }
+
+/* nav bar */
+#home-nav {
+  display:flex; border-bottom:1px solid var(--border);
+  padding:0 18px; gap:4px;
+}
+.hnav {
+  padding:10px 7px; font-size:10px; font-weight:700; letter-spacing:1px;
+  text-transform:uppercase; color:var(--muted); cursor:pointer;
+  border-bottom:2px solid transparent; transition:color .2s,border-color .2s;
+  white-space:nowrap;
+}
+.hnav.active { color:var(--accent); border-color:var(--accent); }
+
+/* tab panes */
+.tab-pane { display:none; flex:1; overflow-y:auto; padding:12px 14px; flex-direction:column; gap:8px; }
+.tab-pane.active { display:flex; }
+
+/* level cards */
+.level-card {
+  background:var(--bg2); border:1px solid var(--border); border-radius:12px;
+  padding:13px 15px; display:flex; align-items:center; justify-content:space-between;
+  cursor:pointer; transition:border-color .15s,background .15s,transform .1s;
+  position:relative; overflow:hidden;
+}
+.level-card::before {
+  content:''; position:absolute; left:0;top:0;bottom:0; width:3px;
+  background:var(--accent); opacity:0; border-radius:3px 0 0 3px; transition:opacity .15s;
+}
+.level-card:hover { border-color:var(--border2); background:var(--bg3); transform:translateX(2px); }
+.level-card:hover::before { opacity:1; }
+.lc-info .lc-name { font-size:14px; font-weight:700; }
+.lc-info .lc-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.lc-hs {
+  display:flex; align-items:center; gap:5px; margin-top:4px;
+  font-size:11px; font-family:var(--font-data);
+}
+.lc-hs-icon { font-size:10px; }
+.lc-hs-score { font-weight:700; color:var(--perfect); }
+.lc-hs-name { color:var(--muted); font-size:10px; }
+.lc-hs-none { color:var(--dim); font-size:10px; font-style:italic; }
+.lc-badge {
+  font-size:10px; font-weight:700; padding:3px 9px; border-radius:20px;
+  letter-spacing:1px; text-transform:uppercase; flex-shrink:0;
+}
+.b-easy   { background:rgba(16,185,129,.15); color:#10b981; }
+.b-medium { background:rgba(245,158,11,.15);  color:#f59e0b; }
+.b-hard   { background:rgba(255,58,110,.15);  color:var(--dtap); }
+.b-custom { background:rgba(59,130,246,.15);  color:var(--tap); }
+.card-actions { display:flex; gap:6px; align-items:center; }
+.ic-btn {
+  width:28px; height:28px; border-radius:7px; border:1px solid var(--border2);
+  background:none; color:var(--muted); display:flex; align-items:center; justify-content:center;
+  cursor:pointer; font-size:13px; transition:color .1s,border-color .1s;
+}
+.ic-btn:hover { color:var(--text); border-color:var(--muted); }
+.ic-btn.del:hover { color:var(--miss); border-color:var(--miss); }
+
+#new-lvl-btn {
+  width:100%; padding:11px; border-radius:12px; background:none;
+  border:1px dashed var(--border2); color:var(--muted); font-size:13px; font-weight:600;
+  font-family:var(--font-body); cursor:pointer; transition:border-color .15s,color .15s;
+}
+#new-lvl-btn:hover { border-color:var(--dtap); color:var(--dtap); }
+
+/* ── THEMES PANEL ── */
+.themes-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px; }
+.theme-card {
+  border-radius:12px; border:2px solid transparent; padding:14px; cursor:pointer;
+  transition:border-color .2s,transform .1s; position:relative; overflow:hidden;
+}
+.theme-card.selected { border-color:var(--accent); }
+.theme-card:hover { transform:scale(1.02); }
+.tc-name { font-size:13px; font-weight:700; margin-bottom:4px; }
+.tc-subs { font-size:11px; opacity:.6; }
+.tc-dots { display:flex; gap:5px; margin-top:8px; }
+.tc-dot  { width:18px; height:8px; border-radius:4px; }
+
+.theme-card[data-theme="dark"]    { background:#0e0e1c; border-color:#1f1f3a; }
+.theme-card[data-theme="forest"]  { background:#081a0f; border-color:#143020; }
+.theme-card[data-theme="sunset"]  { background:#1e1008; border-color:#3a2010; }
+.theme-card[data-theme="void"]    { background:#111;    border-color:#333; }
+.theme-card[data-theme="neon"]    { background:#000820; border-color:#002050; }
+.theme-card[data-theme="dune"]       { background:#1f1408; border-color:#3a2810; }
+.theme-card[data-theme="lotr"]       { background:#0f130c; border-color:#2e3826; }
+.theme-card[data-theme="foundation"] { background:#080d18; border-color:#1a2c4d; }
+.theme-card[data-theme="nintendo"]   { background:#141414; border-color:#3a3a3a; }
+.theme-card[data-theme="glass"]      { background:rgba(255,255,255,.08); border-color:rgba(255,255,255,.25); -webkit-backdrop-filter:blur(8px); backdrop-filter:blur(8px); }
+.theme-card[data-theme="paper"]      { background:#ede8dc; border-color:#b8ae98; color:#1a1510; }
+.theme-card[data-theme="arctic"]     { background:#e4eefa; border-color:#9abce4; color:#0a1828; }
+.theme-card[data-theme="custom"]  { background:var(--bg2); border-color:var(--border2); }
+
+.custom-theme-form { padding:0 14px 14px; display:none; flex-direction:column; gap:8px; }
+.custom-theme-form.show { display:flex; }
+.ctf-row { display:flex; align-items:center; gap:10px; }
+.ctf-label { font-size:12px; color:var(--muted); width:80px; flex-shrink:0; }
+.ctf-input {
+  flex:1; height:32px; border-radius:6px; border:1px solid var(--border2);
+  background:var(--bg3); cursor:pointer; padding:2px 4px;
+}
+.ctf-input[type="color"] { padding:2px; }
+.ctf-apply {
+  width:100%; padding:9px; border-radius:9px; border:none;
+  background:var(--accent); color:#fff; font-size:13px; font-weight:700;
+  font-family:var(--font-body); cursor:pointer;
+}
+.glass-trans-form { padding:0 14px 14px; display:none; flex-direction:column; gap:8px; }
+.glass-trans-form.show { display:flex; }
+.glass-trans-row { display:flex; gap:8px; }
+.glass-trans-btn {
+  flex:1; padding:10px; border-radius:9px; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--muted); font-size:13px; font-weight:700;
+  font-family:var(--font-body); cursor:pointer; transition:all .12s;
+}
+.glass-trans-btn.sel { border-color:var(--accent); background:rgba(125,211,252,.15); color:var(--text); }
+
+/* ═══════════════════════════════════════
+   CREATOR (standard)
+═══════════════════════════════════════ */
+#creator { background:var(--bg); }
+.cr-header {
+  display:flex; align-items:center; gap:10px;
+  padding:11px 14px; border-bottom:1px solid var(--border);
+}
+.cr-back {
+  width:32px; height:32px; border-radius:8px; border:1px solid var(--border2);
+  background:none; color:var(--muted); cursor:pointer; font-size:16px;
+  display:flex; align-items:center; justify-content:center; transition:color .1s;
+}
+.cr-back:hover { color:var(--text); }
+.cr-title-input {
+  flex:1; background:none; border:none; outline:none;
+  font-size:15px; font-weight:700; color:var(--text); font-family:var(--font-body);
+}
+.cr-title-input::placeholder { color:var(--dim); }
+.cr-diff-sel {
+  background:var(--bg3); border:1px solid var(--border2); border-radius:8px;
+  color:var(--muted); font-size:11px; padding:5px 8px; outline:none;
+}
+.cr-save-btn {
+  font-size:12px; font-weight:700; padding:7px 15px; border-radius:8px;
+  border:1px solid var(--accent); background:color-mix(in srgb,var(--accent) 8%,transparent);
+  color:var(--accent); cursor:pointer; font-family:var(--font-body);
+  transition:background .1s;
+}
+.cr-save-btn:hover { background:color-mix(in srgb,var(--accent) 20%,transparent); }
+
+.cr-toolbar {
+  display:flex; align-items:center; gap:6px;
+  padding:8px 14px; border-bottom:1px solid var(--border); flex-wrap:wrap;
+}
+.tool-btn {
+  padding:7px 10px; border-radius:8px; border:1px solid var(--border2);
+  background:var(--bg2); color:var(--muted); font-size:11px; font-weight:700;
+  font-family:var(--font-data); cursor:pointer; transition:all .12s; white-space:nowrap;
+}
+.tool-btn.at { border-color:var(--tap);  color:var(--tap);  background:color-mix(in srgb,var(--tap) 10%,transparent); }
+.tool-btn.ad { border-color:var(--dtap); color:var(--dtap); background:color-mix(in srgb,var(--dtap) 10%,transparent); }
+.tool-btn.ae { border-color:var(--muted);color:var(--text); background:var(--bg3); }
+.cr-sep { width:1px; height:26px; background:var(--border); }
+.bpm-row { display:flex; align-items:center; gap:5px; }
+.bpm-row label { font-size:10px; color:var(--muted); font-family:var(--font-data); }
+.bpm-input {
+  width:50px; padding:5px 6px; border-radius:7px; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--text); font-size:12px; font-weight:700;
+  text-align:center; outline:none; font-family:var(--font-data);
+}
+.adv-toggle {
+  font-size:10px; color:var(--muted); cursor:pointer; padding:6px 10px;
+  border-radius:7px; border:1px solid var(--border); background:none; transition:color .1s,border-color .1s;
+  font-family:var(--font-data); white-space:nowrap;
+}
+.adv-toggle:hover { color:var(--accent); border-color:var(--accent); }
+
+.cr-grid-wrap { flex:1; overflow-y:auto; padding:10px 14px; }
+#cr-grid {
+  display:grid; grid-template-columns:28px repeat(4,1fr); gap:3px;
+}
+.cr-row-num {
+  display:flex; align-items:center; justify-content:flex-end;
+  padding-right:5px; font-size:9px; color:var(--dim); font-family:var(--font-data);
+}
+.cr-cell {
+  height:24px; border-radius:5px; border:1px solid var(--border);
+  background:var(--bg3); cursor:pointer; transition:background .08s,border-color .08s;
+}
+.cr-cell:hover { border-color:var(--border2); }
+.cr-cell.is-tap  { background:color-mix(in srgb,var(--tap) 40%,transparent); border-color:var(--tap); }
+.cr-cell.is-dtap { background:color-mix(in srgb,var(--dtap) 40%,transparent); border-color:var(--dtap); }
+
+/* Per-note frequency selector inside cells (advanced mode) */
+.cr-cell.has-note-pick {
+  height: auto; min-height: 24px; display:flex; flex-direction:column; align-items:stretch;
+  padding: 2px 2px 2px 2px; gap: 2px;
+}
+.cr-note-sel {
+  width: 100%; padding: 1px 2px; border-radius: 4px;
+  border: 1px solid var(--cr-note-sel-border);
+  background: var(--cr-note-sel-bg); color: var(--text);
+  font-size: 9px; font-family: var(--font-data);
+  outline: none; cursor: pointer; line-height: 1.3;
+}
+.cr-cell.is-tap .cr-note-sel  { border-color: rgba(59,130,246,.5); }
+.cr-cell.is-dtap .cr-note-sel { border-color: rgba(255,58,110,.5); }
+
+.cr-add-btn {
+  width:100%; margin-top:7px; padding:8px; border-radius:8px; background:none;
+  border:1px dashed var(--border); color:var(--dim); font-size:12px; cursor:pointer;
+  font-family:var(--font-body); transition:border-color .15s,color .15s;
+}
+.cr-add-btn:hover { border-color:var(--tap); color:var(--tap); }
+
+/* ── CREATOR BODY: grid on the left, advanced panel on the right ──
+   The panel used to open downward, between the toolbar and the grid,
+   which pushed the grid off the bottom of a window that cannot grow
+   taller. It opens sideways now and takes its space from a widened
+   window, so the chart you are editing never moves. */
+.cr-body { flex:1; display:flex; min-height:0; position:relative; }
+.cr-main { flex:1; display:flex; flex-direction:column; min-width:0; }
+
+#adv-panel {
+  flex:0 0 auto; width:0; padding:0; overflow:hidden;
+  border-left:1px solid transparent; background:var(--bg2);
+  display:flex; flex-direction:column; gap:8px;
+  transition:width .18s ease, padding .18s ease;
+}
+#adv-panel.open {
+  width:var(--adv-w,300px); padding:10px 12px;
+  overflow-y:auto; overflow-x:hidden;
+  border-left-color:var(--border);
+}
+/* When the window is already as wide as it can go, the panel floats
+   over the grid rather than squeezing it — the pre-widening
+   behaviour, kept as the fallback so a panel is never unusable. */
+body.adv-overlay #adv-panel.open {
+  position:absolute; top:0; right:0; bottom:0; z-index:30;
+  box-shadow:-14px 0 30px -10px rgba(0,0,0,.55);
+}
+/* The panel's own controls have to survive a narrow column. */
+#adv-panel .lane-note-grid { grid-template-columns:repeat(2,1fr); }
+#adv-panel .bass-step-grid { gap:3px; }
+#adv-panel .bass-step { width:32px; height:30px; }
+.adv-section { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px; }
+
+/* per-lane note picker */
+.lane-note-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
+.lnote-col { display:flex; flex-direction:column; gap:4px; align-items:center; }
+.lnote-label { font-size:11px; font-weight:700; color:var(--tap); font-family:var(--font-data); }
+.lnote-sel {
+  width:100%; padding:4px; border-radius:6px; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--text); font-size:10px; outline:none; cursor:pointer;
+}
+
+/* bg sound settings */
+.bg-sound-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.bg-radio-group { display:flex; gap:6px; }
+.bg-radio-btn {
+  padding:5px 11px; border-radius:7px; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--muted); font-size:11px; font-weight:700;
+  font-family:var(--font-data); cursor:pointer; transition:all .12s;
+}
+.bg-radio-btn.sel { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,transparent); }
+
+/* bass pattern editor */
+#bass-editor { display:none; flex-direction:column; gap:6px; margin-top:4px; }
+#bass-editor.open { display:flex; }
+.bass-step-grid { display:flex; gap:4px; flex-wrap:wrap; }
+.bass-step {
+  width:36px; height:32px; border-radius:6px; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--muted); font-size:9px; font-weight:700;
+  font-family:var(--font-data); cursor:pointer; display:flex;
+  align-items:center; justify-content:center; transition:all .1s; flex-direction:column; gap:1px;
+}
+.bass-step.active { background:color-mix(in srgb,var(--tap) 35%,transparent); border-color:var(--tap); color:var(--tap); }
+.bass-step-note {
+  font-size:8px; color:var(--muted);
+}
+.bass-note-sel {
+  padding:4px 6px; border-radius:6px; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--text); font-size:11px; outline:none; width:120px;
+}
+
+/* ═══════════════════════════════════════
+   GAME SCREEN
+═══════════════════════════════════════ */
+#game { background:var(--bg); }
+#g-hud {
+  padding:10px 16px 8px; display:flex; align-items:center;
+  justify-content:space-between; border-bottom:1px solid var(--border);
+}
+.hud-score-lbl { font-size:9px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; font-family:var(--font-data); }
+.hud-score-num { font-size:30px; font-weight:900; letter-spacing:-2px; line-height:1; }
+.hud-combo {
+  background:var(--bg3); border:1px solid var(--border2); border-radius:20px;
+  padding:4px 14px; font-size:13px; font-weight:700; color:var(--tap);
+  font-family:var(--font-data); min-width:52px; text-align:center;
+  transition:color .3s;
+}
+.hud-lives { font-size:15px; letter-spacing:4px; }
+
+#g-lanes { flex:1; display:flex; gap:6px; padding:0 12px; }
+.lane {
+  flex:1; position:relative; border-radius:10px; overflow:hidden;
+  border:1px solid var(--border); transition:background .3s;
+}
+/* each lane has its own bg color for tap glow */
+.lane[data-lane="0"] { background:color-mix(in srgb,var(--tap) 4%,var(--bg2)); }
+.lane[data-lane="1"] { background:color-mix(in srgb,var(--dtap) 4%,var(--bg2)); }
+.lane[data-lane="2"] { background:color-mix(in srgb,var(--tap) 4%,var(--bg2)); }
+.lane[data-lane="3"] { background:color-mix(in srgb,var(--dtap) 4%,var(--bg2)); }
+/* scanlines */
+.lane::before {
+  content:''; position:absolute; inset:0; z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 11px,var(--scanline-clr) 12px);
+  pointer-events:none;
+}
+.lane-hitbar {
+  position:absolute; bottom:52px; left:0; right:0; height:2px;
+  background:var(--tap); z-index:3;
+  box-shadow:0 0 8px var(--glow-tap);
+}
+.lane-hitglow {
+  position:absolute; bottom:41px; left:0; right:0; height:22px;
+  background:var(--lane-hitglow-clr); z-index:2;
+}
+/* lane flash: replaces background briefly on tap */
+.lane.glow-tap  { background:color-mix(in srgb,var(--tap) 22%,var(--bg2)) !important; }
+.lane.glow-dtap { background:color-mix(in srgb,var(--dtap) 22%,var(--bg2)) !important; }
+
+.lane-btn {
+  position:absolute; bottom:0; left:0; right:0; height:50px;
+  background:var(--bg3); border-top:1px solid var(--border2);
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; z-index:5; user-select:none;
+  transition:background .06s;
+}
+.lane-key { font-size:12px; font-weight:700; color:var(--muted); font-family:var(--font-data); }
+.lane-fb {
+  position:absolute; bottom:58px; left:0; right:0; text-align:center;
+  font-size:9px; font-weight:700; letter-spacing:1.5px; text-transform:uppercase;
+  font-family:var(--font-data); z-index:10; pointer-events:none;
+  opacity:0; transition:opacity .2s;
+}
+.lane-fb.show { opacity:1; }
+
+/* tiles */
+.tile {
+  position:absolute; left:5px; right:5px; border-radius:7px; z-index:4;
+}
+.tile-tap {
+  background:linear-gradient(180deg,var(--tap2) 0%,var(--tap) 100%);
+  box-shadow:0 0 10px var(--glow-tap);
+}
+.tile-dtap {
+  background:linear-gradient(180deg,var(--dtap2) 0%,var(--dtap) 100%);
+  border:1.5px solid rgba(255,255,255,.25);
+  box-shadow:0 0 10px var(--glow-dtap);
+}
+.tile-dtap.primed {
+  animation:dtap-pulse .18s ease-out infinite alternate;
+}
+@keyframes dtap-pulse {
+  from { box-shadow:0 0 10px var(--glow-dtap); }
+  to   { box-shadow:0 0 24px rgba(255,58,110,.8); }
+}
+
+#g-footer {
+  display:flex; justify-content:space-between; align-items:center;
+  padding:6px 14px; border-top:1px solid var(--border);
+}
+#g-lvlname { font-size:11px; color:var(--muted); font-family:var(--font-data); }
+#g-menu-btn {
+  font-size:11px; color:var(--muted); background:none; border:none;
+  cursor:pointer; font-family:var(--font-data); transition:color .1s;
+}
+#g-menu-btn:hover { color:var(--text); }
+
+/* ── GAME OVERLAY ── */
+#g-overlay {
+  position:absolute; inset:0; background:rgba(7,7,15,.95);
+  backdrop-filter:blur(6px);
+  display:none; flex-direction:column; align-items:center; justify-content:center;
+  gap:13px; z-index:50;
+}
+#g-overlay.show { display:flex; }
+.ov-logo {
+  width:52px; height:52px; border-radius:13px;
+  background:var(--bg2); border:1px solid var(--border2);
+  display:flex; align-items:center; justify-content:center;
+}
+.ov-logo svg { width:30px; height:30px; }
+#ov-title { font-size:22px; font-weight:900; letter-spacing:-1px; }
+#ov-title span { color:var(--dtap); }
+.ov-legend { display:flex; gap:10px; }
+.ov-leg {
+  display:flex; align-items:center; gap:8px; background:var(--bg2);
+  border:1px solid var(--border); border-radius:10px; padding:7px 12px;
+  font-size:11px; color:var(--muted); font-family:var(--font-data);
+}
+.ov-swatch { width:22px; height:14px; border-radius:4px; }
+.os-tap  { background:var(--tap);  box-shadow:0 0 6px var(--glow-tap); }
+.os-dtap { background:var(--dtap); border:1.5px solid var(--dtap2); box-shadow:0 0 6px var(--glow-dtap); }
+.ov-keys { display:flex; gap:8px; }
+.ov-key {
+  background:var(--bg3); border:1px solid var(--border2); border-radius:7px;
+  padding:7px 14px; font-size:14px; font-weight:700; color:var(--tap);
+  font-family:var(--font-data);
+}
+#ov-score { font-size:52px; font-weight:900; letter-spacing:-3px; color:var(--dtap); display:none; line-height:1; }
+#ov-score-lbl { font-size:10px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; font-family:var(--font-data); display:none; }
+.ov-play-btn {
+  font-size:14px; font-weight:700; padding:12px 40px; border-radius:10px;
+  border:1px solid var(--dtap); background:color-mix(in srgb,var(--dtap) 12%,transparent);
+  color:var(--text); cursor:pointer; font-family:var(--font-body);
+  transition:background .1s,transform .1s;
+}
+.ov-play-btn:hover { background:color-mix(in srgb,var(--dtap) 25%,transparent); transform:scale(1.02); }
+.ov-hint { font-size:10px; color:var(--dim); font-family:var(--font-data); letter-spacing:1px; }
+
+/* ── SPEED HUD badge ── */
+#speed-badge {
+  position:absolute; top:8px; right:14px;
+  font-size:10px; font-weight:700; color:var(--accent);
+  font-family:var(--font-data); opacity:0; transition:opacity .5s;
+  background:var(--bg3); border:1px solid var(--border2); border-radius:6px; padding:2px 7px;
+}
+#speed-badge.show { opacity:1; }
+
+/* scrollbar */
+::-webkit-scrollbar { width:3px; }
+::-webkit-scrollbar-track { background:transparent; }
+::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
+
+/* ── PROFILE BAR ── */
+#profile-bar {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 14px 6px; border-bottom:1px solid var(--border);
+  background:var(--bg2); flex-shrink:0;
+}
+#pbar-avatar {
+  width:36px; height:48px; border-radius:8px; overflow:hidden;
+  border:2px solid var(--border2); flex-shrink:0; cursor:pointer;
+  background:var(--bg3); display:flex; align-items:center; justify-content:center;
+  transition:border-color .15s;
+}
+#pbar-avatar:hover { border-color:var(--accent); }
+#pbar-avatar img, #pbar-avatar canvas { width:100%; height:100%; object-fit:cover; }
+#pbar-avatar .default-av { font-size:20px; }
+.pbar-info { flex:1; min-width:0; }
+#pbar-username { font-size:13px; font-weight:700; color:var(--text); truncate:ellipsis; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+#pbar-coins { font-size:11px; color:var(--perfect); font-family:var(--font-data); }
+#pbar-hs { font-size:10px; color:var(--muted); font-family:var(--font-data); }
+
+/* ── HIGH SCORE DISPLAY ── */
+.hs-entry {
+  display:flex; align-items:center; gap:8px;
+  padding:8px 12px; border-radius:10px; background:var(--bg2);
+  border:1px solid var(--border);
+}
+.hs-rank { font-size:11px; font-weight:700; color:var(--muted); font-family:var(--font-data); width:20px; }
+.hs-rank.gold { color:var(--perfect); }
+.hs-name { flex:1; font-size:13px; font-weight:700; }
+.hs-score { font-size:12px; font-weight:700; color:var(--tap); font-family:var(--font-data); }
+.hs-coins { font-size:10px; color:var(--perfect); }
+.hs-lvl { font-size:10px; color:var(--muted); }
+
+/* ── SHOP ── */
+.shop-section-head {
+  font-size:10px; font-weight:700; letter-spacing:2px; color:var(--muted);
+  font-family:var(--font-data); text-transform:uppercase; margin:10px 0 6px;
+}
+.avatar-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; }
+.avatar-card {
+  background:var(--bg2); border:2px solid var(--border); border-radius:10px;
+  padding:8px; display:flex; flex-direction:column; align-items:center; gap:5px;
+  cursor:pointer; transition:border-color .15s, transform .1s; position:relative;
+}
+.avatar-card:hover { border-color:var(--border2); transform:scale(1.02); }
+.avatar-card.owned { border-color:var(--good); }
+.avatar-card.equipped { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,transparent); }
+.avatar-thumb {
+  width:60px; height:80px; border-radius:6px; overflow:hidden;
+  background:var(--bg3); display:flex; align-items:center; justify-content:center;
+}
+.avatar-thumb img, .avatar-thumb canvas { width:100%; height:100%; object-fit:cover; }
+.avatar-thumb .big-emoji { font-size:32px; }
+.avatar-name { font-size:10px; font-weight:700; color:var(--text); text-align:center; }
+.avatar-price { font-size:10px; color:var(--perfect); font-family:var(--font-data); }
+.avatar-badge {
+  position:absolute; top:4px; right:4px; font-size:8px; font-weight:700;
+  padding:2px 5px; border-radius:4px; text-transform:uppercase; letter-spacing:.5px;
+}
+.av-badge-owned { background:color-mix(in srgb,var(--good) 20%,transparent); color:var(--good); }
+.av-badge-eq { background:color-mix(in srgb,var(--dtap) 20%,transparent); color:var(--dtap); }
+
+/* ── SHOP sub-nav ── */
+.shop-subnav { display:flex; gap:4px; margin-bottom:12px; }
+.shop-subnav button {
+  flex:1; padding:7px 4px; border-radius:8px; font-size:11px; font-weight:700;
+  font-family:var(--font-body); cursor:pointer; transition:all .12s; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--muted);
+}
+.shop-subnav button.active { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--accent); }
+
+/* rarity tag on shop cards */
+.rarity-tag {
+  position:absolute; top:4px; left:4px; font-size:7px; font-weight:700;
+  padding:2px 5px; border-radius:4px; text-transform:uppercase; letter-spacing:.5px;
+  color:#fff;
+  mix-blend-mode: normal;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.4);
+}
+/* trail preview swatch */
+.trail-swatch {
+  width:60px; height:80px; border-radius:6px; display:flex; align-items:flex-end;
+  justify-content:center; overflow:hidden; position:relative; background:var(--bg3);
+}
+.trail-flame {
+  width:14px; height:38px; border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+  filter:blur(1px); animation:flame-flicker .5s ease-in-out infinite alternate;
+}
+@keyframes flame-flicker {
+  from { transform:scaleY(.85) translateY(2px); opacity:.85; }
+  to   { transform:scaleY(1.1) translateY(-2px); opacity:1; }
+}
+
+/* ── MYSTERY BOX open animation ── */
+#mystery-overlay {
+  position:fixed; inset:0; background:var(--overlay-bg); backdrop-filter:blur(6px);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:16px; z-index:200; font-family:var(--font-body);
+}
+.mb-box { font-size:90px; animation:mb-shake .35s ease-in-out infinite; }
+@keyframes mb-shake {
+  0%,100% { transform:rotate(-8deg) scale(1); }
+  25%     { transform:rotate(8deg) scale(1.08); }
+  50%     { transform:rotate(-6deg) scale(1.04); }
+  75%     { transform:rotate(6deg) scale(1.1); }
+}
+.mb-label { font-size:13px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; font-family:var(--font-data); }
+.mb-reveal { display:flex; flex-direction:column; align-items:center; gap:10px; animation:mb-pop .4s cubic-bezier(.2,1.3,.4,1); }
+@keyframes mb-pop { from { transform:scale(.2); opacity:0; } to { transform:scale(1); opacity:1; } }
+.mb-reveal-thumb {
+  width:96px; height:128px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+  background:var(--bg2); border:3px solid; font-size:54px;
+}
+.mb-reveal-rarity { font-size:14px; font-weight:900; letter-spacing:2px; text-transform:uppercase; }
+.mb-reveal-name { font-size:15px; font-weight:700; color:var(--text); }
+.mb-reveal-sub { font-size:11px; color:var(--muted); font-family:var(--font-data); }
+.mb-close-btn {
+  margin-top:6px; font-size:13px; font-weight:700; padding:10px 32px; border-radius:10px;
+  border:1px solid var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--text);
+  cursor:pointer; font-family:var(--font-body);
+}
+.mb-close-btn:hover { background:color-mix(in srgb,var(--accent) 25%,transparent); }
+
+/* ── STREAK note trail particles (in-game) ── */
+.streak-particle {
+  position:absolute; width:9px; height:9px; border-radius:50%; z-index:6;
+  pointer-events:none; filter:blur(.5px);
+  animation:streak-rise .55s ease-out forwards;
+}
+@keyframes streak-rise {
+  0%   { transform:translateY(0) scale(1);   opacity:.95; }
+  100% { transform:translateY(-46px) scale(.2); opacity:0; }
+}
+
+/* ── Minimalist normal tap pulse (in-game) ── */
+.tap-pulse {
+  position:absolute; left:50%; transform:translate(-50%,-50%);
+  border-radius:50%; border:1.5px solid var(--tap); z-index:5; pointer-events:none;
+  animation:tap-pulse-anim .34s ease-out forwards;
+}
+@keyframes tap-pulse-anim {
+  0%   { width:6px;  height:6px;  opacity:.65; }
+  100% { width:40px; height:40px; opacity:0; }
+}
+
+/* Custom avatar upload area */
+.custom-av-upload {
+  border:2px dashed var(--border2); border-radius:10px; padding:14px;
+  display:flex; flex-direction:column; align-items:center; gap:6px;
+  cursor:pointer; transition:border-color .15s;
+}
+.custom-av-upload:hover { border-color:var(--accent); }
+.custom-av-preview {
+  width:90px; height:120px; border-radius:8px; overflow:hidden;
+  background:var(--bg3); border:1px solid var(--border2);
+  display:flex; align-items:center; justify-content:center;
+}
+
+/* ── CHAOS MODE ── */
+.chaos-toggle {
+  font-size:11px; font-weight:700; padding:8px 18px; border-radius:8px;
+  border:1px solid var(--border2); background:var(--bg3);
+  color:var(--muted); cursor:pointer; font-family:var(--font-data);
+  transition:all .15s; letter-spacing:.5px;
+}
+.chaos-toggle.on {
+  border-color:var(--perfect); color:var(--perfect); background:color-mix(in srgb,var(--perfect) 12%,transparent);
+}
+.tile-chaos-key {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font-size:13px; font-weight:700; color:var(--note-key-text);
+  font-family:var(--font-data); pointer-events:none;
+}
+
+/* ── END GAME overlay additions ── */
+#ov-currency-reward {
+  font-size:13px; font-weight:700; color:var(--perfect);
+  font-family:var(--font-data); display:none;
+}
+#ov-streak-bonus {
+  font-size:10px; color:var(--muted); font-family:var(--font-data); display:none;
+}
+
+/* ── USERNAME SETUP ── */
+#username-screen { background:var(--bg); }
+.uname-wrap {
+  flex:1; display:flex; flex-direction:column; align-items:center;
+  justify-content:center; gap:16px; padding:30px;
+}
+.uname-logo { font-size:40px; font-weight:900; letter-spacing:-2px; }
+.uname-logo span { color:var(--dtap); }
+.uname-sub { font-size:12px; color:var(--muted); letter-spacing:2px; text-transform:uppercase; font-family:var(--font-data); }
+.uname-input {
+  width:100%; padding:12px 16px; border-radius:12px; border:2px solid var(--border2);
+  background:var(--bg2); color:var(--text); font-size:16px; font-weight:700;
+  font-family:var(--font-body); outline:none; text-align:center;
+  transition:border-color .15s;
+}
+.uname-input:focus { border-color:var(--accent); }
+.uname-btn {
+  width:100%; padding:13px; border-radius:12px; border:none;
+  background:var(--accent); color:#fff; font-size:15px; font-weight:700;
+  font-family:var(--font-body); cursor:pointer; transition:opacity .15s;
+}
+.uname-btn:hover { opacity:.85; }
+
+</style>
+</head>
+<body>
+
+<!-- ══════════ USERNAME SETUP ══════════ -->
+<div class="screen" id="username-screen">
+  <div class="uname-wrap">
+    <div class="uname-logo">Rhythm<span>Drop</span></div>
+    <div class="uname-sub">Choose your username</div>
+    <input class="uname-input" id="uname-input" type="text" placeholder="Your name…" maxlength="16" autocomplete="off">
+    <button class="uname-btn" id="uname-confirm">Start Playing →</button>
+  </div>
+</div>
+
+<!-- ══════════ HOME ══════════ -->
+<div class="screen" id="home">
+  <!-- Profile Bar -->
+  <div id="profile-bar">
+    <div id="pbar-avatar" title="Change avatar"><span class="default-av">🎵</span></div>
+    <div class="pbar-info">
+      <div id="pbar-username">Player</div>
+      <div id="pbar-coins">🪙 0 coins</div>
+      <div id="pbar-hs">🏆 Best: 0</div>
+    </div>
+  </div>
+
+  <div id="home-hero">
+    <div class="hero-row">
+      <div class="logo-mark">
+        <svg viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="11" stroke="var(--dtap)" stroke-width="1.5" stroke-dasharray="4 3"/>
+          <circle cx="16" cy="16" r="6"  stroke="var(--dtap)" stroke-width="1.5" stroke-dasharray="3 2"/>
+          <circle cx="16" cy="16" r="2.5" fill="var(--dtap)"/>
+        </svg>
+      </div>
+      <div class="hero-text">
+        <h1>Rhythm<span>Drop</span></h1>
+        <p>TAP THE BEAT · A · S · D · F</p>
+      </div>
+    </div>
+    <div class="legend-row">
+      <div class="leg-pill"><div class="leg-dot ld-tap"></div>tap once</div>
+      <div class="leg-pill"><div class="leg-dot ld-dtap"></div>tap twice</div>
+    </div>
+  </div>
+
+  <div id="home-nav">
+    <div class="hnav active" data-tab="levels">Levels</div>
+    <div class="hnav" data-tab="custom">Custom</div>
+    <div class="hnav" data-tab="shop">Shop</div>
+    <div class="hnav" data-tab="themes">Themes</div>
+    <div class="hnav" data-tab="settings">Settings</div>
+  </div>
+
+  <div class="tab-pane active" id="tab-levels"></div>
+
+  <div class="tab-pane" id="tab-custom">
+    <button id="new-lvl-btn">+ Create new level</button>
+    <div id="custom-list"></div>
+  </div>
+
+
+  <!-- SHOP TAB -->
+  <div class="tab-pane" id="tab-shop">
+    <div class="shop-subnav" id="shop-subnav"></div>
+
+    <!-- Avatars / Icons section -->
+    <div class="shop-section" id="shop-sec-avatars">
+      <div class="shop-section-head">Avatars &amp; Icons</div>
+      <div class="avatar-grid" id="shop-avatar-grid"></div>
+      <div class="shop-section-head" style="margin-top:14px">Custom Avatar</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Upload your own 180×240 image for 1000 🪙</div>
+      <div class="custom-av-upload" id="custom-av-upload-area">
+        <div class="custom-av-preview" id="custom-av-preview">
+          <span style="font-size:28px;color:var(--muted)">+</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);text-align:center;">Click to upload image<br><span style="font-size:10px;opacity:.6">180×240px recommended</span></div>
+        <input type="file" id="custom-av-file" accept="image/*" style="display:none">
+      </div>
+      <button id="custom-av-buy-btn" style="display:none;width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;font-family:Outfit,sans-serif;cursor:pointer;">Buy &amp; Equip Custom Avatar — 1000 🪙</button>
+    </div>
+
+    <!-- Effects (note trails) section -->
+    <div class="shop-section" id="shop-sec-effects" style="display:none">
+      <div class="shop-section-head">Note Trail Effects</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Equip one — at a 100+ streak your notes leave a fire trail.</div>
+      <div class="avatar-grid" id="shop-trail-grid"></div>
+    </div>
+
+    <!-- Mystery Boxes section -->
+    <div class="shop-section" id="shop-sec-mystery" style="display:none">
+      <div class="shop-section-head">Mystery Boxes</div>
+      <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Open for a random avatar or trail — better boxes hold rarer loot.</div>
+      <div class="avatar-grid" id="shop-box-grid"></div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-themes">
+    <div class="themes-grid" id="themes-grid"></div>
+    <div class="custom-theme-form" id="custom-theme-form">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--font-data);letter-spacing:1px">CUSTOM COLORS</div>
+      <div class="ctf-row"><span class="ctf-label">Background</span><input class="ctf-input" type="color" id="ct-bg" value="#07070f"></div>
+      <div class="ctf-row"><span class="ctf-label">Surface</span><input class="ctf-input" type="color" id="ct-bg2" value="#0e0e1c"></div>
+      <div class="ctf-row"><span class="ctf-label">Text</span><input class="ctf-input" type="color" id="ct-text" value="#e8e8ff"></div>
+      <div class="ctf-row"><span class="ctf-label">Tap color</span><input class="ctf-input" type="color" id="ct-tap" value="#3B82F6"></div>
+      <div class="ctf-row"><span class="ctf-label">Dtap color</span><input class="ctf-input" type="color" id="ct-dtap" value="#FF3A6E"></div>
+      <button class="ctf-apply" id="ct-apply">Apply Custom Theme</button>
+    </div>
+    <div class="glass-trans-form" id="glass-trans-form">
+      <div style="font-size:11px;color:var(--muted);font-family:var(--font-data);letter-spacing:1px">GLASS TRANSPARENCY</div>
+      <div class="glass-trans-row">
+        <button class="glass-trans-btn" data-alpha="0.3">30%</button>
+        <button class="glass-trans-btn" data-alpha="0.5">50%</button>
+        <button class="glass-trans-btn" data-alpha="0.7">70%</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-pane" id="tab-settings"></div>
+</div>
+
+<!-- ══════════ CREATOR ══════════ -->
+<div class="screen" id="creator">
+  <div class="cr-header">
+    <button class="cr-back" id="cr-back">←</button>
+    <input class="cr-title-input" id="cr-name" type="text" placeholder="Level name…" maxlength="28">
+    <select class="cr-diff-sel" id="cr-diff">
+      <option value="easy">easy</option>
+      <option value="medium" selected>medium</option>
+      <option value="hard">hard</option>
+    </select>
+    <button class="cr-save-btn" id="cr-save">Save</button>
+  </div>
+
+  <div class="cr-body">
+  <div class="cr-main">
+  <div class="cr-toolbar">
+    <button class="tool-btn at" data-tool="tap" id="t-tap">■ TAP</button>
+    <button class="tool-btn" data-tool="dtap" id="t-dtap">◆ ×2</button>
+    <button class="tool-btn" data-tool="erase" id="t-erase">✕ ERA</button>
+    <div class="cr-sep"></div>
+    <div class="bpm-row"><label>BPM</label><input class="bpm-input" id="cr-bpm" type="number" min="60" max="220" value="120"></div>
+    <div class="cr-sep"></div>
+    <button class="adv-toggle" id="adv-toggle">⚙ Advanced</button>
+  </div>
+  <div class="cr-grid-wrap">
+    <div id="cr-grid"></div>
+    <button class="cr-add-btn" id="cr-add-rows">+ 4 beats</button>
+  </div>
+  </div>
+
+  <!-- Advanced panel — a side column, not a drawer -->
+  <div id="adv-panel">
+    <div class="adv-section">Lane Default Notes</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Default pitch per lane — override individual notes in the grid below</div>
+    <div class="lane-note-grid" id="lane-note-grid"></div>
+
+    <div class="adv-section" style="margin-top:6px">Note Sound</div>
+    <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;" id="adv-instrument-row"></div>
+
+    <div class="adv-section" style="margin-top:6px">Default Sustain / Pedal</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">How long the note fades — applies to new notes placed in the grid</div>
+    <div style="display:flex;align-items:center;gap:8px;" id="adv-sustain-row">
+      <span style="font-size:13px;">🎹</span>
+      <input type="range" id="adv-sustain-slider" min="0" max="3" step="0.5" value="0" style="flex:1;accent-color:var(--perfect);">
+      <span id="adv-sustain-label" style="font-size:11px;font-weight:700;color:var(--perfect);font-family:var(--font-data);min-width:32px;">off</span>
+    </div>
+
+    <div class="adv-section" style="margin-top:6px">Background Sound</div>
+    <div class="bg-sound-row">
+      <div class="bg-radio-group" id="bg-radio-group">
+        <button class="bg-radio-btn sel" data-bg="none">None</button>
+        <button class="bg-radio-btn" data-bg="drums">Drums</button>
+        <button class="bg-radio-btn" data-bg="bass">Bass Loop</button>
+      </div>
+    </div>
+    <div id="bass-editor">
+      <div style="font-size:11px;color:var(--muted)">Bass note pattern (8 steps — click to toggle, pick note below)</div>
+      <div id="bass-note-sel-wrap" style="margin:4px 0;"></div>
+      <div class="bass-step-grid" id="bass-step-grid"></div>
+    </div>
+  </div>
+
+  </div>
+</div>
+
+<!-- ══════════ GAME ══════════ -->
+<div class="screen" id="game">
+  <div id="g-hud">
+    <div>
+      <div class="hud-score-lbl">score</div>
+      <div class="hud-score-num" id="g-score">0</div>
+    </div>
+    <div class="hud-combo" id="g-combo">×1</div>
+    <div class="hud-lives" id="g-lives">♥♥♥</div>
+  </div>
+  <div id="g-lanes">
+    <div class="lane" data-lane="0" id="lane0"><div class="lane-hitglow"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb0"></div><div class="lane-btn" id="btn0"><span class="lane-key">A</span></div></div>
+    <div class="lane" data-lane="1" id="lane1"><div class="lane-hitglow"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb1"></div><div class="lane-btn" id="btn1"><span class="lane-key">S</span></div></div>
+    <div class="lane" data-lane="2" id="lane2"><div class="lane-hitglow"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb2"></div><div class="lane-btn" id="btn2"><span class="lane-key">D</span></div></div>
+    <div class="lane" data-lane="3" id="lane3"><div class="lane-hitglow"></div><div class="lane-hitbar"></div><div class="lane-fb" id="fb3"></div><div class="lane-btn" id="btn3"><span class="lane-key">F</span></div></div>
+  </div>
+  <div id="g-footer">
+    <span id="g-lvlname"></span>
+    <span id="speed-badge">1.0×</span>
+    <button id="g-menu-btn">← menu</button>
+  </div>
+  <div id="g-overlay" class="show">
+    <div class="ov-logo">
+      <svg viewBox="0 0 32 32" fill="none">
+        <circle cx="16" cy="16" r="11" stroke="var(--dtap)" stroke-width="1.5" stroke-dasharray="4 3"/>
+        <circle cx="16" cy="16" r="6"  stroke="var(--dtap)" stroke-width="1.5" stroke-dasharray="3 2"/>
+        <circle cx="16" cy="16" r="2.5" fill="var(--dtap)"/>
+      </svg>
+    </div>
+    <div id="ov-title">Rhythm<span>Drop</span></div>
+    <div class="ov-legend">
+      <div class="ov-leg"><div class="ov-swatch os-tap"></div>tap once</div>
+      <div class="ov-leg"><div class="ov-swatch os-dtap"></div>tap twice</div>
+    </div>
+    <div id="ov-score-lbl">score</div>
+    <div id="ov-score"></div>
+    <div id="ov-currency-reward"></div>
+    <div id="ov-streak-bonus"></div>
+    <div class="ov-keys"><div class="ov-key">A</div><div class="ov-key">S</div><div class="ov-key">D</div><div class="ov-key">F</div></div>
+    <button class="chaos-toggle" id="ov-chaos-toggle">🎲 Chaos Keys: OFF</button>
+    <button class="ov-play-btn" id="ov-btn">Play</button>
+    <div class="ov-hint">R = restart · Q = menu</div>
+  </div>
+</div>
+
+<!-- ══════════ INTRO SPLASH ══════════ -->
+<div id="intro-splash">
+  <div id="intro-inner">
+    <div id="intro-word-rhythm">
+      <span class="il" data-i="0">R</span><span class="il" data-i="1">H</span><span class="il" data-i="2">Y</span><span class="il" data-i="3">T</span><span class="il" data-i="4">H</span><span class="il" data-i="5">M</span>
+    </div>
+    <div id="intro-word-drop">DROP</div>
+  </div>
+</div>
+
+<style>
+/* ── INTRO SPLASH ── */
+#intro-splash {
+  position:fixed; inset:0; z-index:9999;
+  background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  pointer-events:none;
+}
+#intro-inner {
+  display:flex; flex-direction:column; align-items:center;
+  gap:0; overflow:visible;
+}
+
+/* RHYTHM letters — each drops in sequentially */
+#intro-word-rhythm {
+  display:flex; gap:2px; overflow:visible;
+}
+.il {
+  font-family:var(--font-body);
+  font-size:38px; font-weight:900;
+  letter-spacing:-1px;
+  color:var(--text);
+  opacity:0;
+  transform:translateY(-60px);
+  display:inline-block;
+  animation: letterDrop 0.08s ease-out forwards;
+}
+.il[data-i="0"] { animation-delay:0.00s; }
+.il[data-i="1"] { animation-delay:0.07s; }
+.il[data-i="2"] { animation-delay:0.14s; }
+.il[data-i="3"] { animation-delay:0.21s; }
+.il[data-i="4"] { animation-delay:0.28s; }
+.il[data-i="5"] { animation-delay:0.35s; }
+
+@keyframes letterDrop {
+  0%   { opacity:0; transform:translateY(-60px) scaleY(1.2); }
+  70%  { opacity:1; transform:translateY(4px)  scaleY(0.95); }
+  100% { opacity:1; transform:translateY(0)    scaleY(1); }
+}
+
+/* DROP word — falls from above after all letters land */
+#intro-word-drop {
+  font-family:var(--font-body);
+  font-size:38px; font-weight:900;
+  letter-spacing:-1px;
+  color:var(--dtap);
+  opacity:0;
+  transform:translateY(-80px) scaleY(1.3);
+  animation: dropWord 0.18s cubic-bezier(.2,1.4,.4,1) 0.50s forwards;
+  text-shadow: 0 0 24px var(--glow-dtap);
+}
+@keyframes dropWord {
+  0%   { opacity:0;   transform:translateY(-80px) scaleY(1.3); }
+  60%  { opacity:1;   transform:translateY(6px)   scaleY(0.88); }
+  80%  { opacity:1;   transform:translateY(-3px)  scaleY(1.04); }
+  100% { opacity:1;   transform:translateY(0)     scaleY(1); }
+}
+
+/* Slide the whole thing to final position, then fade splash out */
+#intro-inner {
+  animation: slideToPos 0.25s cubic-bezier(.4,0,.2,1) 0.82s both;
+}
+@keyframes slideToPos {
+  0%   { transform:translateY(0); opacity:1; }
+  100% { transform:translateY(-190px); opacity:0; }
+}
+
+/* Fade the overlay itself out last */
+#intro-splash {
+  animation: splashOut 0.12s ease-in 1.08s forwards;
+}
+@keyframes splashOut {
+  to { opacity:0; visibility:hidden; pointer-events:none; }
+}
+</style>
+
+<script>
+(function() {
+  // Remove splash from DOM entirely after animation ends
+  var splash = document.getElementById('intro-splash');
+  splash.addEventListener('animationend', function(e) {
+    if (e.target === splash) {
+      splash.remove();
+    }
+  });
+})();
+</script>
+
+<!-- Load order matters: the baked campaign data first, then the engine
+     that reads it, then audio, then the game that wires them together. -->
+<script src="levels.js"></script>
+<script src="campaign.js"></script>
+<script src="audio.js"></script>
+<script src="game.js"></script>
+</body>
+</html>
