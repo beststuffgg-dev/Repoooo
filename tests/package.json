@@ -30,7 +30,11 @@
     "touch": "node touchverify.js",
     "layout": "node layouttest.js",
     "redesign": "node redesigntest.js",
-    "single": "node singlefiletest.js"
+    "single": "node singlefiletest.js",
+    "v8levels": "node v8levels.js",
+    "v8campaign": "node v8campaign.js",
+    "v8ui": "node v8ui.js",
+    "test:v8": "node v8levels.js && node v8campaign.js && node v8ui.js"
   },
   "dependencies": {
     "jsdom": "^24.0.0",

@@ -3,7 +3,10 @@
 // drop straight into CI or a pre-commit hook.
 //
 //   node run-all.js
-//   APP_DIR=../RhythmDropV7-Redesign node run-all.js
+//   APP_DIR=RhythmDropV7-Redesign node run-all.js
+//
+// The V8 suites always test other/RhythmDropV8 (V8_DIR overrides).
+// APP_DIR selects which V7 build the V7 suites run against.
 //
 // Most suites run under jsdom, which has no layout engine — they can
 // check logic but never what a pixel actually did. The browser-driven
@@ -16,6 +19,11 @@ const { spawnSync } = require('child_process');
 const path = require('path');
 
 const SUITES = [
+  // ══ V8 — the current game ══
+  ['v8levels.js',   'V8 campaign data — 150 baked songs, and the build that plays them'],
+  ['v8campaign.js', 'V8 progression — coins, XP, unlocks, dailies'],
+  ['v8ui.js',       'V8 layout — the side panel, the pinned height, one whole run'],
+  // ══ V7 — kept alongside, under other/v7/ ══
   // ── core ──
   ['smoke.js',        'UI — boot, tabs, campaign, shop, editor, themes'],
   ['smoke2.js',       'Gameplay — scoring, lives, tile pool, migration'],
@@ -53,7 +61,11 @@ const APP = process.env.APP_DIR || '';
 // single-file suites test the generated .html files directly rather
 // than whatever APP_DIR points at — so both are run once, against the
 // shipping build, not again per variant.
-const SKIP = /Redesign/.test(APP) ? new Set(['redesigntest.js', 'singlefiletest.js']) : new Set();
+// The V8 suites name their own build, so re-running them for each V7
+// variant would just repeat identical work.
+const SKIP = /Redesign/.test(APP)
+  ? new Set(['redesigntest.js', 'singlefiletest.js', 'v8levels.js', 'v8campaign.js', 'v8ui.js'])
+  : new Set();
 
 let failed = [], ran = 0;
 for (const [file, blurb] of SUITES) {
