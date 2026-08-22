@@ -12,9 +12,9 @@
 </p>
 
 <p align="center">
-  <b>v7.1.4</b> · <code>UPD7 Beta 14</code> ·
-  <a href="other/HANDOFF.md">Full feature reference</a> ·
-  <a href="https://claude.ai/code/artifact/c0fa5f5f-4219-465b-a508-3eb080dc500a">Design system</a>
+  <b>v8.0</b> ·
+  <a href="other/HANDOFF-V8.md">Full feature reference</a> ·
+  <a href="other/v7/HANDOFF.md">V7, kept alongside</a>
 </p>
 
 ---
@@ -34,55 +34,51 @@
 
 Hit **A · S · D · F** as slabs cross the strike line. Tap once for a single note, twice for the bordered ×2 slabs. That's the whole input model — everything else is depth: a 150-level campaign, a chord-aware music generator, a chart editor, and a full customization economy sitting on top of it.
 
-- **Campaign** — 10 areas × 15 levels, each chart generated deterministically from its own seed (`mulberry32`, never `Math.random()`), so the same level plays identically on every device, every time. Areas: Farmstead, Egypt, Greece, Rome, Aztec, Maya, Old England, Napoleonic, Modern, Retro-Future — each with its own scale, melodic character, and preferred rhythm patterns, so Egypt's double-harmonic scale sounds nothing like Farmstead's folk pentatonic. Melody moves in phrases with real cadences, chords stack in actual thirds instead of random intervals, and a density penalty means a wall of notes never out-earns a musical chart.
-- **The Double** — replay any cleared level at **2× speed**. Genuinely harder, and pays double XP and coins because the formulas key off real speed rather than a bolted-on bonus.
-- **Level creator** — a grid editor with multi-select cut/copy/paste, two-stage note placement (place, then pick the pitch), a live sound-preview button, and an advanced panel that grows the window instead of covering the grid.
+- **Campaign** — 10 areas × 15 levels, **shipped as data rather than generated at boot**. The songs were composed once by a deterministic generator and baked into `levels.js`; the generator is kept as a build tool, so the campaign can be regenerated deliberately but never rewrites itself under you. Areas: Farmstead, Egypt, Greece, Rome, Aztec, Maya, Old England, Napoleonic, Modern, Retro-Future — each with its own scale, instrument and rhythmic character, so Egypt's double-harmonic scale sounds nothing like Farmstead's folk pentatonic. Melody moves in phrases with real cadences and chords stack in actual thirds: 8,658 simultaneous chords across the 150 charts and not one minor second.
+- **Progression** — songs unlock in order and areas unlock behind them, XP is keyed off note count and tempo, every level keeps its own record, and a seven-day daily lapses if you miss a day.
+- **Level creator** — a grid editor with per-lane default pitches, a per-note picker, sustain and a configurable drum/bass backing. Its advanced panel opens **sideways** and widens the window rather than covering the chart you're editing.
 - **Economy** — every level pays a flat coin reward, so grinding a long chart isn't better than clearing a short one. Every purchase is two clicks: the first previews (an avatar goes on your profile, an effect plays live on the board, a mystery box shows its real odds), only the second spends.
-- **12 instruments**, each with an actual audio jingle so you can hear the difference before picking one, plus avatars, colourways, trails, hit-effects, and 6 base "material" themes — walnut, bone, brass, frosted glass, blueprint, matte rubber — each with a real texture, not just a palette swap.
-- **Settings** for key remapping, hit-window tolerance (with a visualizer that draws the exact timing band you're judged against), volume/output device, brightness, and full reduced-motion support.
-- Runs cleanly as a **served page or a phone browser**, not just an extension popup — fills the viewport instead of sitting pinned in a corner, and the usual mobile rough edges (input auto-zoom, tap-highlight flash, notch/home-indicator overlap) are handled.
+- **12 instruments**, synthesized from oscillators — no samples, no network — plus avatars, note trails, mystery boxes and 12 themes including frosted glass, warm paper and arctic white.
+- **Settings** for key remapping, starting lives, UI scale, master and music volume, and instrument choice.
+- **Width, not height.** Chrome caps an extension popup at 800×600 and clips the rest, which is why vertical resizing never worked. The height is pinned to that ceiling and only the width is adjustable — everything vertical scrolls.
 
 ## Run it
 
 Three ways, all from the same source, no build step:
 
-1. **As the extension it's meant to be** — go to `chrome://extensions`, enable Developer Mode, "Load unpacked," and select `other/RhythmDropV7/`.
-2. **Unzip and load** — `RhythmDropV7-Final.zip` is the same folder, zipped, for handing to someone else.
+1. **As the extension it's meant to be** — go to `chrome://extensions`, enable Developer Mode, "Load unpacked," and select `other/RhythmDropV8/`.
+2. **Unzip and load** — `RhythmDropV8.zip` is the same folder, zipped, for handing to someone else.
 3. **Just open it** — `htmls/RhythmDrop.html` is the entire game as one self-contained file. Double-click it, or open it on a phone. No dependencies, nothing to install, nothing to fetch over the network.
 
-`htmls/RhythmDrop.html` is *generated* from `other/RhythmDropV7/` — every script inlined in place. Never edit it directly; edit the source folder and run `bash other/tools/package.sh`.
+`htmls/RhythmDrop.html` is *generated* from `other/RhythmDropV8/` — every script inlined in place. Never edit it directly; edit the source folder and run `bash other/tools/package.sh`.
 
-There's also a **Redesign** variant — the same game with a film-grain overlay and a decorative ghost-lane strip behind the wordmark, shipped in the same three forms (`other/RhythmDropV7-Redesign/`, `RhythmDropV7-Redesign.zip`, `htmls/RhythmDrop-Redesign.html`). It carries its own extension name, so both can be loaded side by side.
+**V7 is still here.** The previous game lives whole under `other/v7/` — source, Redesign variant, single-file builds, zips and its own handoff — and still passes its own 25 test suites. V8 is built on the earlier v3.0 source with V7's campaign ported onto it, so the two are genuinely different games rather than versions of one.
 
 ## Repo layout
 
 ```
-RhythmDropV7-Final.zip      the extension, zipped — hand this to someone
-RhythmDropV7-Redesign.zip   the Redesign variant, zipped
+RhythmDropV8.zip            the game, zipped — hand this to someone
 
-htmls/                      the whole game as one self-contained file
-  RhythmDrop.html             generated, not hand-edited
-  RhythmDrop-Redesign.html    the same, for the Redesign variant
+htmls/
+  RhythmDrop.html             the whole game as one file — generated
 
-tests/                      the test suite — `node run-all.js`
+tests/                      28 suites — 3 for V8, 25 for V7
 
-other/                      everything else
-  RhythmDropV7/               the source — load this as an unpacked extension
-    popup.html                  markup + all styling + the design token system
-    game.js                     screens, input, scoring, shop, settings, creator
-    campaign.js                 deterministic chart generation, XP/coin economy
-    audio.js                    12-instrument synth engine, jingles, limiter
-    codec.js                    share/sync codes (LZW + varint + base64url)
-    loading.js                  the real weighted preload pipeline
-    lighting.js                 cursor-tilt lighting effects
-    edge.js                     Edge-only compatibility layer (inert elsewhere)
-  RhythmDropV7-Redesign/      visual-only variant — same JS, film grain + ghost lanes
+other/
+  RhythmDropV8/               the source — load this as an unpacked extension
+    popup.html                  markup, styling, the theme system
+    game.js                     screens, input, scoring, campaign UI, shop, creator
+    campaign.js                 unlocks, XP, coins, records, dailies
+    levels.js                   the 150 songs, baked — generated, not hand-edited
+    audio.js                    12 synthesized instruments, limiter, backing layer
+  v7/                         the previous game, kept whole and still working
   tools/
+    bake-levels.js              composes the 150 songs into levels.js
     build-single.js             inlines the modules into one .html
-    build-redesign.js           regenerates the Redesign folder from the source
-    package.sh                  runs both, then rebuilds the zips
+    build-redesign.js           regenerates V7's Redesign variant
+    package.sh                  rebuilds every derived artifact
   docs/screenshots/           the images in this README
-  HANDOFF.md                  full feature inventory, architecture, design reference
+  HANDOFF-V8.md               full feature inventory and architecture
 ```
 
 Everything derived is regenerated by one command:
@@ -91,7 +87,7 @@ Everything derived is regenerated by one command:
 bash other/tools/package.sh
 ```
 
-Never hand-edit anything in `htmls/`, either `.zip`, or `other/RhythmDropV7-Redesign/` — they are all outputs. `other/RhythmDropV7/` is the only thing you edit by hand.
+Never hand-edit anything in `htmls/`, any `.zip`, or `other/RhythmDropV8/levels.js` — they are all outputs. `package.sh` deliberately does *not* re-bake the campaign: that is a 150-song diff and should be meant, so run `node other/tools/bake-levels.js` yourself when you want it.
 
 ## Testing
 
@@ -99,13 +95,16 @@ Never hand-edit anything in `htmls/`, either `.zip`, or `other/RhythmDropV7-Rede
 cd tests && npm install && node run-all.js
 ```
 
-Twenty-five harnesses, ~443 probes, covering UI smoke tests, chart generation and harmony across all 150 campaign levels, the XP/coin economy, audio synthesis, codec round-tripping, the stylesheet, and the platform layers. Five of them drive real Chromium rather than jsdom, because jsdom has no layout engine and structurally cannot catch a layout bug — those are the ones that found the strike line sitting 12–19px off the bar it was drawn on, and the campaign list collapsing to a 39px viewport on a short window.
+Twenty-eight harnesses. Three cover V8 — the baked campaign against the build that plays it, the progression rules, and a real-Chromium pass over the layout and one whole run. The other twenty-five are V7's, unchanged, still green against `other/v7/`.
+
+Six suites drive real Chromium rather than jsdom, because jsdom has no layout engine and structurally cannot catch a layout bug — those are the ones that found the strike line sitting 12–19px off the bar it was drawn on, the campaign list collapsing to a 39px viewport, and that verify the creator panel widens the window without moving the grid.
 
 ```
-APP_DIR=RhythmDropV7-Redesign node run-all.js   # the same suite against the variant
+npm run test:v8                                # just the V8 suites
+APP_DIR=RhythmDropV7-Redesign node run-all.js  # V7's suites against its variant
 ```
 
-See [`tests/README.md`](tests/README.md) for the per-suite breakdown, and [`HANDOFF.md`](other/HANDOFF.md#6-testing) for how it fits together.
+See [`tests/README.md`](tests/README.md) for the per-suite breakdown, and [`HANDOFF-V8.md`](other/HANDOFF-V8.md#6-testing) for how it fits together.
 
 ---
 

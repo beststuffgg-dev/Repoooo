@@ -1,9 +1,28 @@
-# RhythmDrop V7 — test harnesses
+# RhythmDrop — test harnesses
 
-Twenty-five suites, ~443 probes, one command. Most boot the extension
-in jsdom with a stubbed Web Audio graph; five drive real Chromium,
-because jsdom has no layout engine and structurally cannot catch a
-layout bug.
+Twenty-eight suites, one command. Three cover **V8**, the current game;
+the other twenty-five cover **V7**, kept alongside it under `other/v7/`
+and still green. Most boot the build in jsdom with a stubbed Web Audio
+graph; six drive real Chromium, because jsdom has no layout engine and
+structurally cannot catch a layout bug.
+
+## V8 — the current game
+
+| Suite | Covers |
+|---|---|
+| `v8levels.js` | The 150 baked songs against the build that plays them: the flat encoding decoding back to real charts, every voice the charts reference existing in `audio.js`, zero minor seconds across 8,658 chords, and the generator still being present to re-bake with |
+| `v8campaign.js` | Flat coins per clear, partial runs, the XP curve and its linearity in speed, the density cap, unlock chaining, and the seven-day daily including its lapse |
+| `v8ui.js` | Real Chromium: the pinned height, the advanced panel widening the window without moving the grid, the overlay fallback at the cap, and one whole run from the campaign list to the results screen |
+
+```bash
+npm run test:v8          # just these three
+V8_DIR=/path/to/build npm run test:v8
+```
+
+The V8 suites always test `other/RhythmDropV8` unless `V8_DIR` says
+otherwise, so `APP_DIR` never affects them.
+
+## V7 — kept alongside
 
 ## Setup
 
@@ -20,15 +39,16 @@ drops straight into CI or a pre-commit hook.
 `APP_DIR` picks it. Unset, it's the shipping one:
 
 ```bash
-npm test                                    # other/RhythmDropV7/
-APP_DIR=RhythmDropV7-Redesign npm test      # the Redesign variant
+npm test                                    # everything, 28 suites
+APP_DIR=RhythmDropV7-Redesign npm test      # V7's suites against its variant
 ```
 
-`APP_DIR` accepts a bare folder name, or a path relative to this
-folder, to `other/`, or to the repo root — whichever you happen to
-type. Unset, it's `other/RhythmDropV7/`, with fallbacks for this
-folder sitting beside a bare extension (which is how it works if you
-unzip it on its own):
+`APP_DIR` selects which **V7** build its suites run against. It accepts
+a bare folder name, or a path relative to this folder, to `other/`, to
+`other/v7/`, or to the repo root — whichever you happen to type. Unset,
+it's `other/v7/RhythmDropV7/`, with fallbacks for this folder sitting
+beside a bare extension (which is how it works if you unzip it on its
+own):
 
 ```
 somewhere/
@@ -40,12 +60,12 @@ somewhere/
 it, so moving a folder is one edit rather than eight copies of the same
 path list going stale at different rates.
 
-`redesigntest` and `singlefiletest` test the generated artifacts
-directly rather than whatever `APP_DIR` points at, so they run once
-against the shipping build and are skipped when `APP_DIR` is the
-Redesign.
+`redesigntest` and `singlefiletest` test V7's generated artifacts
+directly rather than whatever `APP_DIR` points at, so they run once and
+are skipped when `APP_DIR` is the Redesign. The three V8 suites are
+skipped then too, for the same reason: they name their own build.
 
-## The suites
+### V7's suites
 
 **Core**
 
