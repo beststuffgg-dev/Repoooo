@@ -352,6 +352,118 @@ body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var
 }
 .glass-trans-btn.sel { border-color:var(--accent); background:rgba(125,211,252,.15); color:var(--text); }
 
+
+/* ══════════════════════════════════════
+   CAMPAIGN
+   Ten areas, fifteen songs each. The list is a single scrolling
+   column: the area strip picks which fifteen, and nothing inside
+   the pane shrinks — a short window scrolls further, it does not
+   squeeze the rows into stripes.
+══════════════════════════════════════ */
+#tab-levels { padding:0; }
+#cam-wrap { display:flex; flex-direction:column; min-height:0; flex:1; }
+
+/* Daily reward — a card at the top of the campaign, present only
+   while there is something to claim. */
+#daily-card {
+  display:none; align-items:center; gap:11px; margin:12px 14px 4px;
+  padding:11px 13px; border-radius:12px; cursor:pointer;
+  background:linear-gradient(120deg,color-mix(in srgb,var(--perfect) 18%,var(--bg2)),var(--bg2));
+  border:1px solid color-mix(in srgb,var(--perfect) 40%,var(--border));
+  transition:transform .1s, border-color .15s;
+}
+#daily-card.show { display:flex; }
+#daily-card:hover { transform:translateY(-1px); border-color:var(--perfect); }
+.daily-gift { font-size:26px; flex-shrink:0; }
+.daily-text { flex:1; min-width:0; }
+.daily-title { font-size:13px; font-weight:700; color:var(--text); }
+.daily-sub { font-size:11px; color:var(--muted); font-family:var(--font-data); margin-top:1px; }
+.daily-coins { font-size:13px; font-weight:700; color:var(--perfect); font-family:var(--font-data); flex-shrink:0; }
+.daily-dots { display:flex; gap:3px; margin-top:5px; }
+.daily-dot { width:12px; height:4px; border-radius:2px; background:var(--dim); }
+.daily-dot.on { background:var(--perfect); }
+
+/* Area strip — one chip per era, horizontally scrolled. */
+#cam-areas {
+  display:flex; gap:6px; padding:10px 14px 8px; overflow-x:auto;
+  border-bottom:1px solid var(--border); flex-shrink:0;
+}
+#cam-areas::-webkit-scrollbar { height:0; }
+.area-chip {
+  flex:0 0 auto; padding:7px 12px; border-radius:9px; cursor:pointer;
+  background:var(--bg2); border:1px solid var(--border);
+  transition:border-color .15s, background .15s, color .15s;
+  text-align:left; min-width:88px;
+}
+.area-chip .ac-name { font-size:12px; font-weight:700; color:var(--text); white-space:nowrap; }
+.area-chip .ac-prog { font-size:10px; color:var(--muted); font-family:var(--font-data); margin-top:1px; }
+.area-chip.sel { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--bg2)); }
+.area-chip.sel .ac-name { color:var(--accent); }
+.area-chip.done .ac-prog { color:var(--good); }
+.area-chip.locked { opacity:.45; cursor:not-allowed; }
+.area-chip.locked .ac-prog { color:var(--dim); }
+
+/* The fifteen songs of the selected area. */
+#cam-list { flex:1; overflow-y:auto; padding:10px 14px 16px; display:flex; flex-direction:column; gap:7px; }
+#cam-list > * { flex-shrink:0; }
+.cam-head { display:flex; align-items:baseline; gap:8px; margin-bottom:2px; }
+.cam-head .ch-name { font-size:16px; font-weight:900; letter-spacing:-.5px; }
+.cam-head .ch-blurb { font-size:11px; color:var(--muted); }
+
+.song-row {
+  display:flex; align-items:center; gap:11px; padding:10px 12px;
+  border-radius:11px; background:var(--bg2); border:1px solid var(--border);
+  cursor:pointer; transition:border-color .15s, background .15s, transform .1s;
+  position:relative;
+}
+.song-row:hover { border-color:var(--border2); background:var(--bg3); transform:translateX(2px); }
+.song-no {
+  width:26px; height:26px; border-radius:7px; flex-shrink:0;
+  display:flex; align-items:center; justify-content:center;
+  background:var(--bg3); border:1px solid var(--border);
+  font-family:var(--font-data); font-size:11px; font-weight:700; color:var(--muted);
+}
+.song-row.done .song-no { color:var(--good); border-color:color-mix(in srgb,var(--good) 50%,var(--border)); }
+.song-info { flex:1; min-width:0; }
+.song-name { font-size:13px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.song-meta { font-size:10px; color:var(--muted); font-family:var(--font-data); margin-top:2px; }
+.song-best { font-size:10px; color:var(--perfect); font-family:var(--font-data); margin-top:2px; }
+.song-best.none { color:var(--dim); }
+.song-right { display:flex; align-items:center; gap:7px; flex-shrink:0; }
+.song-diff {
+  font-size:9px; font-weight:700; padding:3px 7px; border-radius:20px;
+  letter-spacing:.5px; text-transform:uppercase;
+}
+.song-row.locked { opacity:.5; cursor:not-allowed; }
+.song-row.locked:hover { transform:none; border-color:var(--border); background:var(--bg2); }
+.song-lock { font-size:12px; color:var(--muted); }
+
+/* Locked-area notice, in place of the list. */
+.cam-locked-note {
+  padding:22px 16px; text-align:center; color:var(--muted); font-size:12px;
+  border:1px dashed var(--border2); border-radius:12px;
+}
+
+/* XP strip in the profile bar. */
+.xp-strip { display:flex; align-items:center; gap:7px; margin-top:3px; }
+.xp-lv {
+  font-size:11px; font-weight:900; color:var(--perfect);
+  font-family:var(--font-data); flex-shrink:0;
+}
+.xp-bar {
+  flex:1; height:5px; border-radius:3px; background:var(--bg4);
+  overflow:hidden; min-width:40px;
+}
+.xp-fill { display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,var(--perfect),var(--tap)); }
+.xp-num { font-size:9px; color:var(--muted); font-family:var(--font-data); flex-shrink:0; }
+
+/* Level-up and XP on the results overlay. */
+#ov-xp { font-size:12px; color:var(--tap); font-family:var(--font-data); display:none; }
+#ov-levelup {
+  font-size:13px; font-weight:700; color:var(--perfect);
+  font-family:var(--font-data); display:none;
+}
+
 /* ═══════════════════════════════════════
    CREATOR (standard)
 ═══════════════════════════════════════ */
@@ -898,6 +1010,11 @@ body.adv-overlay #adv-panel.open {
       <div id="pbar-username">Player</div>
       <div id="pbar-coins">🪙 0 coins</div>
       <div id="pbar-hs">🏆 Best: 0</div>
+      <div class="xp-strip">
+        <span class="xp-lv" id="xp-lv">1</span>
+        <span class="xp-bar"><i class="xp-fill" id="xp-fill" style="width:0%"></i></span>
+        <span class="xp-num" id="xp-num">0/60</span>
+      </div>
     </div>
   </div>
 
@@ -929,7 +1046,21 @@ body.adv-overlay #adv-panel.open {
     <div class="hnav" data-tab="settings">Settings</div>
   </div>
 
-  <div class="tab-pane active" id="tab-levels"></div>
+  <div class="tab-pane active" id="tab-levels">
+    <div id="cam-wrap">
+      <div id="daily-card">
+        <span class="daily-gift">🎁</span>
+        <span class="daily-text">
+          <span class="daily-title" id="daily-title">Daily reward</span>
+          <span class="daily-sub" id="daily-sub">Day 1 of 7</span>
+          <span class="daily-dots" id="daily-dots"></span>
+        </span>
+        <span class="daily-coins" id="daily-coins">+100</span>
+      </div>
+      <div id="cam-areas"></div>
+      <div id="cam-list"></div>
+    </div>
+  </div>
 
   <div class="tab-pane" id="tab-custom">
     <button id="new-lvl-btn">+ Create new level</button>
@@ -1098,6 +1229,8 @@ body.adv-overlay #adv-panel.open {
     <div id="ov-score-lbl">score</div>
     <div id="ov-score"></div>
     <div id="ov-currency-reward"></div>
+    <div id="ov-xp"></div>
+    <div id="ov-levelup"></div>
     <div id="ov-streak-bonus"></div>
     <div class="ov-keys"><div class="ov-key">A</div><div class="ov-key">S</div><div class="ov-key">D</div><div class="ov-key">F</div></div>
     <button class="chaos-toggle" id="ov-chaos-toggle">🎲 Chaos Keys: OFF</button>

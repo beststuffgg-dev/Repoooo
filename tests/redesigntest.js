@@ -11,11 +11,11 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
-const { SRC, launchOpts, openApp, htmlBuild } = require('./browser');
+const { V7, launchOpts, openApp } = require('./browser');
 
-const SHIP = path.join(SRC, 'RhythmDropV7');
-const RD = path.join(SRC, 'RhythmDropV7-Redesign');
-const SINGLE = htmlBuild('RhythmDrop-Redesign.html');
+const SHIP = path.join(V7, 'RhythmDropV7');
+const RD = path.join(V7, 'RhythmDropV7-Redesign');
+const SINGLE = path.join(V7, 'RhythmDrop-Redesign.html');
 
 let fail = 0, pass = 0;
 const ok = (c, m) => { c ? pass++ : (fail++, console.log('  FAIL: ' + m)); };

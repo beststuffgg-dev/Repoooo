@@ -14,8 +14,10 @@ const path = require('path');
 // spelling out '../..' itself, so a move like the one that put the
 // source folders under other/ is a single edit.
 const ROOT = path.join(__dirname, '..');
-const SRC  = path.join(ROOT, 'other');    // the loadable extension folders
-const HTML = path.join(ROOT, 'htmls');    // the generated single-file builds
+const SRC  = path.join(ROOT, 'other');        // where the builds live
+const V8   = path.join(SRC, 'RhythmDropV8');  // the current game
+const V7   = path.join(SRC, 'v7');            // the previous one, kept whole
+const HTML = path.join(ROOT, 'htmls');        // generated single-file builds
 
 const isBuild = d => fs.existsSync(path.join(d, 'popup.html'));
 
@@ -25,8 +27,11 @@ function appDir() {
   // or to the repo root all resolve — APP_DIR is typed by hand often
   // enough that being fussy about it only costs people time.
   const tries = d
-    ? [path.resolve(d), path.resolve(__dirname, d), path.resolve(SRC, d), path.resolve(ROOT, d)]
-    : [path.join(SRC, 'RhythmDropV7'),
+    ? [path.resolve(d), path.resolve(__dirname, d), path.resolve(SRC, d),
+       path.resolve(V7, d), path.resolve(ROOT, d)]
+    // The v7 suites are pinned to v7's behaviour, so this stays pointing
+    // at v7. The v8 suites name their build explicitly through v8Dir().
+    : [path.join(V7, 'RhythmDropV7'),
        // Fallbacks for this folder sitting beside a bare extension,
        // which is how it ships if someone unzips it on its own.
        path.join(ROOT, 'RhythmDropV7'),
@@ -41,6 +46,9 @@ function appDir() {
 
 // The generated single-file builds, by the name they carry.
 const htmlBuild = name => path.join(HTML, name);
+
+// The current game, for the suites that test it rather than v7.
+const v8Dir = () => (process.env.V8_DIR ? path.resolve(process.env.V8_DIR) : V8);
 
 function chromePath() {
   if (process.env.PW_CHROME) return process.env.PW_CHROME;
@@ -93,4 +101,4 @@ async function openApp(browser, viewport, opts = {}) {
   return { ctx, page, errors };
 }
 
-module.exports = { ROOT, SRC, HTML, appDir, htmlBuild, chromePath, launchOpts, openApp };
+module.exports = { ROOT, SRC, V7, V8, HTML, appDir, v8Dir, htmlBuild, chromePath, launchOpts, openApp };

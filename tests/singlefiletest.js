@@ -11,7 +11,7 @@
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
-const { SRC, launchOpts, openApp, htmlBuild } = require('./browser');
+const { V7, launchOpts, openApp } = require('./browser');
 
 const BUILDS = [
   ['RhythmDrop.html', 'RhythmDropV7'],
@@ -26,12 +26,12 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
   const b = await chromium.launch(launchOpts());
 
   for (const [file, srcDir] of BUILDS) {
-    const full = htmlBuild(file);
+    const full = path.join(V7, file);
     console.log('== ' + file + ' ==');
     if (!fs.existsSync(full)) { ok(false, file + ' exists'); continue; }
 
     const html = fs.readFileSync(full, 'utf8');
-    const src = path.join(SRC, srcDir);
+    const src = path.join(V7, srcDir);
 
     ok(!/<script\s+src=/.test(html), 'no <script src> survived the inlining');
     {
@@ -111,8 +111,8 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
   // The two single-file builds must agree on everything but the look.
   console.log('== the two single-file builds differ only in presentation ==');
   {
-    const a = fs.readFileSync(htmlBuild('RhythmDrop.html'), 'utf8');
-    const c = fs.readFileSync(htmlBuild('RhythmDrop-Redesign.html'), 'utf8');
+    const a = fs.readFileSync(path.join(V7, 'RhythmDrop.html'), 'utf8');
+    const c = fs.readFileSync(path.join(V7, 'RhythmDrop-Redesign.html'), 'utf8');
     const scriptsOf = t => [...t.matchAll(/<script data-from="([^"]+)">\n([\s\S]*?)\n<\/script>/g)]
       .map(m => [m[1], m[2]]);
     const sa = scriptsOf(a), sc = scriptsOf(c);

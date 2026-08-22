@@ -8,15 +8,15 @@
 // builds cannot drift apart in behaviour.
 //
 //   node other/tools/build-redesign.js
-//   node other/tools/build-single.js other/RhythmDropV7-Redesign htmls/RhythmDrop-Redesign.html
+//   node other/tools/build-single.js other/v7/RhythmDropV7-Redesign other/v7/RhythmDrop-Redesign.html
 'use strict';
 const fs = require('fs');
 const path = require('path');
 
 // tools/ lives under other/, alongside the two build folders.
 const ROOT = path.join(__dirname, '..', '..');
-const SRC = path.join(ROOT, 'other', 'RhythmDropV7');
-const OUT = path.join(ROOT, 'other', 'RhythmDropV7-Redesign');
+const SRC = path.join(ROOT, 'other', 'v7', 'RhythmDropV7');
+const OUT = path.join(ROOT, 'other', 'v7', 'RhythmDropV7-Redesign');
 
 // A static fractal-noise tile. Static, not animated: the point is to
 // break up large flat panels so they don't read as vector fills, and a
@@ -164,7 +164,7 @@ for (const f of js) {
   if (fs.readFileSync(path.join(SRC, f)).compare(fs.readFileSync(path.join(OUT, f))) !== 0)
     throw new Error('JS diverged: ' + f);
 }
-console.log('other/RhythmDropV7 -> other/RhythmDropV7-Redesign');
+console.log('other/v7/RhythmDropV7 -> other/v7/RhythmDropV7-Redesign');
 console.log('  ' + js.length + ' JS files copied byte-for-byte: ' + js.join(', '));
 console.log('  popup.html patched (film grain, ghost lanes, title), manifest renamed');
 module.exports = { OPEN, CLOSE, SRC, OUT };

@@ -15,78 +15,9 @@
 // until its own line executes.
 let advExpansion = 0;
 
-// ── Built-in levels ──────────────────────────────
-const LEVELS = [
-  {
-    id:'l0', name:'Cascade', diff:'easy', bpm:90, beats:24,
-    notes:[
-      {b:0,l:0,t:'tap'},{b:2,l:1,t:'tap'},{b:4,l:2,t:'tap'},{b:6,l:3,t:'tap'},
-      {b:8,l:0,t:'tap'},{b:9,l:2,t:'tap'},{b:11,l:1,t:'tap'},{b:13,l:3,t:'tap'},
-      {b:14,l:0,t:'dtap'},{b:16,l:2,t:'dtap'},
-      {b:18,l:1,t:'tap'},{b:19,l:3,t:'tap'},
-      {b:20,l:0,t:'tap'},{b:21,l:1,t:'tap'},{b:22,l:2,t:'tap'},{b:23,l:3,t:'tap'},
-    ],
-    bgMode:'none',
-    laneFreqs:[261.63,329.63,392.00,523.25],
-    bassPattern:[]
-  },
-  {
-    id:'l1', name:'Strobe', diff:'medium', bpm:125, beats:28,
-    notes:[
-      {b:0,l:0,t:'tap'},{b:1,l:2,t:'tap'},{b:2,l:1,t:'tap'},{b:3,l:3,t:'tap'},
-      {b:4,l:0,t:'dtap'},{b:6,l:1,t:'tap'},{b:7,l:3,t:'tap'},
-      {b:8,l:2,t:'dtap'},{b:10,l:0,t:'tap'},{b:11,l:1,t:'tap'},
-      {b:12,l:3,t:'dtap'},{b:14,l:2,t:'tap'},{b:15,l:0,t:'tap'},
-      {b:16,l:1,t:'dtap'},{b:17,l:3,t:'dtap'},
-      {b:18,l:0,t:'tap'},{b:19,l:2,t:'tap'},{b:20,l:1,t:'tap'},{b:21,l:3,t:'tap'},
-      {b:22,l:0,t:'dtap'},{b:24,l:2,t:'dtap'},
-      {b:25,l:1,t:'tap'},{b:26,l:3,t:'tap'},{b:27,l:0,t:'tap'},
-    ],
-    bgMode:'drums',
-    laneFreqs:[220.00,261.63,329.63,392.00],
-    bassPattern:[]
-  },
-  {
-    id:'l2', name:'Echo', diff:'medium', bpm:115, beats:32,
-    notes:[
-      {b:0,l:0,t:'dtap'},{b:2,l:2,t:'tap'},{b:3,l:3,t:'tap'},
-      {b:4,l:1,t:'dtap'},{b:6,l:0,t:'tap'},{b:7,l:2,t:'tap'},
-      {b:8,l:3,t:'dtap'},{b:10,l:1,t:'tap'},{b:11,l:0,t:'tap'},
-      {b:12,l:2,t:'dtap'},{b:13,l:3,t:'tap'},{b:14,l:1,t:'tap'},
-      {b:15,l:0,t:'dtap'},{b:16,l:2,t:'tap'},{b:17,l:3,t:'tap'},
-      {b:18,l:1,t:'dtap'},{b:19,l:0,t:'tap'},
-      {b:20,l:2,t:'tap'},{b:21,l:3,t:'tap'},{b:22,l:1,t:'tap'},{b:23,l:0,t:'tap'},
-      {b:24,l:3,t:'dtap'},{b:25,l:1,t:'dtap'},
-      {b:26,l:0,t:'tap'},{b:27,l:2,t:'tap'},{b:28,l:1,t:'tap'},
-      {b:29,l:3,t:'dtap'},{b:30,l:0,t:'tap'},{b:31,l:2,t:'tap'},
-    ],
-    bgMode:'bass',
-    laneFreqs:[174.61,220.00,261.63,349.23],
-    bassPattern:[65.41,0,65.41,0,87.31,0,73.42,0]
-  },
-  {
-    id:'l3', name:'Overload', diff:'hard', bpm:155, beats:36,
-    notes:[
-      {b:0,l:0,t:'tap'},{b:1,l:1,t:'tap'},{b:2,l:2,t:'tap'},{b:3,l:3,t:'tap'},
-      {b:4,l:0,t:'dtap'},{b:4,l:2,t:'dtap'},{b:5,l:1,t:'tap'},{b:6,l:3,t:'tap'},
-      {b:7,l:0,t:'tap'},{b:8,l:1,t:'dtap'},{b:9,l:3,t:'tap'},{b:10,l:2,t:'tap'},
-      {b:11,l:0,t:'dtap'},{b:12,l:1,t:'tap'},{b:13,l:2,t:'tap'},
-      {b:14,l:3,t:'dtap'},{b:15,l:1,t:'tap'},
-      {b:16,l:0,t:'tap'},{b:16,l:3,t:'tap'},
-      {b:17,l:2,t:'dtap'},{b:18,l:1,t:'tap'},
-      {b:19,l:0,t:'dtap'},{b:20,l:3,t:'tap'},{b:21,l:2,t:'tap'},
-      {b:22,l:1,t:'dtap'},{b:22,l:3,t:'dtap'},
-      {b:23,l:0,t:'tap'},{b:24,l:1,t:'tap'},{b:25,l:2,t:'tap'},{b:26,l:3,t:'tap'},
-      {b:27,l:0,t:'dtap'},{b:28,l:2,t:'dtap'},
-      {b:29,l:1,t:'tap'},{b:30,l:3,t:'tap'},{b:31,l:0,t:'tap'},
-      {b:32,l:1,t:'dtap'},{b:32,l:3,t:'dtap'},
-      {b:33,l:0,t:'tap'},{b:34,l:2,t:'tap'},{b:35,l:1,t:'tap'},
-    ],
-    bgMode:'drums',
-    laneFreqs:[196.00,246.94,293.66,392.00],
-    bassPattern:[]
-  }
-];
+// The four demo levels the v3 build shipped are gone: the campaign in
+// levels.js is the level list now, and a second parallel one that
+// nothing linked to was only ever going to drift.
 
 // ── Persistence ──────────────────────────────────
 const store = {
@@ -125,6 +56,17 @@ const store = {
   // Custom avatar data URL
   loadCustomAv:     ()  => localStorage.getItem('rd_custom_av')||null,
   saveCustomAv:     d   => localStorage.setItem('rd_custom_av', d),
+  // Campaign progress: total XP and which levels are cleared.
+  loadProgress:     ()  => {
+    try {
+      const p = JSON.parse(localStorage.getItem('rd_progress')||'{}');
+      return { xp: p.xp || 0, cleared: p.cleared || {} };
+    } catch { return { xp: 0, cleared: {} }; }
+  },
+  saveProgress:     p   => localStorage.setItem('rd_progress', JSON.stringify(p)),
+  // Daily reward: { day, streak }
+  loadDaily:        ()  => { try { return JSON.parse(localStorage.getItem('rd_daily')||'null'); } catch { return null; } },
+  saveDaily:        d   => localStorage.setItem('rd_daily', JSON.stringify(d)),
 };
 
 // ── Profile state ──────────────────────────────
@@ -278,26 +220,37 @@ function rarityForPrice(p) {
 })();
 
 // ── High score management ───────────────────
-function addHighScore(name, score, levelName) {
-  const coins = Math.floor(score / 1000);
+// Logs a run and pays the score-derived coin reward.
+//
+// `opts.logOnly` records the run without paying for it or writing a
+// per-level best: campaign runs take that path, because the campaign
+// pays a flat reward per clear and keeps its own record keyed by level
+// id. Without the flag a campaign clear was paid twice — once flat and
+// once again as score/1000 — which is exactly the score-derived payout
+// the flat reward exists to replace.
+function addHighScore(name, score, levelName, opts) {
+  opts = opts || {};
+  const coins = opts.logOnly ? 0 : Math.floor(score / 1000);
   const scores = store.loadScores();
   scores.push({ name, score, level: levelName, coins, date: Date.now() });
   scores.sort((a,b) => b.score - a.score);
   store.saveScores(scores.slice(0, 50)); // keep top 50
 
-  // Per-level best (kept separately so a level's best is never evicted)
-  const bests = store.loadBests();
-  const prev  = bests[levelName];
-  if (!prev || score > prev.score) {
-    bests[levelName] = { name, score, coins, date: Date.now() };
-    store.saveBests(bests);
+  if (!opts.logOnly) {
+    // Per-level best (kept separately so a level's best is never evicted)
+    const bests = store.loadBests();
+    const prev  = bests[levelName];
+    if (!prev || score > prev.score) {
+      bests[levelName] = { name, score, coins, date: Date.now() };
+      store.saveBests(bests);
+    }
   }
 
   if (score > profile.bestScore) {
     profile.bestScore = score;
     saveProfile();
   }
-  addCoins(coins);
+  if (coins) addCoins(coins);
   return coins;
 }
 
@@ -501,40 +454,181 @@ document.querySelectorAll('.glass-trans-btn').forEach(b => {
 });
 
 // ══════════════════════════════════════
+//  CAMPAIGN
+//
+//  Ten areas of fifteen songs. The songs themselves are baked data —
+//  see levels.js and other/tools/bake-levels.js — so everything here
+//  is about which of them you can reach and what you have done to
+//  them, never about composing one.
+// ══════════════════════════════════════
+const CAM = () => window.RD_Campaign;
+
+let progress = store.loadProgress();
+function saveProgress() { store.saveProgress(progress); }
+
+// Which area the browser is showing. Opens on the furthest one
+// reached rather than always on Farmstead, so picking the game back
+// up doesn't start with scrolling.
+let camArea = 1;
+function furthestArea() {
+  const C = CAM(); if (!C) return 1;
+  let a = 1;
+  for (const area of C.AREAS) if (C.isAreaUnlocked(progress, area.id)) a = area.id;
+  return a;
+}
+
+// A campaign level's record is keyed by its id, not its name: two
+// areas can and do name a song the same thing.
+function bestKeyFor(lvl) {
+  return lvl && lvl.campaign ? 'cam:' + lvl.id : (lvl ? lvl.name : null);
+}
+function bestFor(lvl) {
+  const k = bestKeyFor(lvl);
+  return k ? (store.loadBests()[k] || null) : null;
+}
+function recordBest(lvl, score, coins) {
+  const k = bestKeyFor(lvl);
+  if (!k) return false;
+  const bests = store.loadBests();
+  if (bests[k] && bests[k].score >= score) return false;
+  bests[k] = { name: profile.username || 'Player', score, coins, date: Date.now() };
+  store.saveBests(bests);
+  return true;
+}
+
+function renderCampaign() {
+  const C = CAM();
+  const strip = document.getElementById('cam-areas');
+  const list  = document.getElementById('cam-list');
+  if (!C || !strip || !list) return;
+  if (!C.isAreaUnlocked(progress, camArea)) camArea = furthestArea();
+
+  // ── area strip ──
+  strip.innerHTML = '';
+  C.AREAS.forEach(area => {
+    const unlocked = C.isAreaUnlocked(progress, area.id);
+    let done = 0;
+    for (let i = 0; i < C.LEVELS_PER_AREA; i++) if (C.isLevelCleared(progress, area.id, i)) done++;
+    const chip = document.createElement('div');
+    chip.className = 'area-chip'
+      + (area.id === camArea ? ' sel' : '')
+      + (!unlocked ? ' locked' : '')
+      + (done === C.LEVELS_PER_AREA ? ' done' : '');
+    chip.innerHTML = '<div class="ac-name">' + (unlocked ? area.name : '🔒 ' + area.name) + '</div>'
+      + '<div class="ac-prog">' + done + '/' + C.LEVELS_PER_AREA + '</div>';
+    if (unlocked) chip.addEventListener('click', () => { camArea = area.id; renderCampaign(); });
+    strip.appendChild(chip);
+  });
+
+  // ── song list ──
+  const area = C.areaById(camArea);
+  list.innerHTML = '';
+  const head = document.createElement('div');
+  head.className = 'cam-head';
+  head.innerHTML = '<span class="ch-name">' + area.name + '</span>'
+    + '<span class="ch-blurb">' + area.blurb + '</span>';
+  list.appendChild(head);
+
+  if (!C.isAreaUnlocked(progress, camArea)) {
+    const note = document.createElement('div');
+    note.className = 'cam-locked-note';
+    const prev = C.areaById(camArea - 1);
+    note.textContent = 'Finish ' + (prev ? prev.name : 'the previous area') + ' to open ' + area.name + '.';
+    list.appendChild(note);
+    return;
+  }
+
+  C.areaMeta(camArea).forEach(m => {
+    const unlocked = C.isLevelUnlocked(progress, camArea, m.levelIdx);
+    const cleared  = C.isLevelCleared(progress, camArea, m.levelIdx);
+    const best     = store.loadBests()['cam:' + m.id];
+    const row = document.createElement('div');
+    row.className = 'song-row' + (cleared ? ' done' : '') + (!unlocked ? ' locked' : '');
+    const mins = Math.floor(m.seconds / 60), secs = String(m.seconds % 60).padStart(2, '0');
+    row.innerHTML =
+      '<div class="song-no">' + (cleared ? '✓' : m.trackNo) + '</div>'
+      + '<div class="song-info">'
+      +   '<div class="song-name">' + (unlocked ? m.name : '???') + '</div>'
+      +   '<div class="song-meta">' + mins + ':' + secs + ' · ' + m.bpm + ' BPM · ' + m.notes + ' notes</div>'
+      +   (best
+            ? '<div class="song-best">🏆 ' + best.score.toLocaleString() + '</div>'
+            : '<div class="song-best none">' + (unlocked ? 'No score yet' : 'Locked') + '</div>')
+      + '</div>'
+      + '<div class="song-right">'
+      +   '<span class="song-diff b-' + m.diff + '">' + m.diff + '</span>'
+      +   (unlocked ? '' : '<span class="song-lock">🔒</span>')
+      + '</div>';
+    if (unlocked) row.addEventListener('click', () => launchCampaignLevel(camArea, m.levelIdx));
+    list.appendChild(row);
+  });
+}
+
+function launchCampaignLevel(areaId, idx) {
+  const lvl = CAM().levelAt(areaId, idx);
+  if (!lvl) { showToast('That song could not be loaded', true); return; }
+  launchLevel(lvl);
+}
+
+// ── XP ────────────────────────────────
+function grantXp(amount) {
+  const before = CAM().levelFromXp(progress.xp);
+  progress.xp += amount;
+  saveProgress();
+  const after = CAM().levelFromXp(progress.xp);
+  renderXpStrip();
+  return { gained: amount, levelUp: after > before, level: after, from: before };
+}
+
+function renderXpStrip() {
+  const C = CAM(); if (!C) return;
+  const p = C.levelProgress(progress.xp);
+  const lv = document.getElementById('xp-lv');
+  const fl = document.getElementById('xp-fill');
+  const nm = document.getElementById('xp-num');
+  if (lv) lv.textContent = p.level;
+  if (fl) fl.style.width = (p.pct * 100).toFixed(1) + '%';
+  if (nm) nm.textContent = p.into + '/' + p.need;
+}
+
+// ── Daily reward ──────────────────────
+function renderDaily() {
+  const C = CAM(); if (!C) return;
+  const card = document.getElementById('daily-card');
+  if (!card) return;
+  const st = C.dailyState(store.loadDaily());
+  card.classList.toggle('show', st.claimable);
+  if (!st.claimable) return;
+  document.getElementById('daily-sub').textContent = 'Day ' + st.streak + ' of 7';
+  document.getElementById('daily-coins').textContent = '+' + st.reward;
+  const dots = document.getElementById('daily-dots');
+  dots.innerHTML = '';
+  for (let i = 1; i <= 7; i++) {
+    const d = document.createElement('span');
+    d.className = 'daily-dot' + (i <= st.streak ? ' on' : '');
+    dots.appendChild(d);
+  }
+  card.onclick = () => {
+    const r = C.claimDaily(store.loadDaily());
+    if (!r.coins) return;
+    store.saveDaily(r.daily);
+    addCoins(r.coins);
+    showToast('Day ' + r.streak + ' — +' + r.coins + ' coins');
+    renderDaily();
+  };
+}
+
+// ══════════════════════════════════════
 //  HOME
 // ══════════════════════════════════════
 function renderHome() {
   buildThemesGrid();
-  renderBuiltins();
+  renderCampaign();
+  renderDaily();
+  renderXpStrip();
   renderCustoms();
   buildSettingsPanel();
   renderShop();
   updateProfileBar();
-}
-
-function renderBuiltins() {
-  const pane = document.getElementById('tab-levels');
-  pane.innerHTML = '';
-  const bests = store.loadBests();
-
-  LEVELS.forEach(lvl => {
-    const best = bests[lvl.name] || null;
-
-    const c = document.createElement('div');
-    c.className = 'level-card';
-    c.innerHTML = `
-      <div class="lc-info">
-        <div class="lc-name">${lvl.name}</div>
-        <div class="lc-meta mono">${lvl.bpm} BPM · ${lvl.beats} beats${lvl.bgMode !== 'none' ? ' · 🎵 ' + lvl.bgMode : ''}</div>
-        ${best
-          ? `<div class="lc-hs"><span class="lc-hs-icon">🏆</span><span class="lc-hs-score">${best.score.toLocaleString()}</span><span class="lc-hs-name">${best.name}</span></div>`
-          : `<div class="lc-hs lc-hs-none">No score yet</div>`
-        }
-      </div>
-      <div class="lc-badge b-${lvl.diff}">${lvl.diff}</div>`;
-    c.addEventListener('click', () => launchLevel(lvl));
-    pane.appendChild(c);
-  });
 }
 
 function renderCustoms() {
@@ -1975,6 +2069,10 @@ let gameLevel   = null;
 let gameQueue   = [];
 let activeTiles = [];
 let score = 0, combo = 0, lives = 3, maxLives = 3;
+// Notes struck this run, against the chart's total. A run that ends
+// early is paid out on this ratio, so dying on the first note earns
+// first-note money rather than the whole level's.
+let notesHit = 0, notesTotal = 0;
 let lifeScoreMult = 1; // difficulty scaling from chosen starting lives
 let streak = 0; // consecutive hits for streak bonus
 let running = false, lastT = 0, raf = null;
@@ -2099,6 +2197,7 @@ function startGame() {
   currentBeatMs = baseBeatMs;
   fbTimers = [0,0,0,0]; lastTapT = {0:0,1:0,2:0,3:0};
   gameQueue = buildQueue(gameLevel);
+  notesHit = 0; notesTotal = gameQueue.length;
   scoreEl.textContent = '0'; comboEl.textContent = '×1'; comboEl.style.color = 'var(--tap)';
   spdBadge.textContent = '1.0×'; spdBadge.classList.remove('show');
   updateLives();
@@ -2238,6 +2337,7 @@ function processTap(best, bestDist, glowLane) {
 function hit(lane, dist) {
   combo++;
   streak++;
+  notesHit++;
   const pct = dist / HIT_TOL;
   let pts, label, color;
   if      (pct < 0.2) { pts = 300; label = 'PERFECT'; color = 'var(--perfect)'; }
@@ -2314,9 +2414,28 @@ function endGame(won) {
   if (window.RD_stopBg) window.RD_stopBg();
   if (window.RD_resetLaneFreqs) window.RD_resetLaneFreqs();
 
-  // Award currency and save high score
+  // ── What the run was worth ──
   const levelName = gameLevel ? gameLevel.name : 'Unknown';
-  const coinsEarned = addHighScore(profile.username || 'Player', score, levelName);
+  const isCampaign = !!(gameLevel && gameLevel.campaign);
+  // A failed run pays for the share of the chart it actually struck,
+  // or quitting on the first note would pay the same as clearing.
+  const runProgress = notesTotal > 0 ? Math.min(1, notesHit / notesTotal) : (won ? 1 : 0);
+
+  let coinsEarned, xpGain = 0, xpRes = null;
+  if (isCampaign) {
+    coinsEarned = CAM().coinsFor(gameLevel, { completed: won, progress: runProgress });
+    xpGain      = CAM().xpFor(gameLevel,    { completed: won, progress: runProgress });
+    addCoins(coinsEarned);
+    xpRes = grantXp(xpGain);
+    if (won) {
+      progress.cleared[CAM().levelKey(gameLevel.areaId, gameLevel.levelIdx)] = true;
+      saveProgress();
+    }
+    recordBest(gameLevel, score, coinsEarned);
+    addHighScore(profile.username || 'Player', score, levelName, { logOnly: true });
+  } else {
+    coinsEarned = addHighScore(profile.username || 'Player', score, levelName);
+  }
 
   ovTitle.innerHTML = won ? 'Level <span>Clear!</span>' : 'Game <span>Over</span>';
   ovScore.textContent = score; ovScore.style.display = 'block'; ovScLbl.style.display = 'block';
@@ -2326,6 +2445,21 @@ function endGame(won) {
     ovCurr.style.display = 'block';
     ovCurr.textContent = '+' + coinsEarned + ' 🪙 earned';
   }
+  const ovXp = document.getElementById('ov-xp');
+  if (ovXp) {
+    ovXp.style.display = xpGain ? 'block' : 'none';
+    if (xpGain) {
+      const note = won ? [] : [Math.round(runProgress * 100) + '% of the chart'];
+      ovXp.textContent = '+' + xpGain + ' XP' + (note.length ? ' (' + note.join(' · ') + ')' : '');
+    }
+  }
+  const ovLv = document.getElementById('ov-levelup');
+  if (ovLv) {
+    const up = xpRes && xpRes.levelUp;
+    ovLv.style.display = up ? 'block' : 'none';
+    if (up) ovLv.textContent = '★ Level ' + xpRes.level;
+  }
+
   const ovStreak = document.getElementById('ov-streak-bonus');
   if (ovStreak) {
     const parts = [];
@@ -2340,6 +2474,8 @@ function endGame(won) {
   ovBtn.onclick = () => {
     if (ovCurr) ovCurr.style.display = 'none';
     if (ovStreak) ovStreak.style.display = 'none';
+    if (ovXp) ovXp.style.display = 'none';
+    if (ovLv) ovLv.style.display = 'none';
     overlay.classList.remove('show'); startGame();
   };
   overlay.classList.add('show');

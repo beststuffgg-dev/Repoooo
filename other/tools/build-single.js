@@ -4,8 +4,8 @@
 // from a double-click, a phone browser or any static host, and makes
 // zero network requests.
 //
-//   node other/tools/build-single.js         -> htmls/RhythmDrop.html
-//   node other/tools/build-single.js other/RhythmDropV7-Redesign htmls/RhythmDrop-Redesign.html
+//   node other/tools/build-single.js         -> htmls/RhythmDrop.html  (V8)
+//   node other/tools/build-single.js other/v7/RhythmDropV7 other/v7/RhythmDrop.html
 //
 // Both arguments are resolved from the repo root. The .html builds are
 // generated, never hand-maintained: edit the source folder and re-run
@@ -16,7 +16,7 @@ const path = require('path');
 
 // tools/ lives under other/, so the repo root is two levels up.
 const ROOT = path.join(__dirname, '..', '..');
-const srcDir = path.resolve(ROOT, process.argv[2] || 'other/RhythmDropV7');
+const srcDir = path.resolve(ROOT, process.argv[2] || 'other/RhythmDropV8');
 const outFile = path.resolve(ROOT, process.argv[3] || 'htmls/RhythmDrop.html');
 
 const SRC_TAG = /<script\s+src="([^"]+)"\s*><\/script>/g;
