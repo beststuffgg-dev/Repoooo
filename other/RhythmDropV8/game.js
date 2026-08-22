@@ -358,7 +358,13 @@ function clearCustomThemeVars() {
 function applyTheme(id) {
   // Clear any inline custom-theme overrides so other themes take effect
   clearCustomThemeVars();
-  document.body.className = id === 'dark' ? '' : 'theme-' + id;
+  // This replaces body.className outright, so anything on the body that
+  // is not a theme has to be carried across explicitly — otherwise
+  // picking a theme silently turns the graphics style off.
+  const keep = ['gfx-modern', 'adv-overlay']
+    .filter(c => document.body.classList.contains(c));
+  document.body.className = [id === 'dark' ? '' : 'theme-' + id, ...keep]
+    .filter(Boolean).join(' ');
   if (id === 'custom') applyCustomTheme(store.loadCustomTheme());
   if (id === 'glass')  applyGlassTrans(store.loadGlassTrans());
   store.saveTheme(id);
@@ -1132,6 +1138,31 @@ function buildSettingsDisplay(panel) {
   const { maxW, maxH } = getMaxDims();
   _pendingSize = { width: Math.min(s.width, maxW), height: Math.min(s.height, maxH) };
   void maxH;   // height is pinned; only the width is offered below
+
+  panel.appendChild(_settingsSectionHead('Graphics'));
+  {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px;';
+    const blurb = document.createElement('div');
+    blurb.style.cssText = 'font-size:10px;color:var(--muted);margin-bottom:10px;';
+    GFX_STYLES.forEach(([id, label, desc]) => {
+      const btn = document.createElement('button');
+      const on = (currentSettings.gfx || 'modern') === id;
+      btn.className = 'bg-radio-btn' + (on ? ' sel' : '');
+      btn.style.cssText = 'flex:1;';
+      btn.textContent = label;
+      btn.addEventListener('click', () => {
+        currentSettings.gfx = id;
+        store.saveSettings(currentSettings);
+        applySettingsToDOM();
+        buildSettingsPanel();
+      });
+      row.appendChild(btn);
+      if (on) blurb.textContent = desc;
+    });
+    panel.appendChild(row);
+    panel.appendChild(blurb);
+  }
 
   panel.appendChild(_settingsSectionHead('UI Scale'));
   _settingsSliderRow(panel, 'Scale', 0.6, 1.6, 0.05, s.uiScale || 1, '×', v => {
@@ -2491,8 +2522,17 @@ function quitToMenu() {
 }
 
 // ── Settings ──────────────────────────────────────
+// 'modern' is the updated look; 'classic' is the original, kept as a
+// real choice rather than a fallback. The graphics layer is additive,
+// so 'classic' is simply the class being absent.
+const GFX_STYLES = [
+  ['modern',  'Modern',  'Lit edges, depth on the board, glow on the strike line'],
+  ['classic', 'Classic', 'The original flat look, exactly as it was'],
+];
+
 const DEFAULT_SETTINGS = {
   keys: ['KeyA', 'KeyS', 'KeyD', 'KeyF'],
+  gfx: 'modern',
   width: 420,
   height: 640,
   lives: 3,
@@ -2512,6 +2552,7 @@ function loadAndApplySettings() {
     if (saved.height)     currentSettings.height     = saved.height;
     if (saved.lives)      currentSettings.lives      = saved.lives;
     if (saved.instrument) currentSettings.instrument = saved.instrument;
+    if (saved.gfx)            currentSettings.gfx        = saved.gfx;
     if (saved.uiScale)        currentSettings.uiScale   = saved.uiScale;
     if (saved.masterVol != null) currentSettings.masterVol = saved.masterVol;
     if (saved.musicVol  != null) currentSettings.musicVol  = saved.musicVol;
@@ -2563,6 +2604,9 @@ function applySettingsToDOM() {
   root.style.maxHeight = maxH + 'px';
   root.style.width  = appliedWidth() + 'px';
   root.style.height = currentSettings.height + 'px';
+  // Graphics style. Additive: the class going on is the whole change,
+  // so taking it off restores the original look exactly.
+  document.body.classList.toggle('gfx-modern', currentSettings.gfx !== 'classic');
   // UI scale — zoom the whole interface without changing the window box
   document.body.style.zoom = currentSettings.uiScale || 1;
   // Update lane key labels in game

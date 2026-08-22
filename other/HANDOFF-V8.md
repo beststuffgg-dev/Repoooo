@@ -45,6 +45,7 @@ Everything the v3.0 build had — four lanes on **A S D F**, tap and double-tap 
 - **A seven-day daily reward** that lapses on a missed day.
 - **Flat coins per clear** (150), replacing v3's score-derived reward. Coins now count levels cleared rather than how long the chart was: the shortest campaign song is 52 notes and the longest 758, and both pay the same.
 - **Twelve instruments**, up from five — the campaign needs them, because a chart composed for a lyre that falls back to a guitar stops sounding like the place it is set.
+- **Two graphics styles.** *Modern* (default) gives the board depth, lit tile edges and a glowing strike line; *Classic* is the original flat look, kept as a real choice. See [§5](#5-graphics).
 
 Deliberately **not** ported from V7: share/sync codes, endless mode, the materials system, and the weighted loading pipeline.
 
@@ -78,7 +79,28 @@ Why bake at all: a song that exists as a file can be read, diffed and reviewed. 
 
 ---
 
-## 5. Architecture
+## 5. Graphics
+
+Two styles, chosen in Settings → Display: **Modern** (default) and **Classic**.
+
+The whole updated look is one block of CSS scoped under `body.gfx-modern`, and it is **strictly additive** — it does not change a single rule above it. That is what makes "the old style is still available" a fact rather than a hope: with the class off there is nothing left to render differently. `v8graphics.js` parses the stylesheet and asserts every one of the 52 selectors in the block is scoped under that class, that its keyframes are uniquely named so they cannot shadow the originals, and that nothing outside the block mentions the class at all.
+
+Verified by pixel comparison against the build from before the change: home, shop, themes and creator all render **byte-identical** under Classic, and all four differ under Modern.
+
+What Modern adds, all derived from the active theme's own tokens so every one of the twelve themes works under both:
+
+- **The board reads as a shaft.** A dark gradient at the top and shadow pooling at the bottom, so notes arrive out of somewhere instead of appearing on a flat rectangle.
+- **Tiles are objects.** A lit top edge, shading pooling beneath it, a gloss that scales with the tile's height, and light cast onto the lane below. The ×2 tile gets a second read — an inner rim and a pair of marks across its face — because it has to be legible at speed.
+- **The strike line is the most important pixel on screen**, so it is tapered to read as light rather than a drawn rule, with a bright core and a bloom the tile passes through. The landing glow moved above the line, where the tile actually is when it counts, rather than below it behind the keycaps.
+- **Keycaps behave like keys**, with a bevel and a pressed state.
+- **Panels get one hairline of light** along the top edge — the cheapest way to make a flat fill read as a surface facing up — plus elevation under cards and rows.
+- **The light themes invert it.** A white sheen on a near-white panel is invisible, so under Paper and Arctic the shadow does the work instead.
+
+`applyTheme` replaces `body.className` outright, so the style class is carried across explicitly — otherwise picking a theme would silently turn the graphics off. The suite checks that across all 13 themes.
+
+---
+
+## 6. Architecture
 
 **Load order is fixed**: `levels.js → campaign.js → audio.js → game.js`. The baked data first, then the engine that reads it, then audio, then the game that wires them together.
 
@@ -93,27 +115,32 @@ Why bake at all: a song that exists as a file can be read, diffed and reviewed. 
 
 ---
 
-## 6. Testing
+## 7. Testing
 
 ```
 cd tests && npm install && node run-all.js
 ```
 
-28 suites. Three cover V8:
+30 suites. Five cover V8:
 
 | Suite | Covers |
 |---|---|
 | `v8levels.js` | The baked campaign against the build that plays it: 150 levels, the flat encoding decoding back to real charts, every referenced voice existing in `audio.js`, zero minor seconds across 8,658 chords |
 | `v8campaign.js` | Flat coins, partial runs, the XP curve and its linearity in speed, the density cap, unlock chaining, the seven-day daily and its lapse |
+| `v8audio.js` | Every instrument **rendered** through an OfflineAudioContext and measured — not just present. Peak, RMS, duration and brightness per voice, the double-tap fifth, sustain, the per-note override, the output ceiling and the volume controls |
+| `v8graphics.js` | That the graphics layer is strictly additive, that Classic and Modern really differ, and that the style survives all 13 theme switches |
 | `v8ui.js` | Real Chromium: the pinned height, the side panel widening the window without moving the grid, the overlay fallback, and one whole run from the campaign list to the results screen |
 
 The remaining 25 are V7's, unchanged, running against `other/v7/`. `APP_DIR` selects which V7 build they test; `V8_DIR` overrides the V8 one.
 
+**On audio testing.** Everything before `v8audio` was structural — the roster has twelve ids, the file parses, the functions exist — and none of it would have caught a voice that was lifted from another build and no longer works. Rendering the samples caught two real bugs: the limiter was not actually limiting (seven simultaneous double-taps peaked at 1.318, a third past full scale), and `ctx()` called `resume()` unguarded on a context that could not be resumed, where the throw takes the note with it.
+
 ---
 
-## 7. Open items
+## 8. Open items
 
 - **The campaign has no ending.** Clearing area 10 leaves you at the last song with nothing after it. V7 had an endless mode for this; it was not ported.
 - **Difficulty is inherited, not tuned.** The 150 charts carry V7's difficulty curve. Nobody has played them in V8's engine end to end — V8's scoring has v3's lives-based multiplier, which V7 did not have, so the balance may not be the same game.
 - **The creator cannot make campaign-shaped levels.** It writes the same grid format, but nothing lets you save one into an area or share it.
 - **The 11 above-C8 notes** (§3) are worth a listen before deciding whether to leave them.
+- **Modern is not applied to every screen yet.** The board, the campaign list, the shop cards, the profile bar and the creator grid all pick it up; the mystery-box reveal, the results overlay and the username screen still render the same under both.

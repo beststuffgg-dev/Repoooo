@@ -39,6 +39,7 @@ Hit **A · S · D · F** as slabs cross the strike line. Tap once for a single n
 - **Level creator** — a grid editor with per-lane default pitches, a per-note picker, sustain and a configurable drum/bass backing. Its advanced panel opens **sideways** and widens the window rather than covering the chart you're editing.
 - **Economy** — every level pays a flat coin reward, so grinding a long chart isn't better than clearing a short one. Every purchase is two clicks: the first previews (an avatar goes on your profile, an effect plays live on the board, a mystery box shows its real odds), only the second spends.
 - **12 instruments**, synthesized from oscillators — no samples, no network — plus avatars, note trails, mystery boxes and 12 themes including frosted glass, warm paper and arctic white.
+- **Two graphics styles.** *Modern* gives the board depth, lit tile edges and a glowing strike line. *Classic* is the original flat look, kept as a real choice — the updated layer is strictly additive, so Classic renders pixel-identical to the build from before it existed.
 - **Settings** for key remapping, starting lives, UI scale, master and music volume, and instrument choice.
 - **Width, not height.** Chrome caps an extension popup at 800×600 and clips the rest, which is why vertical resizing never worked. The height is pinned to that ceiling and only the width is adjustable — everything vertical scrolls.
 
@@ -95,16 +96,16 @@ Never hand-edit anything in `htmls/`, any `.zip`, or `other/RhythmDropV8/levels.
 cd tests && npm install && node run-all.js
 ```
 
-Twenty-eight harnesses. Three cover V8 — the baked campaign against the build that plays it, the progression rules, and a real-Chromium pass over the layout and one whole run. The other twenty-five are V7's, unchanged, still green against `other/v7/`.
+Thirty harnesses. Five cover V8 — the baked campaign against the build that plays it, the progression rules, every instrument rendered and measured through an OfflineAudioContext, the graphics layer, and a real-Chromium pass over the layout and one whole run. The other twenty-five are V7's, unchanged, still green against `other/v7/`.
 
-Six suites drive real Chromium rather than jsdom, because jsdom has no layout engine and structurally cannot catch a layout bug — those are the ones that found the strike line sitting 12–19px off the bar it was drawn on, the campaign list collapsing to a 39px viewport, and that verify the creator panel widens the window without moving the grid.
+Eight suites drive a real browser rather than jsdom, because jsdom has no layout engine or audio engine and structurally cannot catch a layout or a silence bug — those are the ones that found the strike line sitting 12–19px off the bar it was drawn on, the campaign list collapsing to a 39px viewport, and the master bus peaking a third past full scale on a seven-note chord.
 
 ```
 npm run test:v8                                # just the V8 suites
 APP_DIR=RhythmDropV7-Redesign node run-all.js  # V7's suites against its variant
 ```
 
-See [`tests/README.md`](tests/README.md) for the per-suite breakdown, and [`HANDOFF-V8.md`](other/HANDOFF-V8.md#6-testing) for how it fits together.
+See [`tests/README.md`](tests/README.md) for the per-suite breakdown, and [`HANDOFF-V8.md`](other/HANDOFF-V8.md#7-testing) for how it fits together.
 
 ---
 

@@ -464,6 +464,185 @@ body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var
   font-family:var(--font-data); display:none;
 }
 
+
+/* ══════════════════════════════════════
+   UPDATED GRAPHICS  —  body.gfx-modern
+
+   Everything in this block is ADDITIVE. Nothing here changes a rule
+   above it; the class is either on or it isn't, and with it off the
+   build renders exactly as it always did. That is deliberate: the old
+   look is not a legacy path to be tolerated, it is a setting, and it
+   has to stay pixel-for-pixel intact to be worth offering.
+
+   All twelve themes work under both, because none of this hard-codes a
+   colour — every value here is derived from the theme's own tokens.
+══════════════════════════════════════ */
+
+/* ── The board reads as a shaft, not a flat rectangle ──
+   Notes should look like they are arriving out of somewhere. A dark
+   gradient at the top and a shadow pooling at the bottom does that
+   with no per-frame cost. ::before is already the scanlines. */
+body.gfx-modern .lane::after {
+  content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.55) 0%, rgba(0,0,0,0) 24%),
+    linear-gradient(0deg,   rgba(0,0,0,.30) 0%, rgba(0,0,0,0) 16%);
+}
+body.gfx-modern .lane {
+  box-shadow: inset 1px 0 0 rgba(255,255,255,.05),
+              inset -1px 0 0 rgba(0,0,0,.40);
+}
+
+/* ── Tiles are objects with a lit edge, not coloured slabs ──
+   A highlight along the top, shading pooling under it, and light cast
+   onto the lane beneath. The gloss is a pseudo-element so it scales
+   with the tile's own height. */
+body.gfx-modern .tile {
+  border-radius:8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.45),
+    inset 0 -3px 8px rgba(0,0,0,.32),
+    0 4px 14px -3px var(--glow-tap);
+}
+body.gfx-modern .tile::after {
+  content:''; position:absolute; left:3px; right:3px; top:2px; height:38%;
+  border-radius:6px 6px 12px 12px; pointer-events:none;
+  background:linear-gradient(180deg, rgba(255,255,255,.32), rgba(255,255,255,0));
+}
+/* The ×2 tile has to be legible at a glance and at speed, so it gets a
+   second read: an inner rim, and a pair of marks across its face. */
+body.gfx-modern .tile-dtap {
+  box-shadow:
+    inset 0 0 0 2px rgba(255,255,255,.24),
+    inset 0 1px 0 rgba(255,255,255,.50),
+    inset 0 -3px 8px rgba(0,0,0,.32),
+    0 4px 16px -3px var(--glow-dtap);
+}
+body.gfx-modern .tile-dtap::before {
+  content:''; position:absolute; inset:0; pointer-events:none; z-index:1;
+  background:
+    linear-gradient(90deg, transparent calc(50% - 7px), rgba(255,255,255,.30) calc(50% - 7px),
+                    rgba(255,255,255,.30) calc(50% - 5px), transparent calc(50% - 5px)),
+    linear-gradient(90deg, transparent calc(50% + 5px), rgba(255,255,255,.30) calc(50% + 5px),
+                    rgba(255,255,255,.30) calc(50% + 7px), transparent calc(50% + 7px));
+}
+body.gfx-modern .tile-dtap.primed { animation:dtap-pulse-m .18s ease-out infinite alternate; }
+@keyframes dtap-pulse-m {
+  from { box-shadow: inset 0 0 0 2px rgba(255,255,255,.24), inset 0 1px 0 rgba(255,255,255,.50),
+                     inset 0 -3px 8px rgba(0,0,0,.32), 0 4px 16px -3px var(--glow-dtap); }
+  to   { box-shadow: inset 0 0 0 2px rgba(255,255,255,.55), inset 0 1px 0 rgba(255,255,255,.70),
+                     inset 0 -3px 8px rgba(0,0,0,.32), 0 6px 30px -2px var(--dtap); }
+}
+
+/* ── The strike line is the most important pixel on screen ──
+   Tapered so it reads as light rather than as a drawn rule, with a
+   bright core and a bloom the tile passes through. */
+body.gfx-modern .lane-hitbar {
+  height:3px; border-radius:3px;
+  background:linear-gradient(90deg,
+    transparent 0%, var(--tap2) 16%, var(--tap2) 84%, transparent 100%);
+  box-shadow:0 0 18px var(--glow-tap), 0 0 5px var(--tap);
+}
+/* The landing zone sits above the line, where the tile actually is
+   when it counts — not below it, behind the keycaps. */
+body.gfx-modern .lane-hitglow {
+  bottom:54px; height:42px;
+  background:linear-gradient(180deg, transparent 0%, var(--lane-hitglow-clr) 78%, transparent 100%);
+}
+
+/* ── Keycaps behave like keys ── */
+body.gfx-modern .lane-btn {
+  background:linear-gradient(180deg, var(--bg4) 0%, var(--bg3) 62%, var(--bg2) 100%);
+  border-top-color:rgba(255,255,255,.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.14),
+    inset 0 -1px 0 rgba(0,0,0,.45),
+    0 -8px 18px -12px rgba(0,0,0,.9);
+}
+body.gfx-modern .lane-btn:active {
+  background:linear-gradient(180deg, var(--bg3), var(--bg2));
+  box-shadow:inset 0 2px 7px rgba(0,0,0,.55);
+}
+body.gfx-modern .lane-key { text-shadow:0 1px 0 rgba(0,0,0,.65); }
+
+/* ── HUD ── */
+body.gfx-modern .hud-score-num { text-shadow:0 2px 14px rgba(0,0,0,.55); }
+body.gfx-modern .hud-combo {
+  background:linear-gradient(180deg, var(--bg4), var(--bg3));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 2px 12px -5px var(--glow-tap);
+}
+
+/* ── Panels get one hairline of light along the top edge ──
+   The cheapest way to make a flat fill read as a surface facing up. */
+body.gfx-modern .song-row,
+body.gfx-modern .area-chip,
+body.gfx-modern .level-card,
+body.gfx-modern .avatar-card,
+body.gfx-modern .hs-entry,
+body.gfx-modern #daily-card,
+body.gfx-modern .cr-cell,
+body.gfx-modern .bass-step,
+body.gfx-modern .tool-btn {
+  background-image:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0) 58%);
+}
+body.gfx-modern .song-row,
+body.gfx-modern .area-chip,
+body.gfx-modern .level-card,
+body.gfx-modern .avatar-card,
+body.gfx-modern #daily-card {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 4px 14px -9px rgba(0,0,0,.75);
+}
+body.gfx-modern .song-row:hover,
+body.gfx-modern .level-card:hover,
+body.gfx-modern .avatar-card:hover {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.11), 0 9px 22px -11px rgba(0,0,0,.9);
+}
+body.gfx-modern .area-chip.sel {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 4px 16px -6px var(--glow-dtap);
+}
+body.gfx-modern .song-row.done .song-no {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 0 12px -3px var(--good);
+}
+
+/* ── Chrome ── */
+body.gfx-modern #profile-bar,
+body.gfx-modern #home-hero {
+  background-image:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0) 70%);
+}
+body.gfx-modern #profile-bar { box-shadow:inset 0 1px 0 rgba(255,255,255,.06); }
+body.gfx-modern .hnav.active { text-shadow:0 0 14px var(--glow-dtap); }
+body.gfx-modern #pbar-avatar { box-shadow:0 3px 10px -4px rgba(0,0,0,.8); }
+body.gfx-modern .xp-fill { box-shadow:0 0 8px -1px var(--perfect); }
+
+/* ── Creator ── */
+body.gfx-modern .cr-cell.is-tap {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.28), 0 2px 9px -5px var(--glow-tap);
+}
+body.gfx-modern .cr-cell.is-dtap {
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.18), inset 0 1px 0 rgba(255,255,255,.28),
+             0 2px 9px -5px var(--glow-dtap);
+}
+
+/* The light themes need the highlights inverted — a white sheen on a
+   near-white panel is invisible, and the shadow is what reads there. */
+body.gfx-modern.theme-paper .song-row,
+body.gfx-modern.theme-paper .area-chip,
+body.gfx-modern.theme-paper .avatar-card,
+body.gfx-modern.theme-paper #daily-card,
+body.gfx-modern.theme-arctic .song-row,
+body.gfx-modern.theme-arctic .area-chip,
+body.gfx-modern.theme-arctic .avatar-card,
+body.gfx-modern.theme-arctic #daily-card {
+  background-image:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 60%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7), 0 3px 10px -7px rgba(0,0,0,.45);
+}
+body.gfx-modern.theme-paper .lane::after,
+body.gfx-modern.theme-arctic .lane::after {
+  background:
+    linear-gradient(180deg, rgba(0,0,0,.16) 0%, rgba(0,0,0,0) 24%),
+    linear-gradient(0deg,   rgba(0,0,0,.10) 0%, rgba(0,0,0,0) 16%);
+}
+
 /* ═══════════════════════════════════════
    CREATOR (standard)
 ═══════════════════════════════════════ */

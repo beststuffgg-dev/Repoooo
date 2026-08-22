@@ -23,6 +23,7 @@ const SUITES = [
   ['v8levels.js',   'V8 campaign data — 150 baked songs, and the build that plays them'],
   ['v8campaign.js', 'V8 progression — coins, XP, unlocks, dailies'],
   ['v8audio.js',    'V8 audio — every voice rendered and measured, not just present'],
+  ['v8graphics.js', 'V8 graphics — the updated look, and the old one kept intact'],
   ['v8ui.js',       'V8 layout — the side panel, the pinned height, one whole run'],
   // ══ V7 — kept alongside, under other/v7/ ══
   // ── core ──
@@ -65,7 +66,7 @@ const APP = process.env.APP_DIR || '';
 // The V8 suites name their own build, so re-running them for each V7
 // variant would just repeat identical work.
 const SKIP = /Redesign/.test(APP)
-  ? new Set(['redesigntest.js', 'singlefiletest.js', 'v8levels.js', 'v8campaign.js', 'v8audio.js', 'v8ui.js'])
+  ? new Set(['redesigntest.js', 'singlefiletest.js', 'v8levels.js', 'v8campaign.js', 'v8audio.js', 'v8graphics.js', 'v8ui.js'])
   : new Set();
 
 let failed = [], ran = 0;
