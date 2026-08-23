@@ -179,8 +179,14 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       store.saveSettings(currentSettings);
     });
     await page.reload({ waitUntil: 'load' });
-
-    await page.waitForTimeout(1400);
+    // Wait for boot to actually finish rather than guessing at a delay:
+    // settings are loaded and applied asynchronously, and a fixed
+    // timeout raced them on a loaded machine.
+    await page.waitForFunction(
+      () => typeof currentSettings !== 'undefined' && currentSettings.keys
+            && window.RD_getVolume && document.querySelector('#btn0 .lane-key'),
+      { timeout: 8000 });
+    await page.waitForTimeout(200);
     const r = await page.evaluate(() => ({
       keys: currentSettings.keys.join(','),
       cap: document.querySelector('#btn0 .lane-key').textContent.trim(),

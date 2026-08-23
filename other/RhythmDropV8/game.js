@@ -545,6 +545,12 @@ function renderCampaign() {
     return;
   }
 
+  // The rows live in one grouped card, v7-style, rather than fifteen
+  // separate floating ones.
+  const songs = document.createElement('div');
+  songs.className = 'cam-songs';
+  list.appendChild(songs);
+
   C.areaMeta(camArea).forEach(m => {
     const unlocked = C.isLevelUnlocked(progress, camArea, m.levelIdx);
     const cleared  = C.isLevelCleared(progress, camArea, m.levelIdx);
@@ -573,7 +579,7 @@ function renderCampaign() {
       const lvl = CAM().levelAt(camArea, m.levelIdx);
       if (lvl) launchLevel(lvl, true);
     });
-    list.appendChild(row);
+    songs.appendChild(row);
   });
 }
 
