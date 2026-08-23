@@ -35,6 +35,32 @@ const OUT = path.join(ROOT, 'other', 'RhythmDropV8', 'levels.js');
 const ROSTER = ['synth', 'piano', 'guitar', 'marimba', 'bell', 'flute',
   'lyre', 'brass', 'organ', 'strings', 'chiptune', 'kalimba'];
 
+// Campaign songs are capped to two minutes. The composer aims for
+// 1m30–3m by difficulty, which left the back half of the campaign
+// running past three minutes a track — too long for a pick-up-and-play
+// popup. Capping is done here, on the baked grid, by dropping WHOLE
+// BARS from the tail: a bar is a complete musical phrase, so the song
+// still ends on a bar line rather than mid-figure. Shorter songs are
+// left exactly as composed.
+const MAX_SECONDS = 120;
+
+function capToLength(lvl) {
+  const rows = lvl.grid.length;
+  const seconds = Math.round((rows * 60) / lvl.bpm);
+  if (seconds <= MAX_SECONDS) return { grid: lvl.grid, rows, seconds, capped: false };
+  const rowsPerBar = Math.max(1, Math.round(rows / (lvl._bars || (rows / 4))));
+  const maxRows = Math.floor((MAX_SECONDS * lvl.bpm) / 60);
+  // Whole bars only, and at least a few so nothing collapses to a stub.
+  const bars = Math.max(4, Math.floor(maxRows / rowsPerBar));
+  const keep = Math.min(rows, bars * rowsPerBar);
+  return {
+    grid: lvl.grid.slice(0, keep),
+    rows: keep,
+    seconds: Math.round((keep * 60) / lvl.bpm),
+    capped: true,
+  };
+}
+
 // campaign.js is an IIFE that hangs one global off `window` and never
 // touches the DOM, so a bare context is all it needs.
 function loadGenerator() {
@@ -66,11 +92,14 @@ function main() {
   }));
 
   const levels = [];
-  let notesTotal = 0, drift = 0;
+  let notesTotal = 0, drift = 0, capped = 0;
 
   for (const area of C.AREAS) {
     for (let idx = 0; idx < C.LEVELS_PER_AREA; idx++) {
       const l = C.buildCampaignLevel(area.id, idx);
+      const cap = capToLength(l);
+      l.grid = cap.grid;                 // trimmed to whole bars under MAX_SECONDS
+      if (cap.capped) capped++;
       // Flat note list: row, lane, type, midi, sustain in tenths, instrument.
       // Five small integers beats an object per note by a wide margin at
       // 150 charts, and the shape is still obvious at a glance.
@@ -88,7 +117,7 @@ function main() {
       levels.push({
         id: l.id, n: l.name, a: l.areaId, x: l.levelIdx, t: l.trackNo,
         b: l.bpm, r: l.grid.length, d: l.diff, df: l.difficulty,
-        sn: l.styleName, sec: l.seconds, bg: l.bgMode, ins: instIdx(l.instrument),
+        sn: l.styleName, sec: Math.round((l.grid.length * 60) / l.bpm), bg: l.bgMode, ins: instIdx(l.instrument),
         lf: l.laneFreqs.map(toMidi), bp: (l.bassPattern || []).map(f => (f > 0 ? toMidi(f) : 0)),
         nt,
       });
@@ -122,6 +151,7 @@ function main() {
   console.log('baked ' + levels.length + ' levels -> ' + path.relative(ROOT, OUT));
   console.log('  ' + areas.length + ' areas, ' + notesTotal.toLocaleString() + ' notes, '
     + instruments.length + ' instruments (' + instruments.filter(Boolean).join(', ') + ')');
+  console.log('  ' + capped + ' of ' + levels.length + ' trimmed to <=' + MAX_SECONDS + 's on a bar line; rest as composed');
   console.log('  ' + (fs.statSync(OUT).size / 1024).toFixed(0) + ' KB, every pitch exact through midi');
 }
 
