@@ -834,6 +834,55 @@ body.gfx-modern.theme-arctic .lane::after {
 .endless-title { font-size:14px; font-weight:800; letter-spacing:-.3px; }
 .endless-sub { display:block; font-size:11px; color:var(--muted); font-family:var(--font-data); margin-top:1px; }
 
+
+/* ── Advanced panel: mode toggle + generation menu ── */
+.adv-modes {
+  display:flex; gap:4px; margin-bottom:10px;
+  background:var(--bg3); border:1px solid var(--border); border-radius:9px; padding:3px;
+}
+.adv-mode {
+  flex:1; padding:7px 4px; border-radius:7px; border:none; cursor:pointer;
+  background:none; color:var(--muted); font-size:11px; font-weight:700;
+  font-family:var(--font-body); transition:all .12s;
+}
+.adv-mode.sel { background:var(--bg); color:var(--accent); box-shadow:0 1px 4px -1px var(--bevel-shade,rgba(0,0,0,.5)); }
+.adv-mode-pane { display:none; }
+.adv-mode-pane.show { display:block; }
+.gen-band { display:flex; gap:6px; margin-bottom:10px; }
+.gen-band-btn {
+  flex:1; padding:9px 4px; border-radius:9px; cursor:pointer;
+  border:1px solid var(--border2); background:var(--bg3); color:var(--muted);
+  font-size:11px; font-weight:700; font-family:var(--font-body); transition:all .12s;
+}
+.gen-band-btn.sel { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--bg3)); }
+.gen-go, .gen-play {
+  width:100%; padding:11px; border-radius:10px; cursor:pointer; margin-bottom:6px;
+  font-size:13px; font-weight:700; font-family:var(--font-body); border:1px solid var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,transparent); color:var(--accent); transition:background .12s;
+}
+.gen-go:hover, .gen-play:hover { background:color-mix(in srgb,var(--accent) 26%,transparent); }
+.gen-play { border-color:var(--border2); background:var(--bg3); color:var(--text); }
+.gen-play:hover { background:var(--bg4); }
+
+/* Endless as an era tab — a chip like the areas, tinted so it reads as
+   the special one at the end of the row. */
+.area-chip.endless-chip .ac-name { color:var(--dtap); }
+.area-chip.endless-chip.sel { border-bottom-color:var(--dtap); background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--dtap) 12%,transparent)); }
+.area-chip.endless-chip.sel .ac-name { color:var(--dtap); }
+
+/* The endless panel shown in the list when its tab is selected. */
+.endless-pane { display:flex; flex-direction:column; gap:12px; padding:6px 2px; }
+.endless-band {
+  display:flex; align-items:center; gap:12px; padding:14px; cursor:pointer;
+  background:var(--bg2); border:1px solid var(--border); border-radius:13px;
+  transition:border-color .15s, background .15s, transform .1s; position:relative;
+}
+.endless-band:hover { border-color:var(--dtap); transform:translateY(-1px); }
+.endless-band .eb-emoji { font-size:26px; flex-shrink:0; }
+.endless-band .eb-name { font-size:15px; font-weight:800; }
+.endless-band .eb-sub { font-size:11px; color:var(--muted); font-family:var(--font-data); margin-top:2px; }
+.endless-locked-note { padding:22px 16px; text-align:center; color:var(--muted); font-size:12px; border:1px dashed var(--border2); border-radius:12px; }
+
 /* ═══════════════════════════════════════
    CREATOR (standard)
 ═══════════════════════════════════════ */
@@ -1475,32 +1524,12 @@ body.adv-overlay #adv-panel.open {
       </div>
       <div id="cam-areas"></div>
       <div id="cam-list"></div>
-      <div id="endless-card" title="Endless — a new song every time">
-        <span class="endless-emoji">♾️</span>
-        <span class="endless-text">
-          <span class="endless-title">Endless</span>
-          <span class="endless-sub" id="endless-sub">A fresh song every run</span>
-        </span>
-        <select id="endless-diff" class="gen-diff" title="Difficulty" onclick="event.stopPropagation()">
-          <option value="1-4">Casual</option>
-          <option value="4-7" selected>Standard</option>
-          <option value="7-9">Punishing</option>
-        </select>
-      </div>
     </div>
   </div>
 
   <div class="tab-pane" id="tab-custom">
-    <div class="gen-row">
-      <button id="gen-btn" class="gen-main">🎲 Generate a level</button>
-      <select id="gen-diff" class="gen-diff" title="Difficulty">
-        <option value="1-3">Easy</option>
-        <option value="3-6" selected>Medium</option>
-        <option value="6-9">Hard</option>
-      </select>
-    </div>
-    <div class="gen-hint">A fresh song composed on the spot — the same generator that wrote the campaign. Play it, then keep it if you like it.</div>
     <button id="new-lvl-btn">+ Create new level</button>
+    <div class="gen-hint" style="margin-bottom:4px;">Tip: open a new level, hit <b>Advanced → Generate</b> to fill the grid with a composed chart, then edit and save it.</div>
     <div id="custom-list"></div>
   </div>
 
@@ -1596,6 +1625,27 @@ body.adv-overlay #adv-panel.open {
 
   <!-- Advanced panel — a side column, not a drawer -->
   <div id="adv-panel">
+    <!-- A toggle at the top switches the whole panel between the note
+         settings and a generation menu, the way the request asked. -->
+    <div class="adv-modes">
+      <button class="adv-mode sel" data-mode="settings">Settings</button>
+      <button class="adv-mode" data-mode="generate">🎲 Generate</button>
+    </div>
+
+    <div id="adv-generate" class="adv-mode-pane">
+      <div class="adv-section">Generate a chart</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">The same composer that wrote the campaign fills the grid with a fresh chart at the difficulty you pick — then edit it, or just save it.</div>
+      <div class="gen-band" id="gen-band">
+        <button class="gen-band-btn" data-band="1-3">Easy</button>
+        <button class="gen-band-btn sel" data-band="3-6">Medium</button>
+        <button class="gen-band-btn" data-band="6-9">Hard</button>
+      </div>
+      <button id="gen-into-grid" class="gen-go">Generate into grid</button>
+      <button id="gen-play" class="gen-play">▶ Generate &amp; play</button>
+      <div class="gen-hint" style="margin-top:8px;">Generating replaces whatever is in the grid now.</div>
+    </div>
+
+    <div id="adv-settings" class="adv-mode-pane">
     <div class="adv-section">Lane Default Notes</div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Default pitch per lane — override individual notes in the grid below</div>
     <div class="lane-note-grid" id="lane-note-grid"></div>
@@ -1624,6 +1674,7 @@ body.adv-overlay #adv-panel.open {
       <div id="bass-note-sel-wrap" style="margin:4px 0;"></div>
       <div class="bass-step-grid" id="bass-step-grid"></div>
     </div>
+    </div><!-- /#adv-settings -->
   </div>
 
   </div>

@@ -834,6 +834,55 @@ body.gfx-modern.theme-arctic .lane::after {
 .endless-title { font-size:14px; font-weight:800; letter-spacing:-.3px; }
 .endless-sub { display:block; font-size:11px; color:var(--muted); font-family:var(--font-data); margin-top:1px; }
 
+
+/* ── Advanced panel: mode toggle + generation menu ── */
+.adv-modes {
+  display:flex; gap:4px; margin-bottom:10px;
+  background:var(--bg3); border:1px solid var(--border); border-radius:9px; padding:3px;
+}
+.adv-mode {
+  flex:1; padding:7px 4px; border-radius:7px; border:none; cursor:pointer;
+  background:none; color:var(--muted); font-size:11px; font-weight:700;
+  font-family:var(--font-body); transition:all .12s;
+}
+.adv-mode.sel { background:var(--bg); color:var(--accent); box-shadow:0 1px 4px -1px var(--bevel-shade,rgba(0,0,0,.5)); }
+.adv-mode-pane { display:none; }
+.adv-mode-pane.show { display:block; }
+.gen-band { display:flex; gap:6px; margin-bottom:10px; }
+.gen-band-btn {
+  flex:1; padding:9px 4px; border-radius:9px; cursor:pointer;
+  border:1px solid var(--border2); background:var(--bg3); color:var(--muted);
+  font-size:11px; font-weight:700; font-family:var(--font-body); transition:all .12s;
+}
+.gen-band-btn.sel { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,var(--bg3)); }
+.gen-go, .gen-play {
+  width:100%; padding:11px; border-radius:10px; cursor:pointer; margin-bottom:6px;
+  font-size:13px; font-weight:700; font-family:var(--font-body); border:1px solid var(--accent);
+  background:color-mix(in srgb,var(--accent) 14%,transparent); color:var(--accent); transition:background .12s;
+}
+.gen-go:hover, .gen-play:hover { background:color-mix(in srgb,var(--accent) 26%,transparent); }
+.gen-play { border-color:var(--border2); background:var(--bg3); color:var(--text); }
+.gen-play:hover { background:var(--bg4); }
+
+/* Endless as an era tab — a chip like the areas, tinted so it reads as
+   the special one at the end of the row. */
+.area-chip.endless-chip .ac-name { color:var(--dtap); }
+.area-chip.endless-chip.sel { border-bottom-color:var(--dtap); background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--dtap) 12%,transparent)); }
+.area-chip.endless-chip.sel .ac-name { color:var(--dtap); }
+
+/* The endless panel shown in the list when its tab is selected. */
+.endless-pane { display:flex; flex-direction:column; gap:12px; padding:6px 2px; }
+.endless-band {
+  display:flex; align-items:center; gap:12px; padding:14px; cursor:pointer;
+  background:var(--bg2); border:1px solid var(--border); border-radius:13px;
+  transition:border-color .15s, background .15s, transform .1s; position:relative;
+}
+.endless-band:hover { border-color:var(--dtap); transform:translateY(-1px); }
+.endless-band .eb-emoji { font-size:26px; flex-shrink:0; }
+.endless-band .eb-name { font-size:15px; font-weight:800; }
+.endless-band .eb-sub { font-size:11px; color:var(--muted); font-family:var(--font-data); margin-top:2px; }
+.endless-locked-note { padding:22px 16px; text-align:center; color:var(--muted); font-size:12px; border:1px dashed var(--border2); border-radius:12px; }
+
 /* ═══════════════════════════════════════
    CREATOR (standard)
 ═══════════════════════════════════════ */
@@ -1475,32 +1524,12 @@ body.adv-overlay #adv-panel.open {
       </div>
       <div id="cam-areas"></div>
       <div id="cam-list"></div>
-      <div id="endless-card" title="Endless — a new song every time">
-        <span class="endless-emoji">♾️</span>
-        <span class="endless-text">
-          <span class="endless-title">Endless</span>
-          <span class="endless-sub" id="endless-sub">A fresh song every run</span>
-        </span>
-        <select id="endless-diff" class="gen-diff" title="Difficulty" onclick="event.stopPropagation()">
-          <option value="1-4">Casual</option>
-          <option value="4-7" selected>Standard</option>
-          <option value="7-9">Punishing</option>
-        </select>
-      </div>
     </div>
   </div>
 
   <div class="tab-pane" id="tab-custom">
-    <div class="gen-row">
-      <button id="gen-btn" class="gen-main">🎲 Generate a level</button>
-      <select id="gen-diff" class="gen-diff" title="Difficulty">
-        <option value="1-3">Easy</option>
-        <option value="3-6" selected>Medium</option>
-        <option value="6-9">Hard</option>
-      </select>
-    </div>
-    <div class="gen-hint">A fresh song composed on the spot — the same generator that wrote the campaign. Play it, then keep it if you like it.</div>
     <button id="new-lvl-btn">+ Create new level</button>
+    <div class="gen-hint" style="margin-bottom:4px;">Tip: open a new level, hit <b>Advanced → Generate</b> to fill the grid with a composed chart, then edit and save it.</div>
     <div id="custom-list"></div>
   </div>
 
@@ -1596,6 +1625,27 @@ body.adv-overlay #adv-panel.open {
 
   <!-- Advanced panel — a side column, not a drawer -->
   <div id="adv-panel">
+    <!-- A toggle at the top switches the whole panel between the note
+         settings and a generation menu, the way the request asked. -->
+    <div class="adv-modes">
+      <button class="adv-mode sel" data-mode="settings">Settings</button>
+      <button class="adv-mode" data-mode="generate">🎲 Generate</button>
+    </div>
+
+    <div id="adv-generate" class="adv-mode-pane">
+      <div class="adv-section">Generate a chart</div>
+      <div style="font-size:10px;color:var(--muted);margin-bottom:8px;">The same composer that wrote the campaign fills the grid with a fresh chart at the difficulty you pick — then edit it, or just save it.</div>
+      <div class="gen-band" id="gen-band">
+        <button class="gen-band-btn" data-band="1-3">Easy</button>
+        <button class="gen-band-btn sel" data-band="3-6">Medium</button>
+        <button class="gen-band-btn" data-band="6-9">Hard</button>
+      </div>
+      <button id="gen-into-grid" class="gen-go">Generate into grid</button>
+      <button id="gen-play" class="gen-play">▶ Generate &amp; play</button>
+      <div class="gen-hint" style="margin-top:8px;">Generating replaces whatever is in the grid now.</div>
+    </div>
+
+    <div id="adv-settings" class="adv-mode-pane">
     <div class="adv-section">Lane Default Notes</div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Default pitch per lane — override individual notes in the grid below</div>
     <div class="lane-note-grid" id="lane-note-grid"></div>
@@ -1624,6 +1674,7 @@ body.adv-overlay #adv-panel.open {
       <div id="bass-note-sel-wrap" style="margin:4px 0;"></div>
       <div class="bass-step-grid" id="bass-step-grid"></div>
     </div>
+    </div><!-- /#adv-settings -->
   </div>
 
   </div>
@@ -5402,7 +5453,7 @@ function renderCampaign() {
   const strip = document.getElementById('cam-areas');
   const list  = document.getElementById('cam-list');
   if (!C || !strip || !list) return;
-  if (!C.isAreaUnlocked(progress, camArea)) camArea = furthestArea();
+  if (camArea !== 'endless' && !C.isAreaUnlocked(progress, camArea)) camArea = furthestArea();
 
   // ── area strip ──
   strip.innerHTML = '';
@@ -5420,6 +5471,28 @@ function renderCampaign() {
     if (unlocked) chip.addEventListener('click', () => { camArea = area.id; renderCampaign(); });
     strip.appendChild(chip);
   });
+
+  // Endless is the eleventh tab, at the end of the row — unlocked once
+  // every area is cleared, the way V7 gated it.
+  const endlessReady = C.AREAS.every(a => C.areaCleared(progress, a.id));
+  const echip = document.createElement('div');
+  echip.className = 'area-chip endless-chip'
+    + (camArea === 'endless' ? ' sel' : '')
+    + (!endlessReady ? ' locked' : '');
+  echip.innerHTML = '<div class="ac-name">' + (endlessReady ? '♾️ Endless' : '🔒 Endless') + '</div>'
+    + '<div class="ac-prog">' + (endlessReady ? 'no end' : 'clear all') + '</div>';
+  if (endlessReady) echip.addEventListener('click', () => { camArea = 'endless'; renderCampaign(); });
+  strip.appendChild(echip);
+
+  // Keep the selected era in view — the strip scrolls, and Endless is
+  // the rightmost tab.
+  const selChip = strip.querySelector('.area-chip.sel');
+  if (selChip && selChip.scrollIntoView) {
+    try { selChip.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (e) {}
+  }
+
+  // ── the Endless pane replaces the song list on its tab ──
+  if (camArea === 'endless') { renderEndlessPane(list, endlessReady); return; }
 
   // ── song list ──
   const area = C.areaById(camArea);
@@ -5475,6 +5548,47 @@ function renderCampaign() {
     });
     songs.appendChild(row);
   });
+}
+
+// The three difficulty bands, launched as endless runs.
+const ENDLESS_BANDS = [
+  ['1-4', '🌱', 'Casual',    'Gentle — a warm-up that never ends'],
+  ['4-7', '🔥', 'Standard',  'The campaign\'s middle, rolling forever'],
+  ['7-9', '💀', 'Punishing', 'Fast and dense, run after run'],
+];
+
+function renderEndlessPane(list, ready) {
+  list.innerHTML = '';
+  const head = document.createElement('div');
+  head.className = 'cam-head';
+  head.innerHTML = '<span class="ch-name">Endless</span>'
+    + '<span class="ch-blurb">A fresh song every run</span>';
+  list.appendChild(head);
+  if (!ready) {
+    const note = document.createElement('div');
+    note.className = 'endless-locked-note';
+    note.textContent = 'Clear every campaign area to unlock Endless.';
+    list.appendChild(note);
+    return;
+  }
+  const pane = document.createElement('div');
+  pane.className = 'endless-pane';
+  ENDLESS_BANDS.forEach(([band, emoji, name, sub]) => {
+    const card = document.createElement('div');
+    card.className = 'endless-band';
+    card.innerHTML = '<span class="eb-emoji">' + emoji + '</span>'
+      + '<span class="eb-text"><span class="eb-name">' + name + '</span>'
+      + '<span class="eb-sub">' + sub + '</span></span>';
+    card.addEventListener('click', () => {
+      const lvl = generateLevel(band);
+      if (!lvl) { showToast('Could not start Endless', true); return; }
+      lvl.endless = true; lvl._band = band;
+      lastGenerated = lvl;
+      launchLevel(lvl);
+    });
+    pane.appendChild(card);
+  });
+  list.appendChild(pane);
 }
 
 function launchCampaignLevel(areaId, idx) {
@@ -6010,7 +6124,7 @@ function buildSettingsControls(panel) {
 // then ignored. So the height is pinned at the popup ceiling and only
 // the width is adjustable. When the game is served as an ordinary page
 // instead, there is no such ceiling and it fills what it is given.
-const POPUP_MAX_W = 780;   // just inside Chrome's 800px popup limit
+const POPUP_MAX_W = 800;   // Chrome's popup width ceiling
 const POPUP_MAX_H = 600;   // Chrome's popup height limit, exactly
 const FIXED_H     = POPUP_MAX_H;
 
@@ -6601,7 +6715,7 @@ document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.addEventListene
 //  must not move or shrink because you opened a settings panel. If the
 //  window has nowhere left to grow — already at the popup's width cap —
 //  the panel floats over the grid instead, which is at least usable.
-const ADV_PANEL_W = 300;
+const ADV_PANEL_W = 360;   // wider, so the generation menu has room
 const ADV_PANEL_MIN = 170;   // a sliver of panel is worse than none
 
 function openAdvPanel() {
@@ -6631,6 +6745,12 @@ document.getElementById('adv-toggle').addEventListener('click', () => {
   crAdvOpen = !crAdvOpen;
   if (crAdvOpen) openAdvPanel(); else closeAdvPanel();
   document.getElementById('adv-panel').classList.toggle('open', crAdvOpen);
+  // Open on the Settings pane each time, with Generate a tap away.
+  document.querySelectorAll('.adv-mode').forEach(b => b.classList.toggle('sel', b.dataset.mode === 'settings'));
+  const setPane = document.getElementById('adv-settings');
+  const genPane = document.getElementById('adv-generate');
+  if (setPane) setPane.classList.add('show');
+  if (genPane) genPane.classList.remove('show');
   buildAdvPanel();
   buildGrid();
 });
@@ -6833,21 +6953,53 @@ function positionPopup(pop, anchorEl) {
   pop.style.visibility = 'visible';
 }
 
-(function wireGenerate() {
-  const btn = document.getElementById('gen-btn');
-  if (btn) btn.addEventListener('click', () => {
-    const band = (document.getElementById('gen-diff') || {}).value || '3-6';
-    playGenerated(band);
+// Loads a freshly generated chart into the creator grid, so the
+// generation menu composes something you can then edit and save —
+// which is what "generate, in the creator" should mean.
+let crGenBand = '3-6';
+function generateIntoGrid(band) {
+  const lvl = generateLevel(band || crGenBand);
+  if (!lvl || !lvl.grid) { showToast('Could not generate', true); return; }
+  crGrid = lvl.grid.map(r => r.map(c => (c ? { ...c } : null)));
+  while (crGrid.length < 8) crGrid.push([null, null, null, null]);
+  crLaneFreqs = lvl.laneFreqs ? [...lvl.laneFreqs] : [261.63, 329.63, 392.00, 523.25];
+  crBgMode = lvl.bgMode || 'none';
+  const nameEl = document.getElementById('cr-name');
+  const bpmEl  = document.getElementById('cr-bpm');
+  if (nameEl && !nameEl.value) nameEl.value = lvl.name || 'Generated';
+  if (bpmEl) bpmEl.value = lvl.bpm || 120;
+  if (lvl.instrument && window.RD_saveInstrument) {
+    currentSettings.instrument = lvl.instrument;
+    window.RD_saveInstrument(lvl.instrument);
+  }
+  buildAdvPanel();
+  buildGrid();
+  showToast('Generated ' + crGrid.length + ' beats — edit or save');
+}
+
+// The advanced panel's Settings / Generate toggle, and the generation
+// menu inside it.
+(function wireAdvGenerate() {
+  document.querySelectorAll('.adv-mode').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      document.querySelectorAll('.adv-mode').forEach(b => b.classList.toggle('sel', b === btn));
+      const setPane = document.getElementById('adv-settings');
+      const genPane = document.getElementById('adv-generate');
+      if (setPane) setPane.classList.toggle('show', mode === 'settings');
+      if (genPane) genPane.classList.toggle('show', mode === 'generate');
+    });
   });
-  const endless = document.getElementById('endless-card');
-  if (endless) endless.addEventListener('click', () => {
-    const band = (document.getElementById('endless-diff') || {}).value || '4-7';
-    const lvl = generateLevel(band);
-    if (!lvl) return;
-    lvl.endless = true; lvl._band = band;
-    lastGenerated = lvl;
-    launchLevel(lvl);
+  document.querySelectorAll('#gen-band .gen-band-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      crGenBand = btn.dataset.band;
+      document.querySelectorAll('#gen-band .gen-band-btn').forEach(b => b.classList.toggle('sel', b === btn));
+    });
   });
+  const into = document.getElementById('gen-into-grid');
+  if (into) into.addEventListener('click', () => generateIntoGrid(crGenBand));
+  const play = document.getElementById('gen-play');
+  if (play) play.addEventListener('click', () => playGenerated(crGenBand));
 })();
 
 document.getElementById('cr-add-rows').addEventListener('click', () => {

@@ -28,6 +28,7 @@ const SUITES = [
   ['v8settings.js', 'V8 settings — every control driven, and its effect measured'],
   ['v8generate.js', 'V8 generation — V7\'s composer bundled, Generate and Endless'],
   ['v8gameplay.js', 'V8 gameplay — the hit window and the Double, from V7'],
+  ['v8creator.js',  'V8 creator — the generation menu, Endless as a tab, aspect ratios'],
   ['v8ui.js',       'V8 layout — the side panel, the pinned height, one whole run'],
   // ══ V7 — kept alongside, under other/v7/ ══
   // ── core ──

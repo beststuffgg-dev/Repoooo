@@ -527,7 +527,7 @@ function renderCampaign() {
   const strip = document.getElementById('cam-areas');
   const list  = document.getElementById('cam-list');
   if (!C || !strip || !list) return;
-  if (!C.isAreaUnlocked(progress, camArea)) camArea = furthestArea();
+  if (camArea !== 'endless' && !C.isAreaUnlocked(progress, camArea)) camArea = furthestArea();
 
   // ── area strip ──
   strip.innerHTML = '';
@@ -545,6 +545,28 @@ function renderCampaign() {
     if (unlocked) chip.addEventListener('click', () => { camArea = area.id; renderCampaign(); });
     strip.appendChild(chip);
   });
+
+  // Endless is the eleventh tab, at the end of the row — unlocked once
+  // every area is cleared, the way V7 gated it.
+  const endlessReady = C.AREAS.every(a => C.areaCleared(progress, a.id));
+  const echip = document.createElement('div');
+  echip.className = 'area-chip endless-chip'
+    + (camArea === 'endless' ? ' sel' : '')
+    + (!endlessReady ? ' locked' : '');
+  echip.innerHTML = '<div class="ac-name">' + (endlessReady ? '♾️ Endless' : '🔒 Endless') + '</div>'
+    + '<div class="ac-prog">' + (endlessReady ? 'no end' : 'clear all') + '</div>';
+  if (endlessReady) echip.addEventListener('click', () => { camArea = 'endless'; renderCampaign(); });
+  strip.appendChild(echip);
+
+  // Keep the selected era in view — the strip scrolls, and Endless is
+  // the rightmost tab.
+  const selChip = strip.querySelector('.area-chip.sel');
+  if (selChip && selChip.scrollIntoView) {
+    try { selChip.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (e) {}
+  }
+
+  // ── the Endless pane replaces the song list on its tab ──
+  if (camArea === 'endless') { renderEndlessPane(list, endlessReady); return; }
 
   // ── song list ──
   const area = C.areaById(camArea);
@@ -600,6 +622,47 @@ function renderCampaign() {
     });
     songs.appendChild(row);
   });
+}
+
+// The three difficulty bands, launched as endless runs.
+const ENDLESS_BANDS = [
+  ['1-4', '🌱', 'Casual',    'Gentle — a warm-up that never ends'],
+  ['4-7', '🔥', 'Standard',  'The campaign\'s middle, rolling forever'],
+  ['7-9', '💀', 'Punishing', 'Fast and dense, run after run'],
+];
+
+function renderEndlessPane(list, ready) {
+  list.innerHTML = '';
+  const head = document.createElement('div');
+  head.className = 'cam-head';
+  head.innerHTML = '<span class="ch-name">Endless</span>'
+    + '<span class="ch-blurb">A fresh song every run</span>';
+  list.appendChild(head);
+  if (!ready) {
+    const note = document.createElement('div');
+    note.className = 'endless-locked-note';
+    note.textContent = 'Clear every campaign area to unlock Endless.';
+    list.appendChild(note);
+    return;
+  }
+  const pane = document.createElement('div');
+  pane.className = 'endless-pane';
+  ENDLESS_BANDS.forEach(([band, emoji, name, sub]) => {
+    const card = document.createElement('div');
+    card.className = 'endless-band';
+    card.innerHTML = '<span class="eb-emoji">' + emoji + '</span>'
+      + '<span class="eb-text"><span class="eb-name">' + name + '</span>'
+      + '<span class="eb-sub">' + sub + '</span></span>';
+    card.addEventListener('click', () => {
+      const lvl = generateLevel(band);
+      if (!lvl) { showToast('Could not start Endless', true); return; }
+      lvl.endless = true; lvl._band = band;
+      lastGenerated = lvl;
+      launchLevel(lvl);
+    });
+    pane.appendChild(card);
+  });
+  list.appendChild(pane);
 }
 
 function launchCampaignLevel(areaId, idx) {
@@ -1135,7 +1198,7 @@ function buildSettingsControls(panel) {
 // then ignored. So the height is pinned at the popup ceiling and only
 // the width is adjustable. When the game is served as an ordinary page
 // instead, there is no such ceiling and it fills what it is given.
-const POPUP_MAX_W = 780;   // just inside Chrome's 800px popup limit
+const POPUP_MAX_W = 800;   // Chrome's popup width ceiling
 const POPUP_MAX_H = 600;   // Chrome's popup height limit, exactly
 const FIXED_H     = POPUP_MAX_H;
 
@@ -1726,7 +1789,7 @@ document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.addEventListene
 //  must not move or shrink because you opened a settings panel. If the
 //  window has nowhere left to grow — already at the popup's width cap —
 //  the panel floats over the grid instead, which is at least usable.
-const ADV_PANEL_W = 300;
+const ADV_PANEL_W = 360;   // wider, so the generation menu has room
 const ADV_PANEL_MIN = 170;   // a sliver of panel is worse than none
 
 function openAdvPanel() {
@@ -1756,6 +1819,12 @@ document.getElementById('adv-toggle').addEventListener('click', () => {
   crAdvOpen = !crAdvOpen;
   if (crAdvOpen) openAdvPanel(); else closeAdvPanel();
   document.getElementById('adv-panel').classList.toggle('open', crAdvOpen);
+  // Open on the Settings pane each time, with Generate a tap away.
+  document.querySelectorAll('.adv-mode').forEach(b => b.classList.toggle('sel', b.dataset.mode === 'settings'));
+  const setPane = document.getElementById('adv-settings');
+  const genPane = document.getElementById('adv-generate');
+  if (setPane) setPane.classList.add('show');
+  if (genPane) genPane.classList.remove('show');
   buildAdvPanel();
   buildGrid();
 });
@@ -1958,21 +2027,53 @@ function positionPopup(pop, anchorEl) {
   pop.style.visibility = 'visible';
 }
 
-(function wireGenerate() {
-  const btn = document.getElementById('gen-btn');
-  if (btn) btn.addEventListener('click', () => {
-    const band = (document.getElementById('gen-diff') || {}).value || '3-6';
-    playGenerated(band);
+// Loads a freshly generated chart into the creator grid, so the
+// generation menu composes something you can then edit and save —
+// which is what "generate, in the creator" should mean.
+let crGenBand = '3-6';
+function generateIntoGrid(band) {
+  const lvl = generateLevel(band || crGenBand);
+  if (!lvl || !lvl.grid) { showToast('Could not generate', true); return; }
+  crGrid = lvl.grid.map(r => r.map(c => (c ? { ...c } : null)));
+  while (crGrid.length < 8) crGrid.push([null, null, null, null]);
+  crLaneFreqs = lvl.laneFreqs ? [...lvl.laneFreqs] : [261.63, 329.63, 392.00, 523.25];
+  crBgMode = lvl.bgMode || 'none';
+  const nameEl = document.getElementById('cr-name');
+  const bpmEl  = document.getElementById('cr-bpm');
+  if (nameEl && !nameEl.value) nameEl.value = lvl.name || 'Generated';
+  if (bpmEl) bpmEl.value = lvl.bpm || 120;
+  if (lvl.instrument && window.RD_saveInstrument) {
+    currentSettings.instrument = lvl.instrument;
+    window.RD_saveInstrument(lvl.instrument);
+  }
+  buildAdvPanel();
+  buildGrid();
+  showToast('Generated ' + crGrid.length + ' beats — edit or save');
+}
+
+// The advanced panel's Settings / Generate toggle, and the generation
+// menu inside it.
+(function wireAdvGenerate() {
+  document.querySelectorAll('.adv-mode').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      document.querySelectorAll('.adv-mode').forEach(b => b.classList.toggle('sel', b === btn));
+      const setPane = document.getElementById('adv-settings');
+      const genPane = document.getElementById('adv-generate');
+      if (setPane) setPane.classList.toggle('show', mode === 'settings');
+      if (genPane) genPane.classList.toggle('show', mode === 'generate');
+    });
   });
-  const endless = document.getElementById('endless-card');
-  if (endless) endless.addEventListener('click', () => {
-    const band = (document.getElementById('endless-diff') || {}).value || '4-7';
-    const lvl = generateLevel(band);
-    if (!lvl) return;
-    lvl.endless = true; lvl._band = band;
-    lastGenerated = lvl;
-    launchLevel(lvl);
+  document.querySelectorAll('#gen-band .gen-band-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      crGenBand = btn.dataset.band;
+      document.querySelectorAll('#gen-band .gen-band-btn').forEach(b => b.classList.toggle('sel', b === btn));
+    });
   });
+  const into = document.getElementById('gen-into-grid');
+  if (into) into.addEventListener('click', () => generateIntoGrid(crGenBand));
+  const play = document.getElementById('gen-play');
+  if (play) play.addEventListener('click', () => playGenerated(crGenBand));
 })();
 
 document.getElementById('cr-add-rows').addEventListener('click', () => {

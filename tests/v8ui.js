@@ -145,8 +145,9 @@ const open = async (b, w, h) => {
     const r = await page.evaluate(() => {
       renderHome();
       return {
-        chips: document.querySelectorAll('.area-chip').length,
-        locked: document.querySelectorAll('.area-chip.locked').length,
+        chips: document.querySelectorAll('.area-chip:not(.endless-chip)').length,
+        endlessChip: document.querySelectorAll('.area-chip.endless-chip').length,
+        locked: document.querySelectorAll('.area-chip:not(.endless-chip).locked').length,
         rows: document.querySelectorAll('.song-row').length,
         lockedRows: document.querySelectorAll('.song-row.locked').length,
         first: document.querySelector('.song-name').textContent,
@@ -156,6 +157,7 @@ const open = async (b, w, h) => {
     });
     notes.push('first song: ' + r.first + ' — ' + r.meta);
     ok(r.chips === 10, r.chips + ' area chips');
+    ok(r.endlessChip === 1, 'plus the Endless tab');
     ok(r.locked === 9, 'nine areas locked on a fresh profile');
     ok(r.rows === 15, r.rows + ' songs in the open area');
     ok(r.lockedRows === 14, 'only the first song is playable');

@@ -91,23 +91,23 @@ console.log('== the composer is bundled, and does not collide with the engine ==
   await page.goto('file://' + path.join(DIR, 'popup.html'), { waitUntil: 'load' });
   await page.waitForTimeout(1400);
 
-  console.log('== Generate: the Custom tab rolls and launches a chart ==');
+  console.log('== Generate & play, from the creator menu, launches a chart ==');
   {
-    const r = await page.evaluate(() => {
-      showScreen('home');
-      [...document.querySelectorAll('.hnav')].find(t => t.dataset.tab === 'custom').click();
-      const out = { btn: !!document.getElementById('gen-btn'), sel: !!document.getElementById('gen-diff') };
-      document.getElementById('gen-diff').value = '3-6';
-      document.getElementById('gen-btn').click();
-      out.screen = document.querySelector('.screen.active').id;
-      out.name = gameLevel.name; out.generated = gameLevel.generated;
-      out.campaign = !!gameLevel.campaign;
+    const r = await page.evaluate(async () => {
+      openCreator(null);
+      document.getElementById('adv-toggle').click();
+      await new Promise(r => setTimeout(r, 260));
+      document.querySelector('.adv-mode[data-mode="generate"]').click();
+      document.querySelector('#gen-band .gen-band-btn[data-band="3-6"]').click();
+      document.getElementById('gen-play').click();
+      await new Promise(r => setTimeout(r, 200));
+      const out = { screen: document.querySelector('.screen.active').id,
+        name: gameLevel.name, generated: gameLevel.generated, campaign: !!gameLevel.campaign };
       let n = 0; gameLevel.grid.forEach(row => row.forEach(c => { if (c) n++; }));
       out.notes = n;
       return out;
     });
-    ok(r.btn && r.sel, 'the Generate button and difficulty select are present');
-    ok(r.screen === 'game', 'clicking Generate launches straight into the chart');
+    ok(r.screen === 'game', 'Generate & play launches straight into the chart');
     ok(r.notes > 20, 'the launched chart has notes (' + r.notes + ')');
     ok(r.generated && !r.campaign, 'it is flagged generated and not campaign');
     notes.push('generated and launched: "' + r.name + '"');
@@ -141,15 +141,17 @@ console.log('== the composer is bundled, and does not collide with the engine ==
     ok(r.keepDisabledAfter, 'the keep button disables after saving, so it is not saved twice');
   }
 
-  console.log('== Endless rolls a fresh song, and keeps rolling ==');
+  console.log('== an Endless run keeps rolling a fresh song on Next ==');
   {
+    // The Endless tab UI is covered in v8creator; this drives the run
+    // mechanics: an endless run offers "Next" and rolls another chart
+    // rather than replaying, and never silently saves what it rolls.
     const r = await page.evaluate(() => {
-      showScreen('home'); renderHome();
-      const card = document.getElementById('endless-card');
-      const out = { card: !!card };
-      document.getElementById('endless-diff').value = '4-7';
-      card.click();
-      out.first = gameLevel.name; out.endless = gameLevel.endless;
+      const lvl = generateLevel('4-7');
+      lvl.endless = true; lvl._band = '4-7';
+      lastGenerated = lvl;
+      launchLevel(lvl);
+      const out = { first: gameLevel.name, endless: gameLevel.endless };
       document.getElementById('g-overlay').classList.remove('show'); startGame();
       notesHit = notesTotal; score = 4000; endGame(true);
       out.btnLabel = document.getElementById('ov-btn').textContent;
@@ -161,8 +163,7 @@ console.log('== the composer is bundled, and does not collide with the engine ==
       out.screen = document.querySelector('.screen.active').id;
       return out;
     });
-    ok(r.card, 'the Endless card is on the campaign screen');
-    ok(r.endless, 'launching it flags the run endless');
+    ok(r.endless, 'launching flags the run endless');
     ok(/next/i.test(r.btnLabel), 'the results button says "' + r.btnLabel + '"');
     ok(r.stillEndless && r.screen === 'game', 'Next song rolls straight into another endless run');
     ok(r.customsAfterNext === r.customsBeforeNext, 'endless does not silently save every song it rolls');
