@@ -256,12 +256,17 @@ function addHighScore(name, score, levelName, opts) {
 
 // ── Import / Export ──────────────────────────────
 function exportLevel(lvl) {
-  const data    = JSON.stringify(lvl);
-  const encoded = btoa(unescape(encodeURIComponent(data)));
-  const text    = 'RHYTHMDROP:' + encoded;
+  // The compact codec from V7: LZW + varint + base64url. A level that
+  // used to export as a multi-kilobyte base64-JSON blob is now a short
+  // RD2 code you can actually paste into a message. Falls back to the
+  // old base64-JSON form only if the codec somehow isn't loaded, so a
+  // share never silently produces nothing.
+  const text = (window.RD_Codec && window.RD_Codec.encodeLevel)
+    ? window.RD_Codec.encodeLevel(lvl)
+    : 'RHYTHMDROP:' + btoa(unescape(encodeURIComponent(JSON.stringify(lvl))));
   navigator.clipboard.writeText(text)
-    .then(() => showToast('✓ Copied to clipboard!'))
-    .catch(() => prompt('Copy this export code:', text));
+    .then(() => showToast('✓ Copied — ' + text.length + ' chars'))
+    .catch(() => prompt('Copy this level code:', text));
 }
 
 function importLevel() {
@@ -278,14 +283,20 @@ function importLevel() {
     showToast('💸 -1,000,000 coins!', true);
     return;
   }
-  if (!text.trim().startsWith('RHYTHMDROP:')) {
-    showToast('Invalid code', true); return;
-  }
+  const trimmed = text.trim();
+  // The codec reads the new RD2 codes and the old RHYTHMDROP: base64
+  // ones, so codes shared from an earlier build still import.
+  const looksLikeCode = /^(RD2:|RHYTHMDROP:)/.test(trimmed) || (window.RD_Codec && /^[A-Za-z0-9_-]+$/.test(trimmed));
+  if (!looksLikeCode) { showToast('Invalid code', true); return; }
   try {
-    const encoded = text.trim().slice('RHYTHMDROP:'.length);
-    const json    = decodeURIComponent(escape(atob(encoded)));
-    const lvl     = JSON.parse(json);
-    if (!lvl.name || !lvl.bpm || !lvl.grid) throw new Error('missing fields');
+    let lvl;
+    if (window.RD_Codec && window.RD_Codec.decodeLevel) {
+      lvl = window.RD_Codec.decodeLevel(trimmed);
+    } else {
+      const encoded = trimmed.replace(/^RHYTHMDROP:/, '');
+      lvl = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+    }
+    if (!lvl || !lvl.name || !lvl.bpm || !lvl.grid) throw new Error('missing fields');
     lvl.id = 'c' + Date.now();
     const arr = store.load(); arr.push(lvl); store.save(arr);
     renderCustoms();
@@ -334,6 +345,14 @@ const showScreen = id => {
 // ══════════════════════════════════════
 const THEMES = [
   { id:'graphite',   name:'Graphite',   subs:'Instrument panel', dots:['#6FA8B5','#C4854E','#121517'] },
+  // Textured "material" themes, ported from V7 — each carries a real
+  // grain (wood, paper, brass, glass, blueprint, rubber).
+  { id:'walnut',     name:'Walnut',     subs:'Oiled wood',       dots:['#6FB3A0','#E0894A','#2A1B0E'], mat:true },
+  { id:'bone',       name:'Bone',       subs:'Matte paper',      dots:['#1E7A8C','#C2325C','#EDE8DE'], mat:true },
+  { id:'amber',      name:'Amber',      subs:'Brushed brass',    dots:['#E8B355','#D9762E','#1F1508'], mat:true },
+  { id:'vapor',      name:'Vapor',      subs:'Frosted glass',    dots:['#57E0E8','#F065C8','#1D1136'], mat:true },
+  { id:'blueprint',  name:'Blueprint',  subs:'Drafting linen',   dots:['#5BC8FF','#FF9E5B','#0B2440'], mat:true },
+  { id:'mono',       name:'Mono',       subs:'Matte rubber',     dots:['#FFFFFF','#FF4757','#141414'], mat:true },
   { id:'dark',       name:'Dark',       subs:'Blue & Pink',      dots:['#3B82F6','#FF3A6E','#0e0e1c'] },
   { id:'forest',     name:'Forest',     subs:'Green & Orange',   dots:['#22c55e','#f97316','#081a0f'] },
   { id:'sunset',     name:'Sunset',     subs:'Amber & Pink',     dots:['#f59e0b','#ec4899','#1e1008'] },

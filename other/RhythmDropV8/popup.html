@@ -147,6 +147,103 @@ body.theme-graphite {
   --accent:#6FA8B5;
 }
 
+/* ══════════════════════════════════════
+   TEXTURED "MATERIAL" THEMES  (from V7)
+   Each carries a real --mat-grain — wood streak, paper tooth, brushed
+   brass, frosted glass, blueprint linen, rubber stipple — painted as a
+   texture layer over the faceplate (see the grain rules further down).
+══════════════════════════════════════ */
+body.theme-walnut {
+  --mat-grain:
+    radial-gradient(ellipse 13px 44px at 77% 20%, rgba(0,0,0,.11), transparent 72%),
+    radial-gradient(ellipse 9px 28px at 16% 66%, rgba(0,0,0,.08), transparent 72%),
+    repeating-linear-gradient(94deg,
+      rgba(0,0,0,.055) 0px, rgba(0,0,0,.055) 1px,
+      rgba(255,255,255,.018) 2px, transparent 5px, transparent 11px);
+  --bg:#1A1008; --bg2:#2A1B0E; --bg3:#3B2814; --bg4:#4A3319;
+  --border:#3A2715; --border2:#6B4A28;
+  --text:#F0E2CE; --muted:#A8865C; --dim:#5A452C;
+  --tap:#6FB3A0; --tap2:#93CCBC; --dtap:#E0894A; --dtap2:#EFA771;
+  --good:#8FBF6A; --perfect:#E8B355; --miss:#D96A5A;
+  --lane-flash:#3A2A14; --glow-tap:rgba(111,179,160,.35); --glow-dtap:rgba(224,137,74,.35);
+  --accent:#E0894A;
+}
+body.theme-bone {
+  --mat-grain:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><filter id=%22bnp%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.75%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2290%22 height=%2290%22 filter=%22url(%23bnp)%22 opacity=%220.09%22/></svg>');
+  --bg:#DED8CC; --bg2:#EDE8DE; --bg3:#F7F3EB; --bg4:#FFFDF8;
+  --border:#CFC7B8; --border2:#B0A695;
+  --text:#232019; --muted:#6E665A; --dim:#A79E90;
+  --tap:#1E7A8C; --tap2:#2A9BB0; --dtap:#C2325C; --dtap2:#D95479;
+  --good:#3F8F4F; --perfect:#B07A12; --miss:#B33A2E;
+  --lane-flash:#CFE3E8; --glow-tap:rgba(30,122,140,.28); --glow-dtap:rgba(194,50,92,.28);
+  --accent:#C2325C;
+  --overlay-bg:rgba(237,232,222,.95); --scanline-clr:rgba(0,0,0,.015);
+  --note-key-text:rgba(35,32,25,.8); --lane-hitglow-clr:rgba(30,122,140,.08);
+  --cr-note-sel-border:rgba(0,0,0,.15); --cr-note-sel-bg:rgba(255,255,255,.6); --input-text:#232019;
+}
+body.theme-amber {
+  --mat-grain:repeating-linear-gradient(90deg,
+    rgba(255,255,255,.05) 0px, rgba(255,255,255,.05) .5px,
+    rgba(0,0,0,.05) .5px, rgba(0,0,0,.05) 1px,
+    transparent 1px, transparent 2px);
+  --bg:#120C04; --bg2:#1F1508; --bg3:#31220D; --bg4:#412D12;
+  --border:#31220D; --border2:#6B4C18;
+  --text:#F6E6C4; --muted:#9C8455; --dim:#4E3D1E;
+  --tap:#E8B355; --tap2:#F5CE84; --dtap:#D9762E; --dtap2:#EB9553;
+  --good:#B8A03C; --perfect:#FFD97A; --miss:#C4522E;
+  --lane-flash:#2E1F08; --glow-tap:rgba(232,179,85,.4); --glow-dtap:rgba(217,118,46,.4);
+  --accent:#E8B355;
+}
+body.theme-vapor {
+  --mat-grain:
+    linear-gradient(135deg, rgba(255,255,255,.04), transparent 60%),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2270%22><filter id=%22vpf%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%221.1%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2270%22 height=%2270%22 filter=%22url(%23vpf)%22 opacity=%220.09%22/></svg>');
+  --bg:#120A22; --bg2:#1D1136; --bg3:#2B1B4D; --bg4:#3A2566;
+  --border:#2E1E52; --border2:#5B3F96;
+  --text:#EFE4FF; --muted:#9784BE; --dim:#4A3670;
+  --tap:#57E0E8; --tap2:#93F0F5; --dtap:#F065C8; --dtap2:#F992DC;
+  --good:#66E8B0; --perfect:#FFD86B; --miss:#FF6B8A;
+  --lane-flash:#33205C; --glow-tap:rgba(87,224,232,.55); --glow-dtap:rgba(240,101,200,.55);
+  --accent:#F065C8;
+}
+body.theme-blueprint {
+  --mat-grain:repeating-linear-gradient(0deg,
+      rgba(120,180,255,.05) 0 1px, transparent 1px 22px),
+    repeating-linear-gradient(90deg,
+      rgba(120,180,255,.05) 0 1px, transparent 1px 22px),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><filter id=%22blp%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.7%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2290%22 height=%2290%22 filter=%22url(%23blp)%22 opacity=%220.07%22/></svg>');
+  --bg:#071A2E; --bg2:#0B2440; --bg3:#103055; --bg4:#164070;
+  --border:#14375C; --border2:#2D5F94;
+  --text:#D6ECFF; --muted:#6E9BC4; --dim:#2E5A8D;
+  --tap:#5BC8FF; --tap2:#8FDBFF; --dtap:#FF9E5B; --dtap2:#FFBA8A;
+  --good:#6BD98F; --perfect:#FFD96B; --miss:#FF7A6B;
+  --lane-flash:#123A63; --glow-tap:rgba(91,200,255,.3); --glow-dtap:rgba(255,158,91,.3);
+  --accent:#5BC8FF;
+}
+body.theme-mono {
+  --mat-grain:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><filter id=%22mnr%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%221.4%22 numOctaves=%223%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2260%22 height=%2260%22 filter=%22url(%23mnr)%22 opacity=%220.12%22/></svg>');
+  --bg:#0A0A0A; --bg2:#141414; --bg3:#1E1E1E; --bg4:#2A2A2A;
+  --border:#242424; --border2:#3A3A3A;
+  --text:#F2F2F2; --muted:#8A8A8A; --dim:#454545;
+  --tap:#FFFFFF; --tap2:#FFFFFF; --dtap:#FF4757; --dtap2:#FF6B78;
+  --good:#CFCFCF; --perfect:#FFFFFF; --miss:#FF4757;
+  --lane-flash:#2E2E2E; --glow-tap:rgba(255,255,255,.3); --glow-dtap:rgba(255,71,87,.4);
+  --accent:#FF4757;
+}
+
+/* Material grain layer — a texture over each screen's faceplate,
+   behind all content. Shows only when the theme sets --mat-grain;
+   every other theme leaves it `none` and paints nothing, so this is
+   inert for the flat themes and both graphics styles. */
+#home, #creator, #game { isolation:isolate; }
+#home::after, #creator::after, #game::after {
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:var(--mat-grain, none);
+  opacity:.75;
+}
+#home > *, #creator > *, #game > * { position:relative; z-index:1; }
+
+
 /* ── LIGHT THEME COMPATIBILITY VARIABLES ── */
 :root {
   --overlay-bg:    rgba(7,7,15,0.92);
@@ -157,6 +254,7 @@ body.theme-graphite {
   --cr-note-sel-border: rgba(255,255,255,0.15);
   --cr-note-sel-bg:     rgba(0,0,0,0.35);
   --input-text:    var(--text);
+  --mat-grain:     none;   /* material texture; set by the textured themes */
 }
 
 /* Paper — warm off-white, ink-black */
@@ -1680,6 +1778,7 @@ body.adv-overlay #adv-panel.open {
      that reads it, then audio, then the game that wires them together. -->
 <script src="levels.js"></script>
 <script src="campaign.js"></script>
+<script src="codec.js"></script>
 <script src="audio.js"></script>
 <!-- V7's composer, bundled for live generation and endless mode. -->
 <script src="generator.js"></script>

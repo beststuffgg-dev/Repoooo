@@ -34,12 +34,13 @@
     "v8levels": "node v8levels.js",
     "v8campaign": "node v8campaign.js",
     "v8ui": "node v8ui.js",
-    "test:v8": "node v8levels.js && node v8campaign.js && node v8audio.js && node v8graphics.js && node v8settings.js && node v8generate.js && node v8gameplay.js && node v8ui.js",
+    "test:v8": "node v8levels.js && node v8campaign.js && node v8audio.js && node v8settings.js && node v8graphics.js && node v8codec.js && node v8ui.js",
     "v8audio": "node v8audio.js",
     "v8graphics": "node v8graphics.js",
     "v8settings": "node v8settings.js",
     "v8generate": "node v8generate.js",
-    "v8gameplay": "node v8gameplay.js"
+    "v8gameplay": "node v8gameplay.js",
+    "v8codec": "node v8codec.js"
   },
   "dependencies": {
     "jsdom": "^24.0.0",

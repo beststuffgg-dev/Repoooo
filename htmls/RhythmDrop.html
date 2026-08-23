@@ -147,6 +147,103 @@ body.theme-graphite {
   --accent:#6FA8B5;
 }
 
+/* ══════════════════════════════════════
+   TEXTURED "MATERIAL" THEMES  (from V7)
+   Each carries a real --mat-grain — wood streak, paper tooth, brushed
+   brass, frosted glass, blueprint linen, rubber stipple — painted as a
+   texture layer over the faceplate (see the grain rules further down).
+══════════════════════════════════════ */
+body.theme-walnut {
+  --mat-grain:
+    radial-gradient(ellipse 13px 44px at 77% 20%, rgba(0,0,0,.11), transparent 72%),
+    radial-gradient(ellipse 9px 28px at 16% 66%, rgba(0,0,0,.08), transparent 72%),
+    repeating-linear-gradient(94deg,
+      rgba(0,0,0,.055) 0px, rgba(0,0,0,.055) 1px,
+      rgba(255,255,255,.018) 2px, transparent 5px, transparent 11px);
+  --bg:#1A1008; --bg2:#2A1B0E; --bg3:#3B2814; --bg4:#4A3319;
+  --border:#3A2715; --border2:#6B4A28;
+  --text:#F0E2CE; --muted:#A8865C; --dim:#5A452C;
+  --tap:#6FB3A0; --tap2:#93CCBC; --dtap:#E0894A; --dtap2:#EFA771;
+  --good:#8FBF6A; --perfect:#E8B355; --miss:#D96A5A;
+  --lane-flash:#3A2A14; --glow-tap:rgba(111,179,160,.35); --glow-dtap:rgba(224,137,74,.35);
+  --accent:#E0894A;
+}
+body.theme-bone {
+  --mat-grain:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><filter id=%22bnp%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.75%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2290%22 height=%2290%22 filter=%22url(%23bnp)%22 opacity=%220.09%22/></svg>');
+  --bg:#DED8CC; --bg2:#EDE8DE; --bg3:#F7F3EB; --bg4:#FFFDF8;
+  --border:#CFC7B8; --border2:#B0A695;
+  --text:#232019; --muted:#6E665A; --dim:#A79E90;
+  --tap:#1E7A8C; --tap2:#2A9BB0; --dtap:#C2325C; --dtap2:#D95479;
+  --good:#3F8F4F; --perfect:#B07A12; --miss:#B33A2E;
+  --lane-flash:#CFE3E8; --glow-tap:rgba(30,122,140,.28); --glow-dtap:rgba(194,50,92,.28);
+  --accent:#C2325C;
+  --overlay-bg:rgba(237,232,222,.95); --scanline-clr:rgba(0,0,0,.015);
+  --note-key-text:rgba(35,32,25,.8); --lane-hitglow-clr:rgba(30,122,140,.08);
+  --cr-note-sel-border:rgba(0,0,0,.15); --cr-note-sel-bg:rgba(255,255,255,.6); --input-text:#232019;
+}
+body.theme-amber {
+  --mat-grain:repeating-linear-gradient(90deg,
+    rgba(255,255,255,.05) 0px, rgba(255,255,255,.05) .5px,
+    rgba(0,0,0,.05) .5px, rgba(0,0,0,.05) 1px,
+    transparent 1px, transparent 2px);
+  --bg:#120C04; --bg2:#1F1508; --bg3:#31220D; --bg4:#412D12;
+  --border:#31220D; --border2:#6B4C18;
+  --text:#F6E6C4; --muted:#9C8455; --dim:#4E3D1E;
+  --tap:#E8B355; --tap2:#F5CE84; --dtap:#D9762E; --dtap2:#EB9553;
+  --good:#B8A03C; --perfect:#FFD97A; --miss:#C4522E;
+  --lane-flash:#2E1F08; --glow-tap:rgba(232,179,85,.4); --glow-dtap:rgba(217,118,46,.4);
+  --accent:#E8B355;
+}
+body.theme-vapor {
+  --mat-grain:
+    linear-gradient(135deg, rgba(255,255,255,.04), transparent 60%),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2270%22 height=%2270%22><filter id=%22vpf%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%221.1%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2270%22 height=%2270%22 filter=%22url(%23vpf)%22 opacity=%220.09%22/></svg>');
+  --bg:#120A22; --bg2:#1D1136; --bg3:#2B1B4D; --bg4:#3A2566;
+  --border:#2E1E52; --border2:#5B3F96;
+  --text:#EFE4FF; --muted:#9784BE; --dim:#4A3670;
+  --tap:#57E0E8; --tap2:#93F0F5; --dtap:#F065C8; --dtap2:#F992DC;
+  --good:#66E8B0; --perfect:#FFD86B; --miss:#FF6B8A;
+  --lane-flash:#33205C; --glow-tap:rgba(87,224,232,.55); --glow-dtap:rgba(240,101,200,.55);
+  --accent:#F065C8;
+}
+body.theme-blueprint {
+  --mat-grain:repeating-linear-gradient(0deg,
+      rgba(120,180,255,.05) 0 1px, transparent 1px 22px),
+    repeating-linear-gradient(90deg,
+      rgba(120,180,255,.05) 0 1px, transparent 1px 22px),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><filter id=%22blp%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.7%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2290%22 height=%2290%22 filter=%22url(%23blp)%22 opacity=%220.07%22/></svg>');
+  --bg:#071A2E; --bg2:#0B2440; --bg3:#103055; --bg4:#164070;
+  --border:#14375C; --border2:#2D5F94;
+  --text:#D6ECFF; --muted:#6E9BC4; --dim:#2E5A8D;
+  --tap:#5BC8FF; --tap2:#8FDBFF; --dtap:#FF9E5B; --dtap2:#FFBA8A;
+  --good:#6BD98F; --perfect:#FFD96B; --miss:#FF7A6B;
+  --lane-flash:#123A63; --glow-tap:rgba(91,200,255,.3); --glow-dtap:rgba(255,158,91,.3);
+  --accent:#5BC8FF;
+}
+body.theme-mono {
+  --mat-grain:url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2260%22 height=%2260%22><filter id=%22mnr%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%221.4%22 numOctaves=%223%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2260%22 height=%2260%22 filter=%22url(%23mnr)%22 opacity=%220.12%22/></svg>');
+  --bg:#0A0A0A; --bg2:#141414; --bg3:#1E1E1E; --bg4:#2A2A2A;
+  --border:#242424; --border2:#3A3A3A;
+  --text:#F2F2F2; --muted:#8A8A8A; --dim:#454545;
+  --tap:#FFFFFF; --tap2:#FFFFFF; --dtap:#FF4757; --dtap2:#FF6B78;
+  --good:#CFCFCF; --perfect:#FFFFFF; --miss:#FF4757;
+  --lane-flash:#2E2E2E; --glow-tap:rgba(255,255,255,.3); --glow-dtap:rgba(255,71,87,.4);
+  --accent:#FF4757;
+}
+
+/* Material grain layer — a texture over each screen's faceplate,
+   behind all content. Shows only when the theme sets --mat-grain;
+   every other theme leaves it `none` and paints nothing, so this is
+   inert for the flat themes and both graphics styles. */
+#home, #creator, #game { isolation:isolate; }
+#home::after, #creator::after, #game::after {
+  content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
+  background:var(--mat-grain, none);
+  opacity:.75;
+}
+#home > *, #creator > *, #game > * { position:relative; z-index:1; }
+
+
 /* ── LIGHT THEME COMPATIBILITY VARIABLES ── */
 :root {
   --overlay-bg:    rgba(7,7,15,0.92);
@@ -157,6 +254,7 @@ body.theme-graphite {
   --cr-note-sel-border: rgba(255,255,255,0.15);
   --cr-note-sel-bg:     rgba(0,0,0,0.35);
   --input-text:    var(--text);
+  --mat-grain:     none;   /* material texture; set by the textured themes */
 }
 
 /* Paper — warm off-white, ink-black */
@@ -1948,6 +2046,434 @@ window.RD_Campaign = (function () {
     coinsFor, COINS_PER_CLEAR, COINS_MIN_NOTES,
     levelKey, isLevelCleared, areaCleared, isAreaUnlocked, isLevelUnlocked, clearedCount,
     DAILY_REWARDS, dailyState, claimDaily, dayNumber,
+  };
+})();
+
+</script>
+<script data-from="codec.js">
+// ═══════════════════════════════════════════
+//  RhythmDrop codec.js — v6
+//
+//  Two jobs:
+//    1. Level codes. v5 wrote base64(JSON), which was enormous
+//       because a 64-beat grid is 256 cells of mostly nulls and
+//       every note carried a 6-digit float. v2 packs the grid
+//       into a run-length token stream, stores pitches as MIDI
+//       integers, then LZW-compresses the lot.
+//       Old RHYTHMDROP: codes still import — see decodeLevel.
+//    2. Account sync codes, so a profile can move between
+//       devices by copy-paste.
+//
+//  Both share the same compress → base64url pipeline.
+// ═══════════════════════════════════════════
+
+(function () {
+  'use strict';
+
+  // ── UTF-8 <-> latin1 byte string ──
+  // Everything downstream works on bytes, so a level named
+  // "Café" compresses identically to an ASCII one.
+  const toBytes   = s => unescape(encodeURIComponent(s));
+  const fromBytes = b => decodeURIComponent(escape(b));
+
+  function b64urlFromBytes(bytes) {
+    return btoa(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function bytesFromB64url(str) {
+    str = str.replace(/-/g, '+').replace(/_/g, '/');
+    while (str.length % 4) str += '=';
+    return atob(str);
+  }
+
+  // ═══════════════════════════════════════════
+  //  LZW
+  //  Grids are extremely repetitive — long runs of rests and
+  //  the same handful of note tokens — which is exactly what
+  //  LZW eats. Operates on bytes, emits 16-bit codes.
+  // ═══════════════════════════════════════════
+  const LZW_MAX = 0x7FFF;   // ceiling imposed by the varint format
+
+  function lzwCompress(byteStr) {
+    if (!byteStr.length) return [];
+    const dict = new Map();
+    let next = 256;
+    let w = byteStr[0];
+    const out = [];
+
+    for (let i = 1; i < byteStr.length; i++) {
+      const c  = byteStr[i];
+      const wc = w + c;
+      if (wc.length === 1 || dict.has(wc)) {
+        w = wc;
+      } else {
+        out.push(w.length === 1 ? w.charCodeAt(0) : dict.get(w));
+        if (next <= LZW_MAX) dict.set(wc, next++);
+        w = c;
+      }
+    }
+    out.push(w.length === 1 ? w.charCodeAt(0) : dict.get(w));
+    return out;
+  }
+
+  function lzwDecompress(codes) {
+    if (!codes.length) return '';
+    const dict = [];              // codes 256+ live here
+    let next = 256;
+
+    const entryFor = c => (c < 256 ? String.fromCharCode(c) : dict[c - 256]);
+
+    let w = entryFor(codes[0]);
+    let out = w;
+
+    for (let i = 1; i < codes.length; i++) {
+      const c = codes[i];
+      let entry = entryFor(c);
+      if (entry === undefined) entry = w + w[0];   // the KwKwK case
+      out += entry;
+      if (next <= LZW_MAX) { dict[next - 256] = w + entry[0]; next++; }
+      w = entry;
+    }
+    return out;
+  }
+
+  // Varint packing. Early LZW codes are mostly single bytes, so
+  // fixed 16-bit words wasted ~half the payload on short levels.
+  // Here a code under 128 costs one byte; anything larger sets
+  // the continuation bit and costs two (up to 32767).
+  function codesToBytes(codes) {
+    let out = '';
+    for (let i = 0; i < codes.length; i++) {
+      const c = codes[i];
+      if (c < 0x80) {
+        out += String.fromCharCode(c);
+      } else {
+        out += String.fromCharCode(0x80 | ((c >> 8) & 0x7F), c & 0xFF);
+      }
+    }
+    return out;
+  }
+  function bytesToCodes(bytes) {
+    const codes = [];
+    for (let i = 0; i < bytes.length; i++) {
+      const b0 = bytes.charCodeAt(i);
+      if (b0 & 0x80) {
+        codes.push(((b0 & 0x7F) << 8) | bytes.charCodeAt(++i));
+      } else {
+        codes.push(b0);
+      }
+    }
+    return codes;
+  }
+
+  // The full pipeline both features share.
+  function pack(text) {
+    return b64urlFromBytes(codesToBytes(lzwCompress(toBytes(text))));
+  }
+  function unpack(code) {
+    return fromBytes(lzwDecompress(bytesToCodes(bytesFromB64url(code))));
+  }
+
+  // ── Pitch as MIDI integer instead of a 6-digit float ──
+  // 261.63 (6 chars) becomes 60 (2 chars), and it round-trips
+  // exactly because every pitch in the app is equal-tempered.
+  function freqToMidi(f) {
+    if (!f) return null;
+    return Math.round(69 + 12 * Math.log2(f / 440));
+  }
+  function midiToFreq(m) {
+    if (m === null || m === undefined || m === '') return null;
+    return parseFloat((440 * Math.pow(2, (m - 69) / 12)).toFixed(2));
+  }
+
+  // ═══════════════════════════════════════════
+  //  LEVEL v2
+  //
+  //  Layout, '|' separated:
+  //    4 | name | bpm | bgMode | laneMidi | bassMidi | diff | instr | gridTokens
+  //
+  //  v4 adds per-note voices for multi-instrument songs. Because
+  //  a voice persists for a whole section, it is encoded as a
+  //  STATE CHANGE (\u0060X) rather than a field on every note — a
+  //  200-note chart with three sections spends 3 tokens, not 200.
+  //
+  //  v2 codes (without diff/instr) still decode — see decodeLevelV2.
+  //
+  //  Grid tokens, one row at a time, ';' between rows:
+  //    .        rest
+  //    .N       N consecutive rests (run-length)
+  //    t / d    tap / dtap at the lane default, no sustain
+  //    T<m>     tap at MIDI m
+  //    D<m>     dtap at MIDI m
+  //    any of the above + ~<s> for a sustain in half-seconds
+  // ═══════════════════════════════════════════
+
+  // One char per instrument. Order is fixed — appending is safe,
+  // reordering would break every code ever shared.
+  const INST_CHARS = {
+    synth:'y', piano:'p', guitar:'g', marimba:'m', bell:'b',
+    flute:'f', lyre:'l', brass:'r', organ:'o', strings:'s',
+    chiptune:'c', kalimba:'k',
+  };
+  const CHAR_INST = Object.keys(INST_CHARS)
+    .reduce((o, k) => { o[INST_CHARS[k]] = k; return o; }, {});
+
+  function encodeLevel(lvl) {
+    const laneFreqs = lvl.laneFreqs || [261.63, 329.63, 392.00, 523.25];
+    const laneMidi  = laneFreqs.map(freqToMidi);
+
+    // Built-in levels store a flat notes array rather than a grid.
+    // Normalise so either shape can be exported.
+    let rows = lvl.grid;
+    if (!rows && lvl.notes) {
+      const beats = lvl.beats || (Math.max(...lvl.notes.map(n => n.b)) + 1);
+      rows = Array.from({ length: beats }, () => [null, null, null, null]);
+      lvl.notes.forEach(n => {
+        rows[n.b][n.l] = {
+          type:    n.t,
+          freq:    n.freq || laneFreqs[n.l],
+          sustain: n.sustain || 0,
+        };
+      });
+    }
+    rows = rows || [];
+    // Tracks the voice currently in effect across rows.
+    let curInst = null;
+
+    const rowStrs = rows.map(row => {
+      let out = '';
+      let rest = 0;
+      const flush = () => {
+        if (!rest) return;
+        out += rest > 1 ? '.' + rest : '.';
+        rest = 0;
+      };
+
+      for (let ci = 0; ci < 4; ci++) {
+        const cell = row[ci];
+        if (!cell) { rest++; continue; }
+        flush();
+
+        const type    = typeof cell === 'string' ? cell : cell.type;
+        const freq    = (typeof cell === 'object' && cell.freq) ? cell.freq : null;
+        const sustain = (typeof cell === 'object' && cell.sustain) ? cell.sustain : 0;
+        const inst    = (typeof cell === 'object' && cell.inst) ? cell.inst : null;
+        const midi    = freq ? freqToMidi(freq) : null;
+        const isDefault = midi === null || midi === laneMidi[ci];
+
+        // Emit a voice change only when it actually changes.
+        if (inst && inst !== curInst && INST_CHARS[inst]) {
+          out += '`' + INST_CHARS[inst];
+          curInst = inst;
+        }
+
+        if (isDefault) out += (type === 'dtap' ? 'd' : 't');
+        else           out += (type === 'dtap' ? 'D' : 'T') + midi;
+
+        // sustain in half-seconds: 1.5s -> 3, one char instead of three
+        if (sustain > 0) out += '~' + Math.round(sustain * 2);
+      }
+      flush();
+      return out;
+    });
+
+    const bass = (lvl.bassPattern || [])
+      .map(f => (f > 0 ? freqToMidi(f) : '0')).join(',');
+
+    const packed = [
+      '5',
+      (lvl.name || 'untitled').replace(/\|/g, '/'),
+      lvl.bpm || 120,
+      lvl.bgMode || 'none',
+      laneMidi.join(','),
+      bass,
+      lvl.diff || 'custom',
+      lvl.instrument || 'synth',
+      lvl.areaId || '',
+      rowStrs.join(';'),
+    ].join('|');
+
+    return 'RD2:' + pack(packed);
+  }
+
+  function decodeLevelV2(code) {
+    const packed = unpack(code.slice(4).trim());
+    const parts  = packed.split('|');
+    const ver    = parts[0];
+    if (['2','3','4','5'].indexOf(ver) < 0) throw new Error('bad version');
+
+    // v2 had no diff/instrument fields, so the grid sat at index 6.
+    const isV3 = ver === '3' || ver === '4' || ver === '5';
+    const isV5 = ver === '5';
+    const diff       = isV3 ? parts[6] : 'custom';
+    const instrument = isV3 ? parts[7] : 'synth';
+    const areaId     = isV5 && parts[8] ? parseInt(parts[8], 10) : null;
+    const gridStr    = isV5 ? parts[9] : (isV3 ? parts[8] : parts[6]);
+
+    const name     = parts[1];
+    const bpm      = parseInt(parts[2], 10);
+    const bgMode   = parts[3];
+    const laneMidi = parts[4].split(',').map(n => parseInt(n, 10));
+    const laneFreqs = laneMidi.map(midiToFreq);
+
+    const bassPattern = parts[5]
+      ? parts[5].split(',').map(n => (n === '0' ? 0 : midiToFreq(parseInt(n, 10))))
+      : [];
+
+    // Voice carries across rows, exactly as it did when encoding.
+    let curInst = null;
+
+    const grid = (gridStr || '').split(';').map(rowStr => {
+      const row = [null, null, null, null];
+      let ci = 0, i = 0;
+
+      while (i < rowStr.length && ci < 4) {
+        const ch = rowStr[i];
+
+        if (ch === '`') {
+          curInst = CHAR_INST[rowStr[i + 1]] || null;
+          i += 2;
+          continue;
+        }
+
+        if (ch === '.') {
+          i++;
+          let num = '';
+          while (i < rowStr.length && /\d/.test(rowStr[i])) num += rowStr[i++];
+          ci += num ? parseInt(num, 10) : 1;
+          continue;
+        }
+
+        let type, midi = null;
+        if (ch === 't' || ch === 'd') {
+          type = ch === 'd' ? 'dtap' : 'tap';
+          i++;
+        } else if (ch === 'T' || ch === 'D') {
+          type = ch === 'D' ? 'dtap' : 'tap';
+          i++;
+          let num = '';
+          while (i < rowStr.length && /\d/.test(rowStr[i])) num += rowStr[i++];
+          midi = parseInt(num, 10);
+        } else { i++; continue; }
+
+        let sustain = 0;
+        if (rowStr[i] === '~') {
+          i++;
+          let num = '';
+          while (i < rowStr.length && /\d/.test(rowStr[i])) num += rowStr[i++];
+          sustain = parseInt(num, 10) / 2;
+        }
+
+        row[ci] = {
+          type,
+          freq: midi !== null ? midiToFreq(midi) : laneFreqs[ci],
+          sustain,
+        };
+        if (curInst) row[ci].inst = curInst;
+        ci++;
+      }
+      return row;
+    });
+
+    // bassSteps is fully derivable from bassPattern, so it is
+    // rebuilt rather than transmitted.
+    const bassSteps = bassPattern.map(f => ({
+      active: f > 0,
+      freq:   f > 0 ? f : 65.41,
+    }));
+
+    const out = { name, bpm, bgMode, laneFreqs, bassPattern, bassSteps,
+                  diff, instrument, grid };
+    if (areaId) out.areaId = areaId;
+    return out;
+  }
+
+  // ── The reader that accepts both formats ──
+  function decodeLevel(text) {
+    const t = (text || '').trim();
+    if (t.startsWith('RD2:')) return decodeLevelV2(t);
+
+    // v5 and earlier: base64(JSON), with or without the prefix.
+    const body = t.startsWith('RHYTHMDROP:') ? t.slice('RHYTHMDROP:'.length) : t;
+    const json = decodeURIComponent(escape(atob(body.trim())));
+    const lvl  = JSON.parse(json);
+    if (!lvl.name || !lvl.bpm || !lvl.grid) throw new Error('missing fields');
+    return lvl;
+  }
+
+  // ═══════════════════════════════════════════
+  //  ACCOUNT SYNC
+  //
+  //  Everything that makes an account an account: who you are,
+  //  what you've earned, what you've bought, what you've built.
+  //  Custom levels are included but optional — they dominate the
+  //  size, and a code you can't paste is no use to anyone.
+  // ═══════════════════════════════════════════
+
+  function buildSyncPayload(parts) {
+    // Short keys — this is machine-read, never human-read.
+    const p = {
+      v: 1,
+      u: parts.profile.username || 'Player',
+      c: parts.profile.coins || 0,
+      b: parts.profile.bestScore || 0,
+      o: (parts.shop.owned || []),
+      e: parts.shop.equipped || null,
+      w: parts.shop.colour || 'cyan',
+      h: parts.shop.themes || [],
+      q: parts.shop.fx || [],
+      s: (parts.scores || []).slice(0, 25).map(x =>
+           [x.name, x.score, x.level, x.coins, x.date]),
+      t: parts.theme || 'graphite',
+      x: parts.customTheme || null,
+      g: parts.settings || null,
+      r: parts.progress || null,   // campaign progress + XP
+      d: parts.daily || null,
+      // Per-level bests: { levelKey: [score, coins, date] }. Small even
+      // at 150 songs, and it is the record a player would most miss.
+      n: parts.bests || null,
+    };
+    if (parts.avatar) p.a = parts.avatar;                 // custom avatar data URL
+    if (parts.levels && parts.levels.length) {
+      p.l = parts.levels.map(l => encodeLevel(l).slice(4)); // drop repeated 'RD2:'
+    }
+    return p;
+  }
+
+  function encodeSync(parts) {
+    const json = JSON.stringify(buildSyncPayload(parts));
+    return 'RDSYNC1:' + pack(json);
+  }
+
+  function decodeSync(text) {
+    const t = (text || '').trim();
+    if (!t.startsWith('RDSYNC1:')) throw new Error('not a sync code');
+    const json = unpack(t.slice('RDSYNC1:'.length));
+    const p = JSON.parse(json);
+    if (!p || p.v !== 1) throw new Error('unsupported sync version');
+
+    return {
+      profile: { username: p.u, coins: p.c || 0, bestScore: p.b || 0 },
+      shop:    { owned: p.o || [], equipped: p.e || null, colour: p.w || 'cyan',
+                 themes: p.h || [], fx: p.q || [] },
+      scores:  (p.s || []).map(a => ({
+                 name: a[0], score: a[1], level: a[2], coins: a[3], date: a[4],
+               })),
+      theme:       p.t || 'graphite',
+      customTheme: p.x || null,
+      settings:    p.g || null,
+      progress:    p.r || null,
+      daily:       p.d || null,
+      bests:       p.n || null,
+      avatar:      p.a || null,
+      levels:      (p.l || []).map(c => decodeLevelV2('RD2:' + c)),
+    };
+  }
+
+  window.RD_Codec = {
+    encodeLevel, decodeLevel, decodeLevelV2,
+    encodeSync, decodeSync,
+    pack, unpack,
+    freqToMidi, midiToFreq,
   };
 })();
 
@@ -4605,12 +5131,17 @@ function addHighScore(name, score, levelName, opts) {
 
 // ── Import / Export ──────────────────────────────
 function exportLevel(lvl) {
-  const data    = JSON.stringify(lvl);
-  const encoded = btoa(unescape(encodeURIComponent(data)));
-  const text    = 'RHYTHMDROP:' + encoded;
+  // The compact codec from V7: LZW + varint + base64url. A level that
+  // used to export as a multi-kilobyte base64-JSON blob is now a short
+  // RD2 code you can actually paste into a message. Falls back to the
+  // old base64-JSON form only if the codec somehow isn't loaded, so a
+  // share never silently produces nothing.
+  const text = (window.RD_Codec && window.RD_Codec.encodeLevel)
+    ? window.RD_Codec.encodeLevel(lvl)
+    : 'RHYTHMDROP:' + btoa(unescape(encodeURIComponent(JSON.stringify(lvl))));
   navigator.clipboard.writeText(text)
-    .then(() => showToast('✓ Copied to clipboard!'))
-    .catch(() => prompt('Copy this export code:', text));
+    .then(() => showToast('✓ Copied — ' + text.length + ' chars'))
+    .catch(() => prompt('Copy this level code:', text));
 }
 
 function importLevel() {
@@ -4627,14 +5158,20 @@ function importLevel() {
     showToast('💸 -1,000,000 coins!', true);
     return;
   }
-  if (!text.trim().startsWith('RHYTHMDROP:')) {
-    showToast('Invalid code', true); return;
-  }
+  const trimmed = text.trim();
+  // The codec reads the new RD2 codes and the old RHYTHMDROP: base64
+  // ones, so codes shared from an earlier build still import.
+  const looksLikeCode = /^(RD2:|RHYTHMDROP:)/.test(trimmed) || (window.RD_Codec && /^[A-Za-z0-9_-]+$/.test(trimmed));
+  if (!looksLikeCode) { showToast('Invalid code', true); return; }
   try {
-    const encoded = text.trim().slice('RHYTHMDROP:'.length);
-    const json    = decodeURIComponent(escape(atob(encoded)));
-    const lvl     = JSON.parse(json);
-    if (!lvl.name || !lvl.bpm || !lvl.grid) throw new Error('missing fields');
+    let lvl;
+    if (window.RD_Codec && window.RD_Codec.decodeLevel) {
+      lvl = window.RD_Codec.decodeLevel(trimmed);
+    } else {
+      const encoded = trimmed.replace(/^RHYTHMDROP:/, '');
+      lvl = JSON.parse(decodeURIComponent(escape(atob(encoded))));
+    }
+    if (!lvl || !lvl.name || !lvl.bpm || !lvl.grid) throw new Error('missing fields');
     lvl.id = 'c' + Date.now();
     const arr = store.load(); arr.push(lvl); store.save(arr);
     renderCustoms();
@@ -4683,6 +5220,14 @@ const showScreen = id => {
 // ══════════════════════════════════════
 const THEMES = [
   { id:'graphite',   name:'Graphite',   subs:'Instrument panel', dots:['#6FA8B5','#C4854E','#121517'] },
+  // Textured "material" themes, ported from V7 — each carries a real
+  // grain (wood, paper, brass, glass, blueprint, rubber).
+  { id:'walnut',     name:'Walnut',     subs:'Oiled wood',       dots:['#6FB3A0','#E0894A','#2A1B0E'], mat:true },
+  { id:'bone',       name:'Bone',       subs:'Matte paper',      dots:['#1E7A8C','#C2325C','#EDE8DE'], mat:true },
+  { id:'amber',      name:'Amber',      subs:'Brushed brass',    dots:['#E8B355','#D9762E','#1F1508'], mat:true },
+  { id:'vapor',      name:'Vapor',      subs:'Frosted glass',    dots:['#57E0E8','#F065C8','#1D1136'], mat:true },
+  { id:'blueprint',  name:'Blueprint',  subs:'Drafting linen',   dots:['#5BC8FF','#FF9E5B','#0B2440'], mat:true },
+  { id:'mono',       name:'Mono',       subs:'Matte rubber',     dots:['#FFFFFF','#FF4757','#141414'], mat:true },
   { id:'dark',       name:'Dark',       subs:'Blue & Pink',      dots:['#3B82F6','#FF3A6E','#0e0e1c'] },
   { id:'forest',     name:'Forest',     subs:'Green & Orange',   dots:['#22c55e','#f97316','#081a0f'] },
   { id:'sunset',     name:'Sunset',     subs:'Amber & Pink',     dots:['#f59e0b','#ec4899','#1e1008'] },

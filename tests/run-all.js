@@ -24,6 +24,7 @@ const SUITES = [
   ['v8campaign.js', 'V8 progression — coins, XP, unlocks, dailies'],
   ['v8audio.js',    'V8 audio — every voice rendered and measured, not just present'],
   ['v8graphics.js', 'V8 graphics — the updated look, and the old one kept intact'],
+  ['v8codec.js',    'V8 export — the compact share codes, and the textured themes'],
   ['v8settings.js', 'V8 settings — every control driven, and its effect measured'],
   ['v8generate.js', 'V8 generation — V7\'s composer bundled, Generate and Endless'],
   ['v8gameplay.js', 'V8 gameplay — the hit window and the Double, from V7'],

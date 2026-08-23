@@ -46,6 +46,8 @@ Everything the v3.0 build had — four lanes on **A S D F**, tap and double-tap 
 - **Flat coins per clear** (150), replacing v3's score-derived reward. Coins now count levels cleared rather than how long the chart was: the shortest campaign song is 52 notes and the longest 758, and both pay the same.
 - **Twelve instruments**, up from five — the campaign needs them, because a chart composed for a lyre that falls back to a guitar stops sounding like the place it is set.
 - **Two graphics styles.** *Modern* (default) gives the board depth, lit tile edges and a glowing strike line; *Classic* is the original flat look, kept as a real choice. See [§5](#5-graphics).
+- **Textured themes.** Six material themes ported from V7 — walnut (wood grain), bone (paper tooth), amber (brushed brass), vapor (frosted glass), blueprint (drafting linen), mono (rubber stipple) — each painting a real grain over the faceplate, alongside the flat palette themes.
+- **Compact share codes.** A custom level exports as a short `RD2:` code (~93% smaller than the old base64-JSON blob), via the same LZW+varint codec V7 uses. Codes shared from the old build still import.
 
 - **Live generation, and Endless.** V7's composer is bundled (see [§4a](#4a-live-generation)), so Generate rolls a fresh song on the spot and Endless rolls a new one every run. A generated chart can be kept as a custom level.
 - **Per-song instruments.** Each of the 150 songs plays in the voices it was composed for — Egypt on flute, Greece on lyre — with a Settings toggle to hear your own pick everywhere instead.
@@ -123,7 +125,11 @@ What Modern adds, all derived from the active theme's own tokens so every one of
 
 ## 6. Architecture
 
-**Load order is fixed**: `levels.js → campaign.js → audio.js → game.js`. The baked data first, then the engine that reads it, then audio, then the game that wires them together.
+**Load order is fixed**: `levels.js → campaign.js → codec.js → audio.js → generator.js → game.js`. The baked data first, then the engine that reads it, then the codec, then audio, the live generator (endless), and the game that wires them together.
+
+`codec.js` is V7's, unchanged — a self-contained IIFE exposing `window.RD_Codec`. `exportLevel`/`importLevel` go through it, so a custom level shares as a short `RD2:` code instead of a multi-kilobyte base64-JSON blob; `decodeLevel` still reads the old `RHYTHMDROP:` codes, so nothing shared from an earlier build breaks. The codec encodes instrument as a *sticky state change* rather than a per-note field to keep codes short — harmless for creator charts, which carry no per-note voice.
+
+**Textured themes.** The six material themes each set `--mat-grain` (an SVG-noise or gradient texture); a `#home/#creator/#game::after` layer paints it over the faceplate, behind content, with the screen made a stacking context via `isolation:isolate`. Flat themes leave `--mat-grain: none` and paint nothing, so the layer is inert for them and identical under both graphics styles.
 
 - `levels.js` — one global, `window.RD_LEVEL_DATA`. Generated.
 - `campaign.js` — one global, `window.RD_Campaign`. Expands baked levels on demand (building all 150 grids at boot would be 40,913 notes of work for a list that shows names and tempos) and carries the XP curve, the coin rules, the density cap, unlock chaining and the daily.
