@@ -1833,6 +1833,11 @@ body.adv-overlay #adv-panel.open {
 <script src="audio.js"></script>
 <!-- V7's composer, bundled for live generation and endless mode. -->
 <script src="generator.js"></script>
+<!-- The creator and the gameplay engine, split out of game.js. They
+     load before game.js so its boot code (which wires everything and
+     starts the game) still runs last. -->
+<script src="creator.js"></script>
+<script src="play.js"></script>
 <script src="game.js"></script>
 </body>
 </html>

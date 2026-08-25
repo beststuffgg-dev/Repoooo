@@ -15,7 +15,9 @@ tests/                    28 suites — 3 for V8, 25 for V7
 other/
   RhythmDropV8/           the source — load this as an unpacked extension
     popup.html              markup, styling, the v3 theme system
-    game.js                 screens, input, scoring, campaign UI, shop, creator
+    game.js                 shell: screens, profile/coins, shop, themes, settings, boot
+    play.js                 gameplay engine: queue, loop, input, scoring, the Double
+    creator.js              the level creator and its note picker
     campaign.js             progression: unlocks, XP, coins, records, dailies
     levels.js               THE 150 SONGS, baked — generated, do not hand-edit
     audio.js                12 synthesized instruments, limiter, background layer
