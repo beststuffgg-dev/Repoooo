@@ -312,7 +312,7 @@ body.theme-glass .lane { -webkit-backdrop-filter:blur(14px); backdrop-filter:blu
 html {
   width:420px; height:640px; overflow:hidden;
   resize:both; min-width:340px; max-width:1100px;
-  min-height:420px; max-height:900px;
+  min-height:420px; max-height:760px;
 }
 body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--font-body); transition:background .3s, color .3s; }
 .mono { font-family:var(--font-data); }
@@ -890,25 +890,28 @@ body.gfx-modern.theme-arctic .lane::after {
 ═══════════════════════════════════════ */
 #creator { background:var(--bg); }
 .cr-header {
-  display:flex; align-items:center; gap:10px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
   padding:11px 14px; border-bottom:1px solid var(--border);
 }
 .cr-back {
+  flex:0 0 auto;
   width:32px; height:32px; border-radius:8px; border:1px solid var(--border2);
   background:none; color:var(--muted); cursor:pointer; font-size:16px;
   display:flex; align-items:center; justify-content:center; transition:color .1s;
 }
 .cr-back:hover { color:var(--text); }
 .cr-title-input {
-  flex:1; background:none; border:none; outline:none;
+  flex:1 1 90px; min-width:0; background:none; border:none; outline:none;
   font-size:15px; font-weight:700; color:var(--text); font-family:var(--font-body);
 }
 .cr-title-input::placeholder { color:var(--dim); }
 .cr-diff-sel {
+  flex:0 0 auto;
   background:var(--bg3); border:1px solid var(--border2); border-radius:8px;
   color:var(--muted); font-size:11px; padding:5px 8px; outline:none;
 }
 .cr-save-btn {
+  flex:0 0 auto;
   font-size:12px; font-weight:700; padding:7px 15px; border-radius:8px;
   border:1px solid var(--accent); background:color-mix(in srgb,var(--accent) 8%,transparent);
   color:var(--accent); cursor:pointer; font-family:var(--font-body);
@@ -4961,42 +4964,22 @@ window.RD_Audio = {
 })();
 
 </script>
-<!-- The creator and the gameplay engine, split out of game.js. They
-     load before game.js so its boot code (which wires everything and
-     starts the game) still runs last. -->
-<script data-from="creator.js">
+<!-- The creator (and its note picker) and the gameplay engine, split out
+     of game.js. They load before game.js so its boot code (which wires
+     everything and starts the game) still runs last. -->
+<script data-from="notepicker.js">
 // ═══════════════════════════════════════════
-//  RhythmDrop V8 — creator.js
+//  RhythmDrop V8 — notepicker.js
 //
-//  The level creator and its note picker: the editing grid, the
-//  two-stage cell editor, the advanced panel (instrument, sustain,
-//  per-lane pitches, bass line) and the in-creator generation menu.
+//  The note-selector modal: a Letter | Octave | Accidental cascade that
+//  resolves to a frequency and calls back with it. A self-contained
+//  reusable picker — the creator opens it for a cell's pitch, for each
+//  lane's default note, and for the bass line.
 //
-//  Split out of game.js — a plain (non-module) script sharing the same
-//  global scope as game.js/play.js. It calls the shell's helpers
-//  (showToast, store, showScreen, GEN(), …) at runtime, so load order
-//  only requires that every script is present before any handler fires;
-//  popup.html loads this before game.js, which keeps the boot code last.
+//  Split out of creator.js — a plain (non-module) script sharing the
+//  same global scope. It calls autoSave() (creator.js) at runtime, so
+//  popup.html loads this before creator.js.
 // ═══════════════════════════════════════════
-
-// ══════════════════════════════════════
-//  CREATOR
-// ══════════════════════════════════════
-
-// ── Note helpers ─────────────────────────
-// Use the chromatic table from audio.js (RD_NOTE_TABLE / RD_NOTE_NAMES)
-// Fallback if audio.js not yet loaded
-function getNoteNames() {
-  return window.RD_NOTE_NAMES || ['C4','D4','E4','G4','A4','C5'];
-}
-function freqToName(freq) {
-  if (window.RD_freqToName) return window.RD_freqToName(freq);
-  return freq.toFixed(2) + ' Hz';
-}
-function nameToFreq(name) {
-  if (window.RD_nameToFreq) return window.RD_nameToFreq(name) || 261.63;
-  return 261.63;
-}
 
 // ── Note Picker Modal ────────────────────
 // 3-column layout: Letter | Octave | Accidental
@@ -5200,6 +5183,41 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   setTimeout(() => document.addEventListener('click', outsideClick), 0);
 }
 
+</script>
+<script data-from="creator.js">
+// ═══════════════════════════════════════════
+//  RhythmDrop V8 — creator.js
+//
+//  The level creator and its note picker: the editing grid, the
+//  two-stage cell editor, the advanced panel (instrument, sustain,
+//  per-lane pitches, bass line) and the in-creator generation menu.
+//
+//  Split out of game.js — a plain (non-module) script sharing the same
+//  global scope as game.js/play.js. It calls the shell's helpers
+//  (showToast, store, showScreen, GEN(), …) at runtime, so load order
+//  only requires that every script is present before any handler fires;
+//  popup.html loads this before game.js, which keeps the boot code last.
+// ═══════════════════════════════════════════
+
+// ══════════════════════════════════════
+//  CREATOR
+// ══════════════════════════════════════
+
+// ── Note helpers ─────────────────────────
+// Use the chromatic table from audio.js (RD_NOTE_TABLE / RD_NOTE_NAMES)
+// Fallback if audio.js not yet loaded
+function getNoteNames() {
+  return window.RD_NOTE_NAMES || ['C4','D4','E4','G4','A4','C5'];
+}
+function freqToName(freq) {
+  if (window.RD_freqToName) return window.RD_freqToName(freq);
+  return freq.toFixed(2) + ' Hz';
+}
+function nameToFreq(name) {
+  if (window.RD_nameToFreq) return window.RD_nameToFreq(name) || 261.63;
+  return 261.63;
+}
+
 // ── Creator state ─────────────────────────
 let editIdx    = null;
 let crGrid     = [];
@@ -5217,7 +5235,8 @@ let _bassPickerFreq = 65.41;
 let crCursor = 0;                 // row the play keys write to
 let crSel    = new Set();         // selected cells, keyed "row,lane"
 let crClip   = null;              // copied block: [{ dr, dc, cell }]
-const selKey = (r, c) => r + ',' + c;
+const selKey   = (r, c) => r + ',' + c;
+const parseKey = k => k.split(',').map(Number);
 
 // True while the creator screen is the one on show — the global key
 // handler in game.js asks this before treating a keystroke as an edit.
@@ -5269,7 +5288,7 @@ function openCreator(idx) {
   if (editIdx !== null) {
     const expBtn = document.createElement('button');
     expBtn.id = 'cr-export-btn';
-    expBtn.style.cssText = 'font-size:11px;font-weight:700;padding:6px 11px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--muted);cursor:pointer;font-family:var(--font-body);';
+    expBtn.style.cssText = 'flex:0 0 auto;font-size:11px;font-weight:700;padding:6px 11px;border-radius:7px;border:1px solid var(--border2);background:none;color:var(--muted);cursor:pointer;font-family:var(--font-body);white-space:nowrap;';
     expBtn.textContent = '⬆ Export';
     expBtn.addEventListener('click', () => {
       const arr = store.load();
@@ -5319,7 +5338,7 @@ function typeNoteAtCursor(lane) {
 // ── Multi-select: copy / cut / paste / move / delete ──
 function selBounds() {
   let minR = Infinity, minC = Infinity;
-  crSel.forEach(k => { const [r, c] = k.split(',').map(Number); if (r < minR) minR = r; if (c < minC) minC = c; });
+  crSel.forEach(k => { const [r, c] = parseKey(k); if (r < minR) minR = r; if (c < minC) minC = c; });
   return { minR, minC };
 }
 function selCopy() {
@@ -5327,7 +5346,7 @@ function selCopy() {
   const { minR, minC } = selBounds();
   const items = [];
   crSel.forEach(k => {
-    const [r, c] = k.split(',').map(Number);
+    const [r, c] = parseKey(k);
     const cell = crGrid[r] && crGrid[r][c];
     if (cell) items.push({ dr: r - minR, dc: c - minC, cell: { ...cell } });
   });
@@ -5336,7 +5355,7 @@ function selCopy() {
 }
 function selDelete(toast) {
   if (!crSel.size) return;
-  crSel.forEach(k => { const [r, c] = k.split(',').map(Number); if (crGrid[r]) crGrid[r][c] = null; });
+  crSel.forEach(k => { const [r, c] = parseKey(k); if (crGrid[r]) crGrid[r][c] = null; });
   crSel.clear();
   buildGrid();
   if (editIdx !== null) autoSave();
@@ -5374,7 +5393,7 @@ function selMove(dr, dc) {
   const moves = [];
   let inRange = true;
   crSel.forEach(k => {
-    const [r, c] = k.split(',').map(Number);
+    const [r, c] = parseKey(k);
     const nr = r + dr, nc = c + dc;
     if (nc < 0 || nc > 3 || nr < 0) inRange = false;
     moves.push({ r, c, nr, nc });
@@ -7802,8 +7821,7 @@ function buildSettingsControls(panel) {
 // the width is adjustable. When the game is served as an ordinary page
 // instead, there is no such ceiling and it fills what it is given.
 const POPUP_MAX_W = 800;   // Chrome's popup width ceiling
-const POPUP_MAX_H = 600;   // Chrome's popup height limit, exactly
-const FIXED_H     = POPUP_MAX_H;
+const POPUP_MAX_H = 760;   // the tallest the window goes
 
 function isExtensionPopup() {
   return location.protocol === 'chrome-extension:'
@@ -7817,7 +7835,7 @@ function getMaxDims() {
   // don't stretch to something unplayable on a desktop monitor.
   return {
     maxW: Math.max(340, Math.min(1100, window.innerWidth  || POPUP_MAX_W)),
-    maxH: Math.max(420, Math.min(900,  window.innerHeight || POPUP_MAX_H)),
+    maxH: Math.max(420, Math.min(POPUP_MAX_H, window.innerHeight || POPUP_MAX_H)),
   };
 }
 
@@ -7928,7 +7946,7 @@ function buildSettingsDisplay(panel) {
   const hint = document.createElement('div');
   hint.style.cssText = 'font-size:10px;color:var(--muted);margin-top:6px;';
   hint.textContent = 'Type a size or drag the sliders, then Apply — or drag the window’s right or bottom edge. '
-    + 'A Chrome popup is capped at ' + POPUP_MAX_W + '×' + POPUP_MAX_H + 'px; on a page it can fill the viewport.';
+    + 'Sizes go up to ' + POPUP_MAX_W + '×' + POPUP_MAX_H + 'px; a Chrome extension popup is limited by the browser and may clip beyond that.';
   panel.appendChild(hint);
 }
 

@@ -46,9 +46,10 @@ const open = async (b, w, h) => {
     ok(net.length === 0, 'zero network requests (' + net.slice(0, 2).join(', ') + ')');
   }
 
-  console.log('== both edges move; each is capped at the viewport ==');
+  console.log('== both edges move; height goes up to 760 ==');
   {
-    // Viewport is 1000×820 here, so maxW/maxH are the page size.
+    // Viewport is 1000×820 here, so the 760 ceiling — not the viewport —
+    // is what caps the height.
     const r = await page.evaluate(() => {
       currentSettings.width = 640; currentSettings.height = 560; applySettingsToDOM();
       const set = { w: document.documentElement.offsetWidth, h: document.documentElement.offsetHeight };
@@ -61,7 +62,7 @@ const open = async (b, w, h) => {
     ok(/both/.test(r.resize), 'the corner grip resizes both ways (' + r.resize + ')');
     ok(r.set.w === 640, 'width follows its setting (' + r.set.w + ')');
     ok(r.set.h === 560, 'height follows its setting too (' + r.set.h + ')');
-    ok(r.capped <= 820 && r.setting <= 820, 'asking for 9999px is capped to the viewport (' + r.setting + ')');
+    ok(r.capped === 760 && r.setting === 760, 'asking for 9999px is capped to 760 (' + r.setting + ')');
   }
 
   console.log('== Advanced opens sideways and widens the window ==');

@@ -17,7 +17,8 @@ other/
     popup.html              markup, styling, the v3 theme system
     game.js                 shell: screens, profile/coins, shop, themes, settings, boot
     play.js                 gameplay engine: queue, loop, input, scoring, the Double
-    creator.js              the level creator and its note picker
+    creator.js              the level creator: grid, keyboard entry, multi-select
+    notepicker.js           the Letter/Octave/Accidental note-selector modal
     campaign.js             progression: unlocks, XP, coins, records, dailies
     levels.js               THE 150 SONGS, baked — generated, do not hand-edit
     audio.js                12 synthesized instruments, limiter, background layer
@@ -87,7 +88,7 @@ Why bake at all: a song that exists as a file can be read, diffed and reviewed. 
 
 **The advanced creator panel opens sideways.** It used to open downward, between the toolbar and the grid, which pushed the chart off the bottom of a window that cannot grow taller. It is now a right-hand column, and opening it *widens the window* rather than taking space from the grid. Measured: the window goes 420 → 720, the grid keeps its width to within a pixel, and closing returns the window to exactly 420. The transient widening is kept separate from the player's chosen width so it is never saved as a preference. At the width cap it falls back to floating over the grid rather than opening an unusable sliver.
 
-**Resizing works both ways.** Width and height each have a slider + number field in Settings → Display with a shared Apply, and the corner grip is `resize:both`. Each dimension is capped at what the host can actually show — `getMaxDims()` returns 800×600 in a Chrome extension popup (Chrome's own ceiling, which clips anything past it) and the live viewport when served as a page — so a chosen size can never render clipped. `applySettingsToDOM()` clamps height the same way it clamps width, and the `ResizeObserver` persists a manual drag of either edge.
+**Resizing works both ways.** Width and height each have a slider + number field in Settings → Display with a shared Apply, and the corner grip is `resize:both`. The ceilings are `POPUP_MAX_W` 800 × `POPUP_MAX_H` 760, and `getMaxDims()` also clamps to the live viewport when served as a page. `applySettingsToDOM()` clamps height the same way it clamps width, and the `ResizeObserver` persists a manual drag of either edge. Note the 760 height is the app's own maximum; a real Chrome extension popup is additionally limited by the browser (~600px) and will clip beyond that — the Display hint says so.
 
 ---
 

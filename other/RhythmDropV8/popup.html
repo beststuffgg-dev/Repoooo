@@ -312,7 +312,7 @@ body.theme-glass .lane { -webkit-backdrop-filter:blur(14px); backdrop-filter:blu
 html {
   width:420px; height:640px; overflow:hidden;
   resize:both; min-width:340px; max-width:1100px;
-  min-height:420px; max-height:900px;
+  min-height:420px; max-height:760px;
 }
 body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--font-body); transition:background .3s, color .3s; }
 .mono { font-family:var(--font-data); }
@@ -890,25 +890,28 @@ body.gfx-modern.theme-arctic .lane::after {
 ═══════════════════════════════════════ */
 #creator { background:var(--bg); }
 .cr-header {
-  display:flex; align-items:center; gap:10px;
+  display:flex; align-items:center; gap:10px; flex-wrap:wrap;
   padding:11px 14px; border-bottom:1px solid var(--border);
 }
 .cr-back {
+  flex:0 0 auto;
   width:32px; height:32px; border-radius:8px; border:1px solid var(--border2);
   background:none; color:var(--muted); cursor:pointer; font-size:16px;
   display:flex; align-items:center; justify-content:center; transition:color .1s;
 }
 .cr-back:hover { color:var(--text); }
 .cr-title-input {
-  flex:1; background:none; border:none; outline:none;
+  flex:1 1 90px; min-width:0; background:none; border:none; outline:none;
   font-size:15px; font-weight:700; color:var(--text); font-family:var(--font-body);
 }
 .cr-title-input::placeholder { color:var(--dim); }
 .cr-diff-sel {
+  flex:0 0 auto;
   background:var(--bg3); border:1px solid var(--border2); border-radius:8px;
   color:var(--muted); font-size:11px; padding:5px 8px; outline:none;
 }
 .cr-save-btn {
+  flex:0 0 auto;
   font-size:12px; font-weight:700; padding:7px 15px; border-radius:8px;
   border:1px solid var(--accent); background:color-mix(in srgb,var(--accent) 8%,transparent);
   color:var(--accent); cursor:pointer; font-family:var(--font-body);
@@ -1871,9 +1874,10 @@ body.adv-overlay #adv-panel.open {
 <script src="audio.js"></script>
 <!-- V7's composer, bundled for live generation and endless mode. -->
 <script src="generator.js"></script>
-<!-- The creator and the gameplay engine, split out of game.js. They
-     load before game.js so its boot code (which wires everything and
-     starts the game) still runs last. -->
+<!-- The creator (and its note picker) and the gameplay engine, split out
+     of game.js. They load before game.js so its boot code (which wires
+     everything and starts the game) still runs last. -->
+<script src="notepicker.js"></script>
 <script src="creator.js"></script>
 <script src="play.js"></script>
 <script src="game.js"></script>

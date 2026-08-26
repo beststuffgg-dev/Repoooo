@@ -1207,8 +1207,7 @@ function buildSettingsControls(panel) {
 // the width is adjustable. When the game is served as an ordinary page
 // instead, there is no such ceiling and it fills what it is given.
 const POPUP_MAX_W = 800;   // Chrome's popup width ceiling
-const POPUP_MAX_H = 600;   // Chrome's popup height limit, exactly
-const FIXED_H     = POPUP_MAX_H;
+const POPUP_MAX_H = 760;   // the tallest the window goes
 
 function isExtensionPopup() {
   return location.protocol === 'chrome-extension:'
@@ -1222,7 +1221,7 @@ function getMaxDims() {
   // don't stretch to something unplayable on a desktop monitor.
   return {
     maxW: Math.max(340, Math.min(1100, window.innerWidth  || POPUP_MAX_W)),
-    maxH: Math.max(420, Math.min(900,  window.innerHeight || POPUP_MAX_H)),
+    maxH: Math.max(420, Math.min(POPUP_MAX_H, window.innerHeight || POPUP_MAX_H)),
   };
 }
 
@@ -1333,7 +1332,7 @@ function buildSettingsDisplay(panel) {
   const hint = document.createElement('div');
   hint.style.cssText = 'font-size:10px;color:var(--muted);margin-top:6px;';
   hint.textContent = 'Type a size or drag the sliders, then Apply — or drag the window’s right or bottom edge. '
-    + 'A Chrome popup is capped at ' + POPUP_MAX_W + '×' + POPUP_MAX_H + 'px; on a page it can fill the viewport.';
+    + 'Sizes go up to ' + POPUP_MAX_W + '×' + POPUP_MAX_H + 'px; a Chrome extension popup is limited by the browser and may clip beyond that.';
   panel.appendChild(hint);
 }
 

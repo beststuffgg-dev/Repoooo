@@ -120,20 +120,49 @@ const boot = async (b, w, h) => {
     await ctx.close();
   }
 
+  console.log('== the creator header keeps every control inside the window ==');
+  {
+    const { ctx, page, errors } = await boot(b, 420, 700);
+    const r = await page.evaluate(async () => {
+      // A saved level, so Export shows alongside Save, and a long name
+      // that would push the buttons off a naive flex row.
+      store.save([{ id: 'c1', name: 'A rather long level name goes here', bpm: 180, diff: 'medium',
+        grid: Array.from({ length: 8 }, () => [null, null, null, null]) }]);
+      currentSettings.width = 420; applySettingsToDOM();
+      openCreator(0);
+      await new Promise(r => setTimeout(r, 80));
+      const win = document.documentElement.clientWidth;
+      const controls = [...document.querySelectorAll('.cr-header button, .cr-header select')];
+      const outside = controls
+        .filter(el => { const b = el.getBoundingClientRect(); return b.right > win + 0.5 || b.left < -0.5; })
+        .map(el => (el.textContent || el.value || 'select').trim().slice(0, 8));
+      return { win, count: controls.length, outside, hasExport: !!document.getElementById('cr-export-btn') };
+    });
+    ok(r.count >= 3, 'the header carries its controls (' + r.count + ')');
+    ok(r.hasExport, 'Export is present for a saved level');
+    ok(r.outside.length === 0, 'no header control spills outside the window' + (r.outside.length ? ' — ' + r.outside.join(', ') : ''));
+    ok(errors.length === 0, 'no errors (' + errors.join('; ') + ')');
+    notes.push('header fits ' + r.count + ' controls inside a 420px window');
+    await ctx.close();
+  }
+
   console.log('== the window resizes vertically as well as horizontally ==');
   {
     const { ctx, page } = await boot(b, 900, 800);
     const r = await page.evaluate(() => {
       currentSettings.width = 520; currentSettings.height = 560; applySettingsToDOM();
       const set = { w: document.documentElement.offsetWidth, h: document.documentElement.offsetHeight };
-      currentSettings.height = 700; applySettingsToDOM();
-      return { set, taller: document.documentElement.offsetHeight,
-        resize: getComputedStyle(document.documentElement).resize };
+      currentSettings.height = 760; applySettingsToDOM();
+      const tall = document.documentElement.offsetHeight;
+      currentSettings.height = 9999; applySettingsToDOM();
+      return { set, tall, ceiling: document.documentElement.offsetHeight,
+        setting: currentSettings.height, resize: getComputedStyle(document.documentElement).resize };
     });
     ok(/both/.test(r.resize), 'the corner grip is resize:both (' + r.resize + ')');
     ok(r.set.h === 560, 'the height follows its setting (' + r.set.h + ')');
-    ok(r.taller === 700, 'raising the height setting grows the window (' + r.taller + ')');
-    notes.push('height 560→700 applied; resize:' + r.resize);
+    ok(r.tall === 760, 'the height goes all the way up to 760 (' + r.tall + ')');
+    ok(r.ceiling === 760 && r.setting === 760, 'and is capped there (' + r.setting + ')');
+    notes.push('height 560→760 applied, 9999 clamped to ' + r.setting + '; resize:' + r.resize);
     await ctx.close();
   }
 
