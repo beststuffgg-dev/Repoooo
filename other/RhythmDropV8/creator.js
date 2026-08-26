@@ -243,7 +243,25 @@ let crLaneFreqs = [261.63,329.63,392.00,523.25];
 let crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
 let _bassPickerFreq = 65.41;
 
+// ── Keyboard entry + multi-select state ───
+// The play keys (A S D F) place notes at a row cursor, so a chart can be
+// typed as fast as it is played. Select mode gathers a set of cells you
+// can copy, cut, paste, nudge or delete as a block.
+let crCursor = 0;                 // row the play keys write to
+let crSel    = new Set();         // selected cells, keyed "row,lane"
+let crClip   = null;              // copied block: [{ dr, dc, cell }]
+const selKey = (r, c) => r + ',' + c;
+
+// True while the creator screen is the one on show — the global key
+// handler in game.js asks this before treating a keystroke as an edit.
+function creatorActive() {
+  const el = document.getElementById('creator');
+  return !!(el && el.classList.contains('active'));
+}
+
 function openCreator(idx) {
+  crCursor = 0;
+  crSel.clear();
   editIdx = idx;
   const customs = store.load();
   if (idx !== null && customs[idx]) {
@@ -295,14 +313,165 @@ function openCreator(idx) {
   showScreen('creator');
 }
 
+const TOOL_CLASS = { tap:' at', dtap:' ad', erase:' ae', select:' as' };
 function setTool(t) {
   crTool = t;
-  ['tap','dtap','erase'].forEach(x => {
+  ['tap','dtap','erase','select'].forEach(x => {
     const b = document.getElementById('t-' + x);
-    b.className = 'tool-btn' + (x === t ? (t==='tap'?' at':t==='dtap'?' ad':' ae') : '');
+    if (b) b.className = 'tool-btn' + (x === t ? TOOL_CLASS[x] : '');
   });
+  const bar = document.getElementById('cr-selbar');
+  if (bar) bar.classList.toggle('show', t === 'select');
+  if (t !== 'select' && crSel.size) crSel.clear();
+  if (document.getElementById('cr-grid')) buildGrid();
 }
 document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
+
+// ── Keyboard note entry ───────────────────
+// Move the write cursor, growing the chart when it runs off the end.
+function moveCursor(d) {
+  crCursor = Math.max(0, crCursor + d);
+  while (crCursor >= crGrid.length) crGrid.push([null, null, null, null]);
+  buildGrid();
+}
+// Toggle a note in a lane at the cursor row, using the active tap/dtap
+// tool. Typing a lane key again clears it.
+function typeNoteAtCursor(lane) {
+  if (lane < 0 || lane > 3) return;
+  while (crCursor >= crGrid.length) crGrid.push([null, null, null, null]);
+  if (cellType(crGrid[crCursor][lane])) {
+    crGrid[crCursor][lane] = null;
+  } else {
+    crGrid[crCursor][lane] = { type: crTool === 'dtap' ? 'dtap' : 'tap',
+                               freq: crLaneFreqs[lane], sustain: crDefaultSustain };
+  }
+  buildGrid();
+  if (editIdx !== null) autoSave();
+}
+
+// ── Multi-select: copy / cut / paste / move / delete ──
+function selBounds() {
+  let minR = Infinity, minC = Infinity;
+  crSel.forEach(k => { const [r, c] = k.split(',').map(Number); if (r < minR) minR = r; if (c < minC) minC = c; });
+  return { minR, minC };
+}
+function selCopy() {
+  if (!crSel.size) { showToast('Select notes first', true); return; }
+  const { minR, minC } = selBounds();
+  const items = [];
+  crSel.forEach(k => {
+    const [r, c] = k.split(',').map(Number);
+    const cell = crGrid[r] && crGrid[r][c];
+    if (cell) items.push({ dr: r - minR, dc: c - minC, cell: { ...cell } });
+  });
+  crClip = items;
+  showToast(items.length ? 'Copied ' + items.length : 'No notes in selection', !items.length);
+}
+function selDelete(toast) {
+  if (!crSel.size) return;
+  crSel.forEach(k => { const [r, c] = k.split(',').map(Number); if (crGrid[r]) crGrid[r][c] = null; });
+  crSel.clear();
+  buildGrid();
+  if (editIdx !== null) autoSave();
+  if (toast !== false) showToast('Deleted');
+}
+function selCut() {
+  if (!crSel.size) { showToast('Select notes first', true); return; }
+  selCopy();
+  selDelete(false);
+}
+function selPaste() {
+  if (!crClip || !crClip.length) { showToast('Clipboard empty', true); return; }
+  // Anchor the block at the selection's top-left, or — with nothing
+  // selected — at the cursor row in lane 1.
+  let anchorR, anchorC;
+  if (crSel.size) { const b = selBounds(); anchorR = b.minR; anchorC = b.minC; }
+  else { anchorR = crCursor; anchorC = 0; }
+  const next = new Set();
+  crClip.forEach(it => {
+    const r = anchorR + it.dr, c = anchorC + it.dc;
+    if (c < 0 || c > 3) return;              // never wrap past the four lanes
+    while (r >= crGrid.length) crGrid.push([null, null, null, null]);
+    crGrid[r][c] = { ...it.cell };
+    next.add(selKey(r, c));
+  });
+  crSel = next;
+  buildGrid();
+  if (editIdx !== null) autoSave();
+  showToast('Pasted ' + next.size);
+}
+// Nudge the whole selection by (dr, dc). Blocked if any cell would fall
+// outside the four lanes or above row 0; overwrites whatever it lands on.
+function selMove(dr, dc) {
+  if (!crSel.size) return;
+  const moves = [];
+  let inRange = true;
+  crSel.forEach(k => {
+    const [r, c] = k.split(',').map(Number);
+    const nr = r + dr, nc = c + dc;
+    if (nc < 0 || nc > 3 || nr < 0) inRange = false;
+    moves.push({ r, c, nr, nc });
+  });
+  if (!inRange) return;
+  const picked = moves.map(m => ({ nr: m.nr, nc: m.nc, cell: crGrid[m.r][m.c] ? { ...crGrid[m.r][m.c] } : null }));
+  moves.forEach(m => { crGrid[m.r][m.c] = null; });
+  const next = new Set();
+  picked.forEach(p => {
+    while (p.nr >= crGrid.length) crGrid.push([null, null, null, null]);
+    crGrid[p.nr][p.nc] = p.cell;
+    next.add(selKey(p.nr, p.nc));
+  });
+  crSel = next;
+  crCursor = Math.max(0, Math.min(crGrid.length - 1, crCursor + dr));
+  buildGrid();
+  if (editIdx !== null) autoSave();
+}
+
+// The one entry point the global key handler calls while the creator is
+// on screen. Returns true when it consumed the key.
+function handleCreatorKey(e, keyMap) {
+  const mod = e.ctrlKey || e.metaKey;
+  if (mod && (e.code === 'KeyC' || e.code === 'KeyX' || e.code === 'KeyV')) {
+    e.preventDefault();
+    if (e.code === 'KeyC') selCopy(); else if (e.code === 'KeyX') selCut(); else selPaste();
+    return true;
+  }
+  if ((e.code === 'Delete' || e.code === 'Backspace') && crSel.size) { e.preventDefault(); selDelete(); return true; }
+  if (e.code === 'Escape' && crSel.size) { e.preventDefault(); crSel.clear(); buildGrid(); return true; }
+
+  const ARROWS = { ArrowLeft: [0, -1], ArrowRight: [0, 1], ArrowUp: [-1, 0], ArrowDown: [1, 0] };
+  if (ARROWS[e.code]) {
+    const [dr, dc] = ARROWS[e.code];
+    e.preventDefault();
+    if (crTool === 'select' && crSel.size) selMove(dr, dc);   // nudge the block
+    else if (dc === 0) moveCursor(dr);                        // else walk the cursor
+    return true;
+  }
+  if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); moveCursor(1); return true; }
+
+  if (e.code in keyMap) {
+    e.preventDefault();
+    const lane = keyMap[e.code];
+    typeNoteAtCursor(lane);
+    if (window.RD_playNote) window.RD_playNote(lane, false, crLaneFreqs[lane] || 261.63);
+    return true;
+  }
+  return false;
+}
+
+// ── Selection action bar ──────────────────
+(function wireSelBar() {
+  const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
+  bind('sel-copy',  selCopy);
+  bind('sel-cut',   selCut);
+  bind('sel-paste', selPaste);
+  bind('sel-del',   () => selDelete());
+  bind('sel-clear', () => { crSel.clear(); buildGrid(); });
+  bind('sel-up',    () => selMove(-1, 0));
+  bind('sel-down',  () => selMove(1, 0));
+  bind('sel-left',  () => selMove(0, -1));
+  bind('sel-right', () => selMove(0, 1));
+})();
 
 // ── Advanced panel: opens sideways, and takes its space from a wider
 //    window rather than from the grid ──
@@ -387,7 +556,8 @@ function buildGrid() {
 
   crGrid.forEach((row, ri) => {
     const lbl = document.createElement('div');
-    lbl.className = 'cr-row-num'; lbl.textContent = ri + 1; g.appendChild(lbl);
+    lbl.className = 'cr-row-num' + (ri === crCursor ? ' cur' : '');
+    lbl.textContent = ri + 1; g.appendChild(lbl);
 
     row.forEach((cell, ci) => {
       const type = cellType(cell);
@@ -398,7 +568,9 @@ function buildGrid() {
       // dropdowns any more — note, type and sustain all live in the
       // popup, so a cell stays a cell.
       const el = document.createElement('div');
-      el.className = 'cr-cell' + (type ? ' is-' + type : '');
+      el.className = 'cr-cell' + (type ? ' is-' + type : '')
+        + (ri === crCursor ? ' cur' : '')
+        + (crSel.has(selKey(ri, ci)) ? ' cr-cell-sel' : '');
       if (type && crAdvOpen) {
         // In advanced mode the chip carries the note name, so a chart's
         // pitches are legible at a glance without opening anything.
@@ -415,6 +587,15 @@ function buildGrid() {
         }
       }
       el.addEventListener('click', () => {
+        crCursor = ri;
+        // Select mode: a click toggles the cell in the selection, empty
+        // or not, so a block can be marked out and then acted on.
+        if (crTool === 'select') {
+          const k = selKey(ri, ci);
+          if (crSel.has(k)) crSel.delete(k); else crSel.add(k);
+          buildGrid();
+          return;
+        }
         const cur = cellType(crGrid[ri][ci]);
         if (crTool === 'erase') { crGrid[ri][ci] = null; buildGrid(); return; }
         if (!cur) {

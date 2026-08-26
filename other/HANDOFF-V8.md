@@ -54,6 +54,8 @@ Everything the v3.0 build had — four lanes on **A S D F**, tap and double-tap 
 - **Live generation, and Endless.** V7's composer is bundled (see [§4a](#4a-live-generation)), so Generate rolls a fresh song on the spot and Endless rolls a new one every run. A generated chart can be kept as a custom level.
 - **Per-song instruments.** Each of the 150 songs plays in the voices it was composed for — Egypt on flute, Greece on lyre — with a Settings toggle to hear your own pick everywhere instead.
 - **Two-stage note placement in the creator.** First tap fills a cell; a second tap opens one popup with type, pitch and sustain, replacing the inline dropdowns.
+- **Keyboard note entry.** In the creator the play keys (A S D F, or whatever the controls are remapped to) type notes into a row cursor — press a lane key to place, again to clear, Enter/↓ to advance the cursor, ↑ to go back. Text fields keep their own keystrokes, so a level name can still contain a/s/d/f.
+- **Multi-select in the creator.** A Select tool marks a block of cells; Copy / Cut / Paste / Delete and the arrow-nudge buttons act on it, and the same lives on the keyboard (Ctrl/⌘ C/X/V, Delete, arrow keys). Paste keeps the block's shape and drops it at the cursor, or at the selection's top-left.
 - **The Double.** Any cleared level can be replayed at 2× speed for 2× reward — offered on the results screen after a clear, and as a 2× badge on cleared song rows.
 - **Hit windows.** Strict / Normal / Forgiving, in Settings → Gameplay. Note *speed* stays fixed per song so scores remain comparable; only the timing tolerance moves.
 
@@ -85,7 +87,7 @@ Why bake at all: a song that exists as a file can be read, diffed and reviewed. 
 
 **The advanced creator panel opens sideways.** It used to open downward, between the toolbar and the grid, which pushed the chart off the bottom of a window that cannot grow taller. It is now a right-hand column, and opening it *widens the window* rather than taking space from the grid. Measured: the window goes 420 → 720, the grid keeps its width to within a pixel, and closing returns the window to exactly 420. The transient widening is kept separate from the player's chosen width so it is never saved as a preference. At the width cap it falls back to floating over the grid rather than opening an unusable sliver.
 
-**Vertical resizing is gone, and the reason it never worked is the fix.** Chrome renders an extension popup at most 800×600 and clips the rest, so the old height setting was moving a number the browser then ignored. The height is pinned to that ceiling, the corner grip is `resize:horizontal`, and everything vertical scrolls instead. Served as an ordinary page rather than a popup there is no such ceiling, and it takes the viewport.
+**Resizing works both ways.** Width and height each have a slider + number field in Settings → Display with a shared Apply, and the corner grip is `resize:both`. Each dimension is capped at what the host can actually show — `getMaxDims()` returns 800×600 in a Chrome extension popup (Chrome's own ceiling, which clips anything past it) and the live viewport when served as a page — so a chosen size can never render clipped. `applySettingsToDOM()` clamps height the same way it clamps width, and the `ResizeObserver` persists a manual drag of either edge.
 
 ---
 

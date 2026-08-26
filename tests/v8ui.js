@@ -46,22 +46,22 @@ const open = async (b, w, h) => {
     ok(net.length === 0, 'zero network requests (' + net.slice(0, 2).join(', ') + ')');
   }
 
-  console.log('== the height is pinned; only the width moves ==');
+  console.log('== both edges move; each is capped at the viewport ==');
   {
+    // Viewport is 1000×820 here, so maxW/maxH are the page size.
     const r = await page.evaluate(() => {
-      const h0 = document.documentElement.offsetHeight;
-      currentSettings.width = 640; applySettingsToDOM();
-      const wide = { w: document.documentElement.offsetWidth, h: document.documentElement.offsetHeight };
-      currentSettings.height = 999; applySettingsToDOM();
-      return { h0, wide, forcedH: document.documentElement.offsetHeight,
-        setting: currentSettings.height,
+      currentSettings.width = 640; currentSettings.height = 560; applySettingsToDOM();
+      const set = { w: document.documentElement.offsetWidth, h: document.documentElement.offsetHeight };
+      currentSettings.height = 9999; applySettingsToDOM();
+      const capped = document.documentElement.offsetHeight;
+      return { set, capped, setting: currentSettings.height,
         resize: getComputedStyle(document.documentElement).resize };
     });
-    notes.push('height stays ' + r.h0 + 'px through a width change and a 999px request');
-    ok(r.resize === 'horizontal', 'the corner grip is horizontal only (' + r.resize + ')');
-    ok(r.wide.w === 640, 'width follows its setting (' + r.wide.w + ')');
-    ok(r.wide.h === r.h0, 'height did not follow it');
-    ok(r.forcedH === r.h0 && r.setting === r.h0, 'asking for 999px is pinned back to ' + r.setting);
+    notes.push('width→640, height→560 both applied; a 9999px height capped to ' + r.capped);
+    ok(/both/.test(r.resize), 'the corner grip resizes both ways (' + r.resize + ')');
+    ok(r.set.w === 640, 'width follows its setting (' + r.set.w + ')');
+    ok(r.set.h === 560, 'height follows its setting too (' + r.set.h + ')');
+    ok(r.capped <= 820 && r.setting <= 820, 'asking for 9999px is capped to the viewport (' + r.setting + ')');
   }
 
   console.log('== Advanced opens sideways and widens the window ==');

@@ -1241,7 +1241,6 @@ function buildSettingsDisplay(panel) {
   const s = currentSettings;
   const { maxW, maxH } = getMaxDims();
   _pendingSize = { width: Math.min(s.width, maxW), height: Math.min(s.height, maxH) };
-  void maxH;   // height is pinned; only the width is offered below
 
   panel.appendChild(_settingsSectionHead('Graphics'));
   {
@@ -1314,7 +1313,8 @@ function buildSettingsDisplay(panel) {
     panel.appendChild(row);
   }
 
-  sizeRow('Width', 340, maxW, 'width', 'size-w-slider', 'size-w-input');
+  sizeRow('Width',  340, maxW, 'width',  'size-w-slider', 'size-w-input');
+  sizeRow('Height', 420, maxH, 'height', 'size-h-slider', 'size-h-input');
 
   const applyBtn = document.createElement('button');
   applyBtn.style.cssText = 'width:100%;margin-top:4px;padding:9px;border-radius:9px;border:1px solid var(--accent);background:rgba(255,58,110,.1);color:var(--accent);font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;transition:background .12s;';
@@ -1323,6 +1323,7 @@ function buildSettingsDisplay(panel) {
   applyBtn.onmouseleave = () => applyBtn.style.background = 'rgba(255,58,110,.1)';
   applyBtn.addEventListener('click', () => {
     currentSettings.width  = _pendingSize.width;
+    currentSettings.height = _pendingSize.height;
     store.saveSettings(currentSettings);
     applySettingsToDOM();
     showToast('Size applied');
@@ -1331,9 +1332,8 @@ function buildSettingsDisplay(panel) {
 
   const hint = document.createElement('div');
   hint.style.cssText = 'font-size:10px;color:var(--muted);margin-top:6px;';
-  hint.textContent = 'Type a width or drag the slider, then Apply — or drag the window’s right edge. '
-    + 'Height is fixed: a Chrome popup is capped at ' + POPUP_MAX_H + 'px tall and clips anything past it, '
-    + 'so everything vertical scrolls instead.';
+  hint.textContent = 'Type a size or drag the sliders, then Apply — or drag the window’s right or bottom edge. '
+    + 'A Chrome popup is capped at ' + POPUP_MAX_W + '×' + POPUP_MAX_H + 'px; on a page it can fill the viewport.';
   panel.appendChild(hint);
 }
 
@@ -1550,6 +1550,8 @@ function updateSizeControls(w, h) {
   if (_pendingSize) { _pendingSize.width = w; _pendingSize.height = h; }
   const ws = document.getElementById('size-w-slider'), wi = document.getElementById('size-w-input');
   if (ws) ws.value = w;  if (wi) wi.value = w;
+  const hs = document.getElementById('size-h-slider'), hi = document.getElementById('size-h-input');
+  if (hs) hs.value = h;  if (hi) hi.value = h;
 }
 
 // Watch for manual corner-drag resizes (CSS resize:both on <html>) and persist
@@ -1561,9 +1563,12 @@ function observeManualResize() {
     // Subtract whatever the advanced panel borrowed, or opening it once
     // would be remembered as the player's chosen width forever.
     const w = Math.round(document.documentElement.offsetWidth) - advExpansion;
-    if (w === currentSettings.width) return;
-    currentSettings.width = w;
-    updateSizeControls(w, currentSettings.height);
+    const h = Math.round(document.documentElement.offsetHeight);
+    let changed = false;
+    if (w !== currentSettings.width)  { currentSettings.width  = w; changed = true; }
+    if (h !== currentSettings.height) { currentSettings.height = h; changed = true; }
+    if (!changed) return;
+    updateSizeControls(currentSettings.width, currentSettings.height);
     clearTimeout(_resizeSaveTimer);
     _resizeSaveTimer = setTimeout(() => store.saveSettings(currentSettings), 200);
   });
@@ -1577,9 +1582,10 @@ function applySettingsToDOM() {
   // Cap the window so it can never exceed the host page / popup viewport.
   const { maxW, maxH } = getMaxDims();
   currentSettings.width  = Math.max(340, Math.min(currentSettings.width, maxW));
-  // The height is not a setting any more: it is whatever the host will
-  // actually render, so nothing can ask for a size that gets clipped.
-  currentSettings.height = Math.min(FIXED_H, maxH);
+  // Height is adjustable the same way width is, capped at whatever the
+  // host can actually show — in a Chrome popup that ceiling is 600px, on
+  // a page it is the viewport — so a chosen size can never get clipped.
+  currentSettings.height = Math.max(420, Math.min(currentSettings.height, maxH));
   const root = document.documentElement;
   root.style.maxWidth  = maxW + 'px';
   root.style.maxHeight = maxH + 'px';
@@ -1620,7 +1626,20 @@ function buildKeyMap() {
 
 document.addEventListener('keydown', e => {
   if (e.repeat) return;
+
+  // Never steal keystrokes from a text field — so a level name can
+  // contain a, s, d, f, and the number inputs still type.
+  const tag = e.target && e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
+
   const KEY_MAP = buildKeyMap();
+
+  // In the creator: the play keys type notes at a row cursor, and the
+  // arrow / copy / paste / delete keys drive multi-select.
+  if (!running && typeof creatorActive === 'function' && creatorActive()
+      && typeof handleCreatorKey === 'function' && handleCreatorKey(e, KEY_MAP)) {
+    return;
+  }
 
   // Chaos mode: any letter key A–Z (except reserved Q/R) is a potential target.
   if (running && chaosMode && /^Key[A-Z]$/.test(e.code) && e.code !== 'KeyQ' && e.code !== 'KeyR') {

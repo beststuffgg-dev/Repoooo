@@ -29,7 +29,8 @@ const SUITES = [
   ['v8generate.js', 'V8 generation — V7\'s composer bundled, Generate and Endless'],
   ['v8gameplay.js', 'V8 gameplay — the hit window and the Double, from V7'],
   ['v8creator.js',  'V8 creator — the generation menu, Endless as a tab, aspect ratios'],
-  ['v8ui.js',       'V8 layout — the side panel, the pinned height, one whole run'],
+  ['v8editor.js',   'V8 creator tools — keyboard entry, multi-select, vertical resize'],
+  ['v8ui.js',       'V8 layout — the side panel, resizable both ways, one whole run'],
   // ══ V7 — kept alongside, under other/v7/ ══
   // ── core ──
   ['smoke.js',        'UI — boot, tabs, campaign, shop, editor, themes'],
@@ -71,7 +72,7 @@ const APP = process.env.APP_DIR || '';
 // The V8 suites name their own build, so re-running them for each V7
 // variant would just repeat identical work.
 const SKIP = /Redesign/.test(APP)
-  ? new Set(['redesigntest.js', 'singlefiletest.js', 'v8levels.js', 'v8campaign.js', 'v8audio.js', 'v8graphics.js', 'v8settings.js', 'v8generate.js', 'v8gameplay.js', 'v8ui.js'])
+  ? new Set(['redesigntest.js', 'singlefiletest.js', 'v8levels.js', 'v8campaign.js', 'v8audio.js', 'v8graphics.js', 'v8settings.js', 'v8generate.js', 'v8gameplay.js', 'v8editor.js', 'v8ui.js'])
   : new Set();
 
 let failed = [], ran = 0;

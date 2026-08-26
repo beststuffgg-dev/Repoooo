@@ -307,10 +307,12 @@ body.theme-glass .lane { -webkit-backdrop-filter:blur(14px); backdrop-filter:blu
    really worked — the board, the creator grid and the campaign list
    all size themselves off the height, and dragging it left them
    half-laid-out — so the height is pinned and the corner grip only
-   moves horizontally. Everything vertical scrolls instead. */
+   drags from either edge; on a page it can fill the viewport, and in a
+   Chrome popup Chrome's own ceiling caps it. */
 html {
   width:420px; height:640px; overflow:hidden;
-  resize:horizontal; min-width:340px; max-width:1100px;
+  resize:both; min-width:340px; max-width:1100px;
+  min-height:420px; max-height:900px;
 }
 body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--font-body); transition:background .3s, color .3s; }
 .mono { font-family:var(--font-data); }
@@ -926,7 +928,26 @@ body.gfx-modern.theme-arctic .lane::after {
 .tool-btn.at { border-color:var(--tap);  color:var(--tap);  background:color-mix(in srgb,var(--tap) 10%,transparent); }
 .tool-btn.ad { border-color:var(--dtap); color:var(--dtap); background:color-mix(in srgb,var(--dtap) 10%,transparent); }
 .tool-btn.ae { border-color:var(--muted);color:var(--text); background:var(--bg3); }
+.tool-btn.as { border-color:var(--accent);color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
 .cr-sep { width:1px; height:26px; background:var(--border); }
+
+/* Select mode: the marked block, the row the keyboard writes to, and the
+   toolbar that acts on a selection. */
+.cr-cell-sel { outline:2px solid var(--accent); outline-offset:-2px;
+  box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent); }
+.cr-cell.cur { border-color:color-mix(in srgb,var(--accent) 45%,var(--border)); }
+.cr-row-num.cur { color:var(--accent); font-weight:700; }
+.cr-selbar { display:none; gap:4px; align-items:center; flex-wrap:wrap;
+  padding:6px 14px; border-bottom:1px solid var(--border); }
+.cr-selbar.show { display:flex; }
+.cr-selbar button {
+  padding:4px 8px; border-radius:6px; border:1px solid var(--border2);
+  background:var(--bg3); color:var(--text); font-size:10px; font-weight:700;
+  font-family:var(--font-body); cursor:pointer; transition:all .12s; white-space:nowrap;
+}
+.cr-selbar button:hover { border-color:var(--accent); color:var(--accent); }
+.cr-sel-move { display:inline-flex; gap:2px; }
+.cr-sel-move button { min-width:24px; padding:4px 5px; font-family:var(--font-data); }
 .bpm-row { display:flex; align-items:center; gap:5px; }
 .bpm-row label { font-size:10px; color:var(--muted); font-family:var(--font-data); }
 .bpm-input {
@@ -1612,10 +1633,27 @@ body.adv-overlay #adv-panel.open {
     <button class="tool-btn at" data-tool="tap" id="t-tap">■ TAP</button>
     <button class="tool-btn" data-tool="dtap" id="t-dtap">◆ ×2</button>
     <button class="tool-btn" data-tool="erase" id="t-erase">✕ ERA</button>
+    <button class="tool-btn" data-tool="select" id="t-select">▦ SEL</button>
     <div class="cr-sep"></div>
     <div class="bpm-row"><label>BPM</label><input class="bpm-input" id="cr-bpm" type="number" min="60" max="220" value="120"></div>
     <div class="cr-sep"></div>
     <button class="adv-toggle" id="adv-toggle">⚙ Advanced</button>
+  </div>
+  <!-- Shown only in Select mode. Copy/cut/paste/delete the marked block,
+       or nudge it with the arrows. Keyboard: Ctrl/Cmd+C/X/V, Delete,
+       and the arrow keys do the same. -->
+  <div class="cr-selbar" id="cr-selbar">
+    <button id="sel-copy">⧉ Copy</button>
+    <button id="sel-cut">✂ Cut</button>
+    <button id="sel-paste">⇩ Paste</button>
+    <button id="sel-del">🗑 Del</button>
+    <span class="cr-sel-move">
+      <button id="sel-left" title="move left">◀</button>
+      <button id="sel-up" title="move up">▲</button>
+      <button id="sel-down" title="move down">▼</button>
+      <button id="sel-right" title="move right">▶</button>
+    </span>
+    <button id="sel-clear">Clear</button>
   </div>
   <div class="cr-grid-wrap">
     <div id="cr-grid"></div>
