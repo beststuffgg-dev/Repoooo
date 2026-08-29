@@ -594,23 +594,27 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 
 /* Area strip — a segmented row, v7-style: no boxes, the selected era
    carries an underline and a lift, the rest are plain dim labels. */
+/* Area strip — a scrolling row of rounded chips (MD3 segmented/filter
+   chips), matching the card language rather than the old underline
+   tabs: each era is its own surface, the selected one fills with a
+   tonal wash of the accent. */
 #cam-areas {
-  display:flex; gap:2px; padding:6px 10px 0; overflow-x:auto;
-  border-bottom:1px solid var(--border); flex-shrink:0;
+  display:flex; gap:6px; padding:10px 12px; overflow-x:auto; flex-shrink:0;
 }
 #cam-areas::-webkit-scrollbar { height:0; }
 .area-chip {
-  flex:0 0 auto; padding:8px 13px 9px; cursor:pointer;
-  background:none; border:none; border-bottom:2px solid transparent;
-  transition:color .15s, border-color .15s, background .15s;
-  text-align:left; min-width:76px; border-radius:8px 8px 0 0;
+  flex:0 0 auto; padding:8px 14px; cursor:pointer;
+  background:var(--bg2); border:1px solid var(--border); border-radius:var(--r-md);
+  transition:color .15s, border-color .15s, background .15s, box-shadow .15s;
+  text-align:left; min-width:78px;
 }
 .area-chip .ac-name { font-size:12px; font-weight:700; color:var(--muted); white-space:nowrap; }
 .area-chip .ac-prog { font-size:9px; color:var(--dim); font-family:var(--font-data); margin-top:1px; letter-spacing:.5px; }
-.area-chip:hover .ac-name { color:var(--text); }
+.area-chip:hover:not(.sel):not(.locked) { background:var(--bg3); border-color:var(--border2); }
+.area-chip:hover:not(.sel):not(.locked) .ac-name { color:var(--text); }
 .area-chip.sel {
-  border-bottom-color:var(--accent);
-  background:linear-gradient(180deg, transparent, color-mix(in srgb,var(--accent) 10%,transparent));
+  background:color-mix(in srgb, var(--accent) 16%, var(--bg2));
+  border-color:color-mix(in srgb, var(--accent) 55%, var(--border));
 }
 .area-chip.sel .ac-name { color:var(--accent); }
 .area-chip.sel .ac-prog { color:var(--muted); }
@@ -993,7 +997,7 @@ body.gfx-modern.theme-arctic .lane::after {
 /* Endless as an era tab — a chip like the areas, tinted so it reads as
    the special one at the end of the row. */
 .area-chip.endless-chip .ac-name { color:var(--dtap); }
-.area-chip.endless-chip.sel { border-bottom-color:var(--dtap); background:linear-gradient(180deg,transparent,color-mix(in srgb,var(--dtap) 12%,transparent)); }
+.area-chip.endless-chip.sel { background:color-mix(in srgb,var(--dtap) 16%,var(--bg2)); border-color:color-mix(in srgb,var(--dtap) 55%,var(--border)); }
 .area-chip.endless-chip.sel .ac-name { color:var(--dtap); }
 
 /* The endless panel shown in the list when its tab is selected. */
