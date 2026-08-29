@@ -346,7 +346,16 @@ html {
    chrome (form controls, the resize grip, autofill) matches instead of
    painting dark widgets onto a paper background. */
 body.theme-paper, body.theme-arctic, body.theme-bone { color-scheme:light; }
-body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--font-body); transition:background .3s, color .3s; }
+body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--font-body); transition:background .3s, color .3s;
+  /* The two-LED brand gradient — every theme's tap and dtap, the two
+     lights that do its colour work, swept into one. Declared here on
+     `body` (not :root) so its var(--tap)/var(--dtap) resolve against the
+     active theme's own tokens, which the theme classes set on `body`;
+     from :root they would bake in the default blue→pink for every theme.
+     Always genuinely two-tone, so a filled primary action reads with
+     real colour rather than a flat tint. */
+  --grad-brand: linear-gradient(120deg, var(--tap) 0%, var(--dtap) 100%);
+}
 /* The data face carries every changing number in the UI — score ticking
    up, coins, combo, records. Lock the digits to one width so they stop
    twitching as the value changes. */
@@ -1642,6 +1651,30 @@ body.adv-overlay #adv-panel.open {
 .cam-head .ch-name { font-size:20px; }
 #ov-title         { font-size:26px; }
 .hud-score-num    { font-size:32px; }
+
+/* ══════════════════════════════════════
+   COLOR ENERGY — the one primary action on each screen carries the
+   two-LED brand gradient, filled and lifted, so it reads with real
+   colour confidence instead of a quiet tint. Secondary and tonal
+   buttons stay calm, so the gradient always points at the main move.
+   All static; the gradient is deterministic, so render-stability holds.
+══════════════════════════════════════ */
+.ov-play-btn, .uname-btn, .ctf-apply, #custom-av-buy-btn, .gen-main, .mb-close-btn {
+  background:var(--grad-brand); color:#fff; border:none; box-shadow:var(--elev-2);
+}
+.ov-play-btn:hover, .uname-btn:hover, .ctf-apply:hover,
+#custom-av-buy-btn:hover, .gen-main:hover, .mb-close-btn:hover {
+  filter:brightness(1.08); background:var(--grad-brand); opacity:1;
+}
+
+/* An emphasized easing on the interactive families, so hover, press and
+   the panel/tab transitions feel snappy and intentional rather than
+   linear. Longhand, so it only swaps the curve on the existing
+   transitions — durations are untouched. */
+.level-card, .avatar-card, .theme-card, .song-row, .area-chip, .hnav,
+.endless-band, #daily-card, #endless-card, button {
+  transition-timing-function:var(--ease-emph);
+}
 
 </style>
 </head>
