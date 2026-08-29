@@ -308,10 +308,7 @@ function importLevel() {
     lvl.id = 'c' + Date.now();
     const arr = store.load(); arr.push(lvl); store.save(arr);
     renderCustoms();
-    document.querySelectorAll('.hnav').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
-    document.querySelector('.hnav[data-tab="custom"]').classList.add('active');
-    document.getElementById('tab-custom').classList.add('active');
+    selectHomeTab('custom');
     showToast('Imported: ' + lvl.name);
   } catch (e) {
     showToast('Failed to import — bad code', true);
@@ -783,11 +780,23 @@ function renderCustoms() {
 }
 
 // nav tabs
+// One place that owns which home tab is showing: the .active class, the
+// matching pane, and the aria-current the tab exposes to assistive tech.
+// Three call sites used to hand-toggle all of this; they call this now.
+function selectHomeTab(tab) {
+  document.querySelectorAll('.hnav').forEach(x => {
+    const on = x.dataset.tab === tab;
+    x.classList.toggle('active', on);
+    if (on) x.setAttribute('aria-current', 'page');
+    else x.removeAttribute('aria-current');
+  });
+  document.querySelectorAll('.tab-pane').forEach(x => {
+    x.classList.toggle('active', x.id === 'tab-' + tab);
+  });
+}
+
 document.querySelectorAll('.hnav').forEach(t => t.addEventListener('click', () => {
-  document.querySelectorAll('.hnav').forEach(x => x.classList.remove('active'));
-  document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
-  t.classList.add('active');
-  document.getElementById('tab-' + t.dataset.tab).classList.add('active');
+  selectHomeTab(t.dataset.tab);
   if (t.dataset.tab === 'shop') renderShop();
 }));
 
@@ -1678,12 +1687,7 @@ btnEls.forEach((el, i) => {
 const pbarAvatar = document.getElementById('pbar-avatar');
 if (pbarAvatar) {
   pbarAvatar.addEventListener('click', () => {
-    document.querySelectorAll('.hnav').forEach(x => x.classList.remove('active'));
-    document.querySelectorAll('.tab-pane').forEach(x => x.classList.remove('active'));
-    const shopNav = document.querySelector('.hnav[data-tab="shop"]');
-    if (shopNav) shopNav.classList.add('active');
-    const shopTab = document.getElementById('tab-shop');
-    if (shopTab) shopTab.classList.add('active');
+    selectHomeTab('shop');
     renderShop();
   });
 }
