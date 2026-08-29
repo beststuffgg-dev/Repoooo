@@ -860,6 +860,33 @@ body.gfx-modern.theme-arctic .lane::after {
 
 /* ══ END UPDATED GRAPHICS ══ */
 
+/* ══════════════════════════════════════
+   CONTROLS POLISH — one consistent, physical response across the app's
+   buttons and top chrome. All static and token-driven, so it rides on
+   top of every theme and both graphics styles without touching either,
+   and none of it animates on its own (press and hover only), so the
+   Classic/Modern comparison stays exact.
+══════════════════════════════════════ */
+
+/* Every button dips a pixel when pressed — the same tactile beat whether
+   it's Play, Save, Apply or a shop buy. */
+.uname-btn:active, .ctf-apply:active, .cr-save-btn:active, .mb-close-btn:active,
+.ov-play-btn:active, #custom-av-buy-btn:active, .gen-go:active, .gen-play:active,
+.chaos-toggle:active, .glass-trans-btn:active, .shop-subnav button:active {
+  transform:translateY(1px);
+}
+
+/* The home tabs take a faint seat on hover, so the hit target reads
+   before the click. The active tab keeps its underline and accent. */
+.hnav { border-radius:8px 8px 0 0; }
+.hnav:hover:not(.active) { background:color-mix(in srgb, var(--text) 6%, transparent); }
+
+/* Small lifts in the top chrome: the logo mark catches a hairline of the
+   accent instead of sitting as an empty well, and the coin count carries
+   a little more weight since it's the number the shop spends. */
+.logo-mark { box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent); }
+#pbar-coins { font-weight:700; }
+
 /* ── Generate + Endless ── */
 .gen-row { display:flex; gap:8px; margin:0 0 6px; }
 .gen-main {
