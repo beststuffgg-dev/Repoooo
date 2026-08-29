@@ -254,7 +254,34 @@ body.theme-mono {
   --cr-note-sel-border: rgba(255,255,255,0.15);
   --cr-note-sel-bg:     rgba(0,0,0,0.35);
   --input-text:    var(--text);
-  --mat-grain:     none;   /* material texture; set by the textured themes */
+  /* Every theme now carries a faint material tooth by default — a low
+     fractal grain so surfaces read as a physical faceplate rather than
+     flat fill. The six textured themes override this with their own
+     wood / paper / brass / glass / linen / rubber grain. */
+  --mat-grain: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22><filter id=%22g%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22140%22 height=%22140%22 filter=%22url(%23g)%22 opacity=%220.035%22/></svg>');
+}
+
+/* ══════════════════════════════════════
+   DESIGN SYSTEM TOKENS  (Material-3 flavoured)
+   A shape scale, a tonal elevation ramp, state-layer overlays and an
+   emphasized easing — the vocabulary the modern shell and the 3D
+   graphics layer both draw on. Purely tokens; painting happens in the
+   rules below and in the modern graphics layer.
+══════════════════════════════════════ */
+:root {
+  /* Shape scale */
+  --r-sm:10px; --r-md:14px; --r-lg:20px; --r-xl:26px; --r-pill:999px;
+  /* Tonal elevation — soft ambient + a tighter key shadow, stacked so
+     raised surfaces read as lifted rather than outlined. */
+  --elev-1: 0 1px 2px rgba(0,0,0,.42), 0 1px 3px 1px rgba(0,0,0,.22);
+  --elev-2: 0 2px 6px 1px rgba(0,0,0,.26), 0 1px 2px rgba(0,0,0,.5);
+  --elev-3: 0 8px 20px 3px rgba(0,0,0,.30), 0 3px 7px rgba(0,0,0,.5);
+  --elev-4: 0 14px 34px 6px rgba(0,0,0,.36), 0 5px 12px rgba(0,0,0,.55);
+  /* State layers — a translucent wash of the on-surface tone. */
+  --state-hover: color-mix(in srgb, var(--text) 8%, transparent);
+  --state-press: color-mix(in srgb, var(--text) 14%, transparent);
+  /* Motion */
+  --ease-emph: cubic-bezier(.2, 0, 0, 1);
 }
 
 /* Paper — warm off-white, ink-black */
@@ -800,12 +827,28 @@ body.gfx-modern .area-chip,
 body.gfx-modern .level-card,
 body.gfx-modern .avatar-card,
 body.gfx-modern #daily-card {
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.06), 0 4px 14px -9px rgba(0,0,0,.75);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09), var(--elev-2);
 }
-body.gfx-modern .song-row:hover,
+/* With real elevation carrying the separation, the hard 1px stroke
+   softens — the lift reads the surface, not an outline. */
+body.gfx-modern .level-card,
+body.gfx-modern .avatar-card,
+body.gfx-modern #daily-card,
+body.gfx-modern #endless-card,
+body.gfx-modern .endless-band,
+body.gfx-modern .cam-songs {
+  border-color:color-mix(in srgb, var(--border) 50%, transparent);
+}
+/* Cards lift toward the reader on hover — the key 3D beat, a stronger
+   key shadow plus a brighter top edge so the surface reads as rising. */
 body.gfx-modern .level-card:hover,
-body.gfx-modern .avatar-card:hover {
-  box-shadow:inset 0 1px 0 rgba(255,255,255,.11), 0 9px 22px -11px rgba(0,0,0,.9);
+body.gfx-modern .avatar-card:hover,
+body.gfx-modern #daily-card:hover {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.16), var(--elev-4);
+  transform:translateY(-2px);
+}
+body.gfx-modern .song-row:hover {
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.14), var(--elev-3);
 }
 body.gfx-modern .area-chip.sel {
   box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 4px 16px -6px var(--glow-dtap);
@@ -1556,6 +1599,45 @@ body.adv-overlay #adv-panel.open {
   font-family:var(--font-body); cursor:pointer; transition:opacity .15s;
 }
 .uname-btn:hover { opacity:.85; }
+
+/* ══════════════════════════════════════
+   MODERN SHELL — the Material-3 pass over the whole popup: a rounder
+   shape scale, tonal raised surfaces, state-layer hovers, pill buttons
+   and a more expressive type scale. It sits at the end of the base
+   layer, so it upgrades every component in BOTH graphics styles; the
+   modern graphics layer then layers dimensional lighting on top. All static
+   — press and hover only — so the Classic/Modern render comparison and
+   its stability check stay exact.
+══════════════════════════════════════ */
+
+/* ── Shape: the card family rounds up to the large step, so the whole
+      surface reads as soft stacked cards rather than boxed panels. ── */
+.level-card, .avatar-card, .theme-card, #daily-card, #endless-card,
+.endless-band, .hs-entry, .cam-songs, .custom-av-preview, .trail-swatch,
+.mb-reveal-thumb, .cr-cell-editor {
+  border-radius:var(--r-lg);
+}
+.leg-pill { border-radius:var(--r-pill); }
+
+/* ── State layers: hover washes the on-surface tone, MD3-style, in one
+      consistent value across rows and tabs. ── */
+.song-row:hover { background:var(--state-hover); }
+.hnav:hover:not(.active) { background:var(--state-hover); }
+
+/* ── Buttons: a pill-forward, tactile language on the headline actions,
+      with the primary Play carrying its own elevation. ── */
+.ov-play-btn, .uname-btn, .ctf-apply, .mb-close-btn,
+#custom-av-buy-btn, .chaos-toggle, .cr-save-btn, .gen-main {
+  border-radius:var(--r-pill);
+}
+.ov-play-btn { box-shadow:var(--elev-2); padding:13px 46px; }
+.uname-btn, .ctf-apply, #custom-av-buy-btn { box-shadow:var(--elev-1); }
+
+/* ── Type: a more expressive display scale on the headline moments. ── */
+.hero-text h1     { font-size:30px; letter-spacing:-1.8px; }
+.cam-head .ch-name { font-size:20px; }
+#ov-title         { font-size:26px; }
+.hud-score-num    { font-size:32px; }
 
 </style>
 </head>

@@ -48,8 +48,9 @@ Everything the v3.0 build had — four lanes on **A S D F**, tap and double-tap 
 - **A seven-day daily reward** that lapses on a missed day.
 - **Flat coins per clear** (150), replacing v3's score-derived reward. Coins now count levels cleared rather than how long the chart was: the shortest campaign song is 52 notes and the longest 758, and both pay the same.
 - **Twelve instruments**, up from five — the campaign needs them, because a chart composed for a lyre that falls back to a guitar stops sounding like the place it is set.
-- **Two graphics styles.** *Modern* (default) gives the board depth, lit tile edges and a glowing strike line; *Classic* is the original flat look, kept as a real choice. See [§5](#5-graphics).
-- **Textured themes.** Six material themes ported from V7 — walnut (wood grain), bone (paper tooth), amber (brushed brass), vapor (frosted glass), blueprint (drafting linen), mono (rubber stipple) — each painting a real grain over the faceplate, alongside the flat palette themes.
+- **A Material-3 shell.** A base-layer refresh both graphics styles share: a rounded shape scale, tonal raised surfaces, state-layer hovers, a faint material grain on every theme and an expressive display type. See [§5](#5-graphics).
+- **Two graphics styles.** On top of that shell, *Modern* (default) adds the board depth, lit tile edges, raised cards and a glowing strike line; *Classic* keeps the flat look, with no dimensional lighting. See [§5](#5-graphics).
+- **Textured themes.** Every theme now carries a faint material tooth (a shared base grain on `:root`), and six material themes ported from V7 — walnut (wood grain), bone (paper tooth), amber (brushed brass), vapor (frosted glass), blueprint (drafting linen), mono (rubber stipple) — override it with a distinct, stronger grain over the faceplate.
 - **Compact share codes.** A custom level exports as a short `RD2:` code (~93% smaller than the old base64-JSON blob), via the same LZW+varint codec V7 uses. Codes shared from the old build still import.
 
 - **Live generation, and Endless.** V7's composer is bundled (see [§4a](#4a-live-generation)), so Generate rolls a fresh song on the spot and Endless rolls a new one every run. A generated chart can be kept as a custom level.
@@ -111,9 +112,9 @@ A generated chart is a normal level object — grid, tempo, lane pitches, per-no
 
 Two styles, chosen in Settings → Display: **Modern** (default) and **Classic**. Separately, the default *theme* is now **Graphite** — V7's near-neutral faceplate palette (graphite surfaces, a dusty teal and a burnt amber doing the colour work) with V7's typography (Archivo display, Inter Tight body, Space Mono data). The twelve original themes are all still present, one tap away in the Themes tab.
 
-The whole updated look is one block of CSS scoped under `body.gfx-modern`, and it is **strictly additive** — it does not change a single rule above it. That is what makes "the old style is still available" a fact rather than a hope: with the class off there is nothing left to render differently. `v8graphics.js` parses the stylesheet and asserts every one of the 52 selectors in the block is scoped under that class, that its keyframes are uniquely named so they cannot shadow the originals, and that nothing outside the block mentions the class at all.
+The board's **dimensional depth** — everything Modern adds on top of the shared shell — is one block of CSS scoped under `body.gfx-modern`, and it is **strictly additive**: it changes no rule above it, so with the class off there is nothing left to render differently. (The Material-3 shell — the rounded shape scale, tonal surfaces, state layers, the per-theme grain and the type scale — lives in the base layer and is shared by both styles.) `v8graphics.js` parses the stylesheet and asserts every selector in the depth block is scoped under that class, that its keyframes are uniquely named so they cannot shadow the originals, and that nothing outside the block mentions the class at all.
 
-Verified by pixel comparison against the build from before the change: home, shop, themes and creator all render **byte-identical** under Classic, and all four differ under Modern.
+`v8graphics.js` renders home, shop and creator under each style and asserts Classic and Modern genuinely differ, and that re-rendering the same style is pixel-stable — so the comparison measures the style, not rendering noise.
 
 What Modern adds, all derived from the active theme's own tokens so every one of the twelve themes works under both:
 
@@ -134,7 +135,7 @@ What Modern adds, all derived from the active theme's own tokens so every one of
 
 `codec.js` is V7's, unchanged — a self-contained IIFE exposing `window.RD_Codec`. `exportLevel`/`importLevel` go through it, so a custom level shares as a short `RD2:` code instead of a multi-kilobyte base64-JSON blob; `decodeLevel` still reads the old `RHYTHMDROP:` codes, so nothing shared from an earlier build breaks. The codec encodes instrument as a *sticky state change* rather than a per-note field to keep codes short — harmless for creator charts, which carry no per-note voice.
 
-**Textured themes.** The six material themes each set `--mat-grain` (an SVG-noise or gradient texture); a `#home/#creator/#game::after` layer paints it over the faceplate, behind content, with the screen made a stacking context via `isolation:isolate`. Flat themes leave `--mat-grain: none` and paint nothing, so the layer is inert for them and identical under both graphics styles.
+**Textured themes.** Every theme carries a faint base grain set on `:root` and inherited, so no surface reads as flat fill; the six material themes override `--mat-grain` with a distinct, stronger texture (SVG-noise or gradient). A `#home/#creator/#game::after` layer paints whatever `--mat-grain` resolves to, over the faceplate and behind content, with the screen made a stacking context via `isolation:isolate`. `v8codec.js` checks that the palette themes share one base tooth and that the six material grains are each distinct — from one another and from the base.
 
 - `levels.js` — one global, `window.RD_LEVEL_DATA`. Generated.
 - `campaign.js` — one global, `window.RD_Campaign`. Expands baked levels on demand (building all 150 grids at boot would be 40,913 notes of work for a list that shows names and tempos) and carries the XP curve, the coin rules, the density cap, unlock chaining and the daily.

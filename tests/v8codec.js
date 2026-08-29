@@ -94,26 +94,35 @@ console.log('== the codec is loaded before the game ==');
     ok(r.importUsesCodec, 'importLevel goes through the codec');
   }
 
-  console.log('== the textured themes carry a real grain ==');
+  console.log('== every theme carries a grain; the material themes a distinct one ==');
   {
+    // The design refresh gives every palette theme a faint shared base
+    // tooth (set on :root and inherited), so no surface reads as flat
+    // fill; the six material themes still override it with their own
+    // distinct, stronger grain. This suite checks both halves.
     const r = await page.evaluate(() => {
       const out = { flat: {}, mat: {} };
       const read = () => getComputedStyle(document.body).getPropertyValue('--mat-grain').trim();
-      // Flat themes: no grain.
+      // Palette themes: the shared base tooth, inherited from :root.
       ['graphite', 'dark', 'neon'].forEach(t => { applyTheme(t); out.flat[t] = read(); });
-      // Material themes: a grain each, and all different.
+      // Material themes: a distinct grain each.
       ['walnut', 'bone', 'amber', 'vapor', 'blueprint', 'mono'].forEach(t => { applyTheme(t); out.mat[t] = read(); });
       applyTheme('graphite');
-      // The picker offers them.
+      // The picker offers the material themes.
       out.offered = THEMES.filter(t => t.mat).map(t => t.id);
       return out;
     });
-    const flatClean = Object.entries(r.flat).filter(([, g]) => !g || g === 'none');
-    ok(flatClean.length === 3, 'the flat themes set no grain (graphite/dark/neon)');
+    const flats = Object.entries(r.flat);
+    ok(flats.every(([, g]) => g && g !== 'none' && g.length > 8),
+      'the palette themes carry the base material grain (graphite/dark/neon)');
+    const baseGrains = new Set(flats.map(([, g]) => g));
+    ok(baseGrains.size === 1, 'and they share one base grain');
+    const base = flats[0][1];
     const mats = Object.entries(r.mat);
     ok(mats.every(([, g]) => g && g !== 'none' && g.length > 8), 'all six material themes set a grain');
     const distinct = new Set(mats.map(([, g]) => g));
     ok(distinct.size === 6, 'all six grains are different textures');
+    ok(mats.every(([, g]) => g !== base), 'and each material grain differs from the shared base tooth');
     notes.push('material grains: ' + mats.map(([t, g]) => t + '=' + (g.slice(0, 14))).join(', '));
     ok(r.offered.length === 6 && r.offered.join() === 'walnut,bone,amber,vapor,blueprint,mono',
       'all six are offered in the theme picker (' + r.offered.join(', ') + ')');
@@ -129,13 +138,14 @@ console.log('== the codec is loaded before the game ==');
         const bg = getComputedStyle(document.getElementById('home'), '::after').backgroundImage;
         const zHome = getComputedStyle(document.getElementById('home')).isolation;
         applyTheme('graphite');
-        const off = getComputedStyle(document.getElementById('home'), '::after').backgroundImage;
+        const palette = getComputedStyle(document.getElementById('home'), '::after').backgroundImage;
         applyTheme('graphite');
-        return { painted: bg && bg !== 'none' && bg.length > 10, isolated: zHome, off };
+        return { painted: bg && bg !== 'none' && bg.length > 10, isolated: zHome,
+                 palettePainted: palette && palette !== 'none' && palette.length > 10 };
       }, gfx);
       ok(r.painted, gfx + ': the grain layer paints on a material theme');
       ok(r.isolated === 'isolate', gfx + ': the screen is its own stacking context so grain sits behind content');
-      ok(!r.off || r.off === 'none', gfx + ': a flat theme paints no grain layer');
+      ok(r.palettePainted, gfx + ': the base grain paints on a palette theme too');
     }
     await page.evaluate(() => { currentSettings.gfx = 'modern'; applySettingsToDOM(); applyTheme('graphite'); });
   }
