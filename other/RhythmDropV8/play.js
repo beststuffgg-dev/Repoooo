@@ -126,7 +126,7 @@ function spawnTile(note) {
     el.style.boxShadow = '0 0 12px rgba(245,158,11,0.7)';
     el.style.borderTop = '2px solid var(--perfect)';
   }
-  el.style.height = h + 'px'; el.style.top = -h + 'px';
+  el.style.height = h + 'px'; el.style.transform = 'translateY(' + -h + 'px)';
 
   // Chaos mode: assign a random key from the whole keyboard (A–Z).
   // Double presses keep the same key (it's stored once per tile).
@@ -204,6 +204,9 @@ function generateLevel(band) {
   const [lo, hi] = (band || '3-6').split('-').map(Number);
   const code = G.rollEndlessCode(lo, hi);
   const lvl = _prepGenerated(G.buildCodeLevel(code), G.songTitle ? G.songTitle(code) : 'Generated');
+  // Every generated chart — Generate, Endless, the creator's fill — comes
+  // through here, so this is the one place a row is made a single type.
+  window.RD_RowTypes.uniformRowTypes(lvl.grid);
   lvl.shareCode = code;
   return lvl;
 }
@@ -303,7 +306,7 @@ function loop(now) {
   for (let i = activeTiles.length - 1; i >= 0; i--) {
     const t = activeTiles[i];
     if (t.done) { t.el.remove(); activeTiles.splice(i,1); continue; }
-    t.y += spd * dt; t.el.style.top = t.y + 'px';
+    t.y += spd * dt; t.el.style.transform = 'translateY(' + t.y + 'px)';
     if (t.y > th + (t.h || TILE_H)) {
       t.el.remove(); activeTiles.splice(i,1);
       damage(t.lane); if (!running) return;
@@ -473,7 +476,7 @@ function endGame(won) {
   // or quitting on the first note would pay the same as clearing.
   const runProgress = notesTotal > 0 ? Math.min(1, notesHit / notesTotal) : (won ? 1 : 0);
 
-  let coinsEarned, xpGain = 0, xpRes = null;
+  let coinsEarned, xpGain = 0, xpRes = null, newTheme = null;
   if (isCampaign) {
     const rewardOpts = { completed: won, progress: runProgress, speedMult: runSpeedBase };
     coinsEarned = CAM().coinsFor(gameLevel, rewardOpts);
@@ -481,8 +484,12 @@ function endGame(won) {
     addCoins(coinsEarned);
     xpRes = grantXp(xpGain);
     if (won) {
+      const areaDone = () => CAM().areaCleared(progress, gameLevel.areaId);
+      const wasDone = areaDone();
       progress.cleared[CAM().levelKey(gameLevel.areaId, gameLevel.levelIdx)] = true;
       saveProgress();
+      // The clear that finishes an area is the one that earns its theme.
+      if (!wasDone && areaDone()) newTheme = THEMES.find(t => t.area === gameLevel.areaId) || null;
     }
     recordBest(gameLevel, score, coinsEarned);
     addHighScore(profile.username || 'Player', score, levelName, { logOnly: true });
@@ -512,6 +519,11 @@ function endGame(won) {
     ovLv.style.display = up ? 'block' : 'none';
     if (up) ovLv.textContent = '★ Level ' + xpRes.level;
   }
+  const ovTheme = document.getElementById('ov-theme');
+  if (ovTheme) {
+    ovTheme.style.display = newTheme ? 'block' : 'none';
+    if (newTheme) ovTheme.textContent = '🎨 ' + newTheme.name + ' theme unlocked — find it in Themes';
+  }
 
   const ovStreak = document.getElementById('ov-streak-bonus');
   if (ovStreak) {
@@ -528,6 +540,7 @@ function endGame(won) {
     if (ovStreak) ovStreak.style.display = 'none';
     if (ovXp) ovXp.style.display = 'none';
     if (ovLv) ovLv.style.display = 'none';
+    if (ovTheme) ovTheme.style.display = 'none';
   };
 
   const gen = gameLevel && gameLevel.generated;

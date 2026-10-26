@@ -11,7 +11,7 @@ V8 is built on the **v3.0** source — its look, its themes, its intro splash, i
 ```
 RhythmDropV8.zip          the game, zipped
 htmls/RhythmDrop.html     the game as one self-contained file (generated)
-tests/                    28 suites — 3 for V8, 25 for V7
+tests/                    38 suites — 13 for V8, 25 for V7
 other/
   RhythmDropV8/           the source — load this as an unpacked extension
     popup.html              markup, styling, the v3 theme system
@@ -20,6 +20,7 @@ other/
     creator.js              the level creator: grid, keyboard entry, multi-select
     notepicker.js           the Letter/Octave/Accidental note-selector modal
     campaign.js             progression: unlocks, XP, coins, records, dailies
+    rowtypes.js             one kind of note per row (shared with the baker)
     levels.js               THE 150 SONGS, baked — generated, do not hand-edit
     audio.js                12 synthesized instruments, limiter, background layer
   v7/                     the previous game, kept whole and still working
@@ -39,7 +40,7 @@ That rebuilds V8's single file and zip, and V7's in place. It deliberately does 
 
 ## 2. What V8 is
 
-Everything the v3.0 build had — four lanes on **A S D F**, tap and double-tap notes, combo and streak multipliers, lives, the shop (avatars, colourways, note trails, mystery boxes), 12 themes including glass/paper/arctic, the custom theme builder, chaos keys, the intro splash, the level creator with its note picker and per-lane pitches — plus:
+Everything the v3.0 build had — four lanes on **A S D F**, tap and double-tap notes, combo and streak multipliers, lives, the shop (avatars, colourways, note trails, mystery boxes), 20 themes including glass/paper/arctic, the custom theme builder, chaos keys, the intro splash, the level creator with its note picker and per-lane pitches — plus:
 
 - **A 150-song campaign** across ten historically themed areas: Farmstead, Egypt, Greece, Rome, Aztec, Maya, Old England, Napoleonic, Modern, Retro-Future. Each area has its own instrument, scale and rhythmic character.
 - **Unlocking that chains**: a song opens when the one before it is cleared, an area opens when the previous one is finished. Nothing is gated behind coins.
@@ -77,7 +78,9 @@ loads the deterministic composer that still lives at `other/v7/RhythmDropV7/camp
 
 Why bake at all: a song that exists as a file can be read, diffed and reviewed. A song that only exists as a seed can only be re-derived, and any change to the composer silently rewrites all 150 under the player's feet.
 
-**Format.** Each level stores its notes as a flat run of six integers — row, lane, type, MIDI, sustain×10, instrument index. Pitches are MIDI rather than frequencies: the composer draws every note from an equal-tempered table, so the number is exact, a third of the size, and readable. The baker asserts every pitch survives the frequency→MIDI→frequency round trip before writing. 150 levels, 40,913 notes, 623 KB.
+**Format.** Each level stores its notes as a flat run of six integers — row, lane, type, MIDI, sustain×10, instrument index. Pitches are MIDI rather than frequencies: the composer draws every note from an equal-tempered table, so the number is exact, a third of the size, and readable. The baker asserts every pitch survives the frequency→MIDI→frequency round trip before writing. 150 levels, 33,766 notes, 515 KB (after the two-minute cap).
+
+**One kind of note per row.** A tap and a ×2 slab never share a row. The composer picks a type per note, so a chord could land a single beside a double — 2,744 of the campaign's 24,034 non-empty rows did, across 146 of the 150 songs. `rowtypes.js` fixes it after the fact, without touching a lane, pitch, sustain or voice: a mixed row takes whichever type it has more of, and a tie is steered by the song's own original share of doubles so the rule doesn't quietly turn a double-heavy style into a single-heavy one (the campaign's share went 22.7% → 22.5%; the worst single song moved 3.0 points, where breaking every tie the same way moved songs by 5–8). The baker loads that module and applies it to every grid before encoding, so a re-bake reproduces the same songs with only the type bit changed on 2,806 notes. The rule lives in V8, not in the composer, so `generator.js` can stay V7's verbatim. `v8rowtypes.js` checks the rule, the baked data, and every live generation path.
 
 **The trap to know about.** The composer resolves each area's voice against whatever `window.RD_INSTRUMENTS` says the target build has, falling back to a near neighbour when one is missing. Baking against an empty roster silently collapses ten area voices into four, and every song after Farmstead comes out wrong — the first bake did exactly that. `bake-levels.js` therefore declares the roster V8 actually ships, and `v8levels.js` asserts the shipped `audio.js` still provides every id the baked charts reference.
 
@@ -104,19 +107,21 @@ Two entry points use it:
 
 A generated chart is a normal level object — grid, tempo, lane pitches, per-note voices — flagged `generated` so it is never mistaken for a campaign level (a generated clear marks no area cleared and grants no campaign progress). `v8generate.js` asserts the bundle is V7's composer with only the banner and export name changed, that charts are real and deterministic and denser in the hard band, and that Generate / Keep / Endless all behave.
 
+Every generated chart — Generate, the creator's *Generate into grid*, each Endless song — enters the game through one function, `generateLevel()` in `play.js`, and that is where `RD_RowTypes.uniformRowTypes` runs. The raw composer mixes rows (3,578 of 44,714 in the test sample); through `generateLevel` none do.
+
 `generator.js` is a copy — **re-copy it from v7 if the composer changes**, don't hand-edit.
 
 ---
 
 ## 5. Graphics
 
-Two styles, chosen in Settings → Display: **Modern** (default) and **Classic**. Separately, the default *theme* is now **Graphite** — V7's near-neutral faceplate palette (graphite surfaces, a dusty teal and a burnt amber doing the colour work) with V7's typography (Archivo display, Inter Tight body, Space Mono data). The twelve original themes are all still present, one tap away in the Themes tab.
+Two styles, chosen in Settings → Display: **Modern** (default) and **Classic**. Separately, the default *theme* is now **Graphite** — V7's near-neutral faceplate palette (graphite surfaces, a dusty teal and a burnt amber doing the colour work) with V7's typography (Archivo display, Inter Tight body, Space Mono data). The original themes are all still present, one tap away in the Themes tab, and ten more are earned (see §5a).
 
 The board's **dimensional depth** — everything Modern adds on top of the shared shell — is one block of CSS scoped under `body.gfx-modern`, and it is **strictly additive**: it changes no rule above it, so with the class off there is nothing left to render differently. (The Material-3 shell — the rounded shape scale, tonal surfaces, state layers, the per-theme grain and the type scale — lives in the base layer and is shared by both styles.) `v8graphics.js` parses the stylesheet and asserts every selector in the depth block is scoped under that class, that its keyframes are uniquely named so they cannot shadow the originals, and that nothing outside the block mentions the class at all.
 
 `v8graphics.js` renders home, shop and creator under each style and asserts Classic and Modern genuinely differ, and that re-rendering the same style is pixel-stable — so the comparison measures the style, not rendering noise.
 
-What Modern adds, all derived from the active theme's own tokens so every one of the twelve themes works under both:
+What Modern adds, all derived from the active theme's own tokens so every one of the themes works under both:
 
 - **The board reads as a shaft.** A dark gradient at the top and shadow pooling at the bottom, so notes arrive out of somewhere instead of appearing on a flat rectangle.
 - **Tiles are objects.** A lit top edge, shading pooling beneath it, a gloss that scales with the tile's height, and light cast onto the lane below. The ×2 tile gets a second read — an inner rim and a pair of marks across its face — because it has to be legible at speed.
@@ -125,7 +130,15 @@ What Modern adds, all derived from the active theme's own tokens so every one of
 - **Panels get one hairline of light** along the top edge — the cheapest way to make a flat fill read as a surface facing up — plus elevation under cards and rows.
 - **The light themes invert it.** A white sheen on a near-white panel is invisible, so under Paper and Arctic the shadow does the work instead.
 
-`applyTheme` replaces `body.className` outright, so the style class is carried across explicitly — otherwise picking a theme would silently turn the graphics off. The suite checks that across all 13 themes.
+`applyTheme` replaces `body.className` outright, so the style class is carried across explicitly — otherwise picking a theme would silently turn the graphics off. The suite checks that across every theme.
+
+## 5a. Campaign themes
+
+Ten themes, one per area, earned by clearing every song in that area: **Harvest** (Farmstead — burlap weave), **Lapis** (Egypt — sandstone strata and sand stipple), **Marble** (Greece — pale veined marble, *light*), **Imperium** (Rome — pitted travertine), **Obsidian** (Aztec — a conchoidal glass sheen), **Jade** (Maya — carved-stone hatching), **Oakmoss** (Old England — organ pipes), **Gold Braid** (Napoleonic — wool twill), **Concrete** (Modern — speckle, formwork seams and tie holes, *light*), **Chrome** (Retro-Future — a neon grid). Each carries its own `--mat-grain`, so what you earn is a different surface, not only a tint. The two light ones set the light-theme variables and `color-scheme: light`.
+
+**The unlock is derived, not stored.** `isThemeLocked(th)` is `!CAM().areaCleared(progress, th.area)`. There is no "unlocked themes" list to migrate or keep in sync, and a player who had already cleared an area simply has the theme. The picker shows locked themes dimmed, with *🔒 Clear <Area>*, under a *Campaign themes · n/10 earned* header; tapping one explains what to do. A saved campaign theme that is not earned falls back to Graphite on boot. The clear that finishes an area adds *🎨 <Theme> theme unlocked* to the results screen. `applyTheme` itself does not gate — it stays pure so tests can drive every theme — the gate is at the two entry points, the picker and boot.
+
+**Contrast was measured, not assumed**, from computed styles in a real browser: body text is at least 11:1 on every surface, secondary text at least 5.4:1, and the note, accent and judgement colours at least 4.6:1. The first draft had six palettes under 4.5:1 for the colours used as small text; the dark themes needed their primary note colour lightened slightly and the two light themes darkened. `v8themes.js` holds the floor.
 
 ---
 
@@ -146,6 +159,13 @@ What Modern adds, all derived from the active theme's own tokens so every one of
 
 **No remote fonts.** The v3 base pulled two families from `fonts.googleapis.com` via a CSS `@import` — render-blocking, at the top of the sheet, and blocked outright in a packed extension, so every popup open waited on the network and then fell back anyway. The stacks name the same faces first for anyone who has them installed.
 
+**Performance — what was measured, not guessed.** Everything below was A/B'd in Chromium against a snapshot of the build before the change, alternating order to cancel drift.
+
+- **Tiles move by `transform`, not `top`.** `top` forced layout and a repaint of the lane every frame for every tile. On a full board (~20 tiles, 220 BPM): layouts per frame 0.71 → 0.09, layout time ~92 → ~27 µs, main-thread work per frame ~708 → ~545 µs (−23%). Judging uses the JS position `t.y`, which is unchanged; `v8gameplay.js` checks each tile is drawn within a pixel of it at two UI scales.
+- **Hidden panes are built when shown.** Themes, Settings and Shop sit behind tabs most visits never open and were nearly half the cost of every return to the menu. They are now built on `selectHomeTab`, and `renderHome()` refreshes only the pane in view (`HOME_PANES`). Boot script time ~23.5 → ~7 ms, first paint ~20 ms sooner, return-to-menu ~5.5 → ~2.6 ms. Much of the boot saving is that the Shop's price formatting no longer pays the browser's one-off ~14 ms locale-data initialisation (`toLocaleString()`) for a tab nobody is looking at. `v8ui.js` pins the contract.
+- **Not done, on evidence.** Storing `levels.js` as `JSON.parse('…')` looked 3× faster in Node (4.5 vs 14.3 ms) and was *8 ms slower* in Chromium, reproducibly in both orders, so it was reverted. Removing `scrollIntoView` from `renderCampaign` (which the profiler blamed for ~55 ms) changed nothing — that was the page's unavoidable first layout, attributed to whatever forced it. Measure in the browser the game ships in.
+- **The one remaining boot cost worth knowing about** is `levels.js`: ~36 ms to load and parse as a 515 KB object literal, the largest single item left. Cutting it means storing each song's notes as a string parsed on demand; the format touches the baker, `campaign.js` and several suites, so it was left.
+
 ---
 
 ## 7. Testing
@@ -154,18 +174,20 @@ What Modern adds, all derived from the active theme's own tokens so every one of
 cd tests && npm install && node run-all.js
 ```
 
-33 suites. Eight cover V8:
+38 suites. Thirteen cover V8:
 
 | Suite | Covers |
 |---|---|
 | `v8levels.js` | The baked campaign against the build that plays it: 150 levels, the flat encoding decoding back to real charts, every referenced voice existing in `audio.js`, zero minor seconds across 8,658 chords |
 | `v8campaign.js` | Flat coins, partial runs, the XP curve and its linearity in speed, the density cap, unlock chaining, the seven-day daily and its lapse |
 | `v8audio.js` | Every instrument **rendered** through an OfflineAudioContext and measured — not just present. Peak, RMS, duration and brightness per voice, the double-tap fifth, sustain, the per-note override, the output ceiling and the volume controls |
-| `v8graphics.js` | That the graphics layer is strictly additive, that Classic and Modern really differ, and that the style survives all 13 theme switches |
+| `v8graphics.js` | That the graphics layer is strictly additive, that Classic and Modern really differ, and that the style survives every theme switch |
 | `v8settings.js` | Every setting driven the way a player drives it, with the effect measured elsewhere — the engine's reported volume, the window's real width, the key that actually fires a lane — and all of it surviving a reload |
 | `v8generate.js` | The bundled composer is V7's verbatim, generated charts are real and deterministic, and Generate / Keep / Endless behave without touching campaign progress |
-| `v8gameplay.js` | The hit window widens the tolerance in order and is applied to judging; the Double runs at half the beat, pays double, is offered only off a clear and never chains |
-| `v8ui.js` | Real Chromium: the pinned height, the side panel widening the window without moving the grid, the overlay fallback, and one whole run from the campaign list to the results screen |
+| `v8rowtypes.js` | One kind of note per row: the rule itself (majority, tie steering, only the type moves, deterministic), zero mixed rows across the 150 baked songs and across 160 generated charts in every band, every generation path (creator fill, Generate & play, Endless), a check that the raw composer *does* mix rows so the zero means something, and that `generator.js` is untouched |
+| `v8themes.js` | The ten campaign themes: one per area in order, each with its own texture, the unlock following the whole area and only the area, locked cards inert, a saved unearned theme not worn on boot, the unlock announced by the clear that earns it and only once, and contrast floors in every theme |
+| `v8gameplay.js` | The hit window widens the tolerance in order and is applied to judging; the Double runs at half the beat, pays double, is offered only off a clear and never chains; tiles are drawn within a pixel of where they are judged, by transform, at two UI scales |
+| `v8ui.js` | Real Chromium: the pinned height, the side panel widening the window without moving the grid, the overlay fallback, hidden panes built on show and the visible one refreshed on return, and one whole run from the campaign list to the results screen |
 
 The remaining 25 are V7's, unchanged, running against `other/v7/`. `APP_DIR` selects which V7 build they test; `V8_DIR` overrides the V8 one.
 
@@ -180,5 +202,6 @@ The remaining 25 are V7's, unchanged, running against `other/v7/`. `APP_DIR` sel
 - **The creator cannot make campaign-shaped levels.** It writes the same grid format, but nothing lets you save one into an area or share it.
 - **The generation menu lives in the creator's advanced panel** (a Settings / Generate toggle at the top): pick a difficulty band and either fill the grid with a composed chart to edit, or generate-and-play. The advanced panel widens the window through the same expansion system the side-panel uses, and falls back to an overlay when the window can't grow — verified at narrow-tall, wide-short, square and ultrawide.
 - **Endless is the eleventh campaign tab**, at the end of the era strip, unlocked once every area is cleared (the three difficulty bands live in its pane). It is no longer a card at the bottom of the levels list.
+- **`v8settings.js` is intermittently flaky** — its "everything survives a reload" section fails roughly 1 run in 8–16 with every setting reading as its default after the reload. It reproduces identically on the build from before the theme, row-type and performance work, so it is not from them. A settle delay before the reload did not cure it, so the obvious race (a `localStorage` write not landing before the reload) is not the whole story; the cause is not found. Worth a proper look, because "settings sometimes reset on reopen" is also what a real bug would look like.
 - **The 11 above-C8 notes** (§3) are worth a listen before deciding whether to leave them.
 - **Modern is not applied to every screen yet.** The board, the campaign list, the shop cards, the profile bar and the creator grid all pick it up; the mystery-box reveal, the results overlay and the username screen still render the same under both.

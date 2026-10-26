@@ -165,6 +165,53 @@ const open = async (b, w, h) => {
     ok(r.daily, 'the daily card is offered');
   }
 
+  console.log('== panes are built when their tab is shown ==');
+  {
+    // Themes, Settings and Shop sit behind tabs most visits never open, so
+    // they are built on show rather than on every return to the menu.
+    const f = await open(b, 420, 640);
+    const sizes = () => f.page.evaluate(() => ({
+      themes: document.querySelectorAll('#themes-grid .theme-card').length,
+      shop: document.querySelectorAll('#shop-avatar-grid .avatar-card').length,
+      settings: document.getElementById('tab-settings').children.length,
+      levels: document.querySelectorAll('.song-row').length,
+    }));
+    const tab = name => f.page.evaluate(n => document.querySelector('.hnav[data-tab="' + n + '"]').click(), name);
+
+    const boot = await sizes();
+    ok(boot.levels === 15, 'the visible pane is built at startup (' + boot.levels + ' songs)');
+    ok(boot.themes === 0 && boot.shop === 0 && boot.settings === 0,
+      'the hidden Themes, Shop and Settings panes are not (' + boot.themes + '/' + boot.shop + '/' + boot.settings + ')');
+
+    await tab('shop');     const s = await sizes();
+    ok(s.shop > 10, 'opening Shop builds it (' + s.shop + ' avatars)');
+    ok(s.themes === 0 && s.settings === 0, 'and only it');
+    await tab('themes');   const t = await sizes();
+    ok(t.themes === 30, 'opening Themes builds it (' + t.themes + ' themes)');
+    await tab('settings'); const g = await sizes();
+    ok(g.settings > 0, 'opening Settings builds it (' + g.settings + ' blocks)');
+
+    // The pane in view is refreshed when the home screen is shown again,
+    // so what a run just earned is there on return.
+    await tab('themes');
+    const earned = await f.page.evaluate(() => {
+      const before = document.querySelectorAll('#themes-grid .theme-card.locked').length;
+      for (let i = 0; i < 15; i++) progress.cleared['a1l' + i] = true;   // finish Farmstead
+      launchCampaignLevel(1, 14);                                        // play a song…
+      document.getElementById('g-overlay').classList.remove('show'); startGame();
+      quitToMenu();                                                      // …and come back
+      return { before, after: document.querySelectorAll('#themes-grid .theme-card.locked').length };
+    });
+    ok(earned.before === 10 && earned.after === 9, 'returning to the menu refreshes the pane in view: a theme just earned shows as unlocked (' + earned.before + ' → ' + earned.after + ' locked)');
+
+    // The profile-bar avatar jumps straight to the shop, built.
+    await f.page.evaluate(() => { document.querySelector('.hnav[data-tab="levels"]').click(); document.getElementById('shop-avatar-grid').innerHTML = ''; });
+    await f.page.evaluate(() => document.getElementById('pbar-avatar').click());
+    const jump = await f.page.evaluate(() => ({ active: document.querySelector('.hnav.active').dataset.tab, cards: document.querySelectorAll('#shop-avatar-grid .avatar-card').length }));
+    ok(jump.active === 'shop' && jump.cards > 10, 'the avatar shortcut opens a populated Shop (' + jump.cards + ' avatars)');
+    await f.ctx.close();
+  }
+
   console.log('== one run, end to end ==');
   {
     const r = await page.evaluate(() => {

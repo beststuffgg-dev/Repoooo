@@ -231,6 +231,160 @@ body.theme-mono {
   --accent:#FF4757;
 }
 
+/* ══════════════════════════════════════
+   CAMPAIGN THEMES — one per area, earned by clearing every song in it.
+   Each is built from its area's own materials (see the blurbs in
+   levels.js): straw and poppy, lapis and sandstone, marble, crimson
+   and laurel, obsidian, jade, oak and moss, gold braid, concrete,
+   chrome. Each carries its own --mat-grain, so what you earn is a
+   different surface under your hands, not only a different tint. Two
+   (Marble, Concrete) are light and set the light-theme variables.
+   Which are unlocked is derived from campaign progress, not stored.
+══════════════════════════════════════ */
+/* Farmstead — woven burlap over a night field */
+body.theme-harvest {
+  --mat-grain:
+    repeating-linear-gradient(0deg,  rgba(0,0,0,.11) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(90deg, rgba(0,0,0,.11) 0 1px, transparent 1px 4px),
+    repeating-linear-gradient(0deg,  rgba(255,238,190,.03) 0 2px, transparent 2px 8px);
+  --bg:#101810; --bg2:#172218; --bg3:#1F2D20; --bg4:#293A2A;
+  --border:#1E2C1F; --border2:#3C5640;
+  --text:#EEE8CF; --muted:#9DAE8C; --dim:#4F6350;
+  --tap:#E5C46A; --tap2:#F2DA94; --dtap:#DC6351; --dtap2:#EE7A66;
+  --good:#8FC172; --perfect:#F2DA94; --miss:#E0654F;
+  --lane-flash:#1F3320; --glow-tap:rgba(229,196,106,.30); --glow-dtap:rgba(220,99,81,.34);
+  --accent:#E5C46A;
+}
+/* Egypt — warm-black sandstone, strata and a fine sand stipple */
+body.theme-lapis {
+  --mat-grain:
+    repeating-linear-gradient(180deg, rgba(255,222,150,.03) 0 1px, transparent 1px 9px),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22110%22 height=%22110%22><filter id=%22lps%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%221.2%22 numOctaves=%223%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22110%22 height=%22110%22 filter=%22url(%23lps)%22 opacity=%220.10%22/></svg>');
+  --bg:#13100B; --bg2:#1D1810; --bg3:#2A2216; --bg4:#382E1D;
+  --border:#2E2616; --border2:#5A4A28;
+  --text:#F3E6C6; --muted:#B09A70; --dim:#5E5036;
+  --tap:#4F86E0; --tap2:#86AEF0; --dtap:#D9AE3E; --dtap2:#EBC96A;
+  --good:#7CC49A; --perfect:#EBC96A; --miss:#E0604C;
+  --lane-flash:#1A2540; --glow-tap:rgba(79,134,224,.38); --glow-dtap:rgba(217,174,62,.36);
+  --accent:#D9AE3E;
+}
+/* Greece — pale marble, long cool veins (light) */
+body.theme-marble {
+  --mat-grain:
+    linear-gradient(112deg, transparent 40%, rgba(80,100,125,.08) 40.3%, transparent 41%),
+    linear-gradient(68deg,  transparent 62%, rgba(80,100,125,.07) 62.3%, transparent 63%),
+    linear-gradient(98deg,  transparent 18%, rgba(80,100,125,.06) 18.3%, transparent 18.9%),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22mbn%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.55%22 numOctaves=%223%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23mbn)%22 opacity=%220.06%22/></svg>');
+  --bg:#E4E8EC; --bg2:#EFF2F5; --bg3:#F8FAFB; --bg4:#FFFFFF;
+  --border:#CBD2D9; --border2:#A9B4BF;
+  --text:#1A2330; --muted:#556272; --dim:#A3AEBA;
+  --tap:#1F5FAE; --tap2:#3F7FCB; --dtap:#925719; --dtap2:#C9812E;
+  --good:#2E7D4F; --perfect:#805F09; --miss:#B8372B;
+  --lane-flash:#D3E2F4; --glow-tap:rgba(31,95,174,.28); --glow-dtap:rgba(146,87,25,.28);
+  --accent:#1F5FAE;
+  --overlay-bg:rgba(239,242,245,.95); --scanline-clr:rgba(0,0,0,.015);
+  --note-key-text:rgba(26,35,48,.8); --lane-hitglow-clr:rgba(31,95,174,.08);
+  --cr-note-sel-border:rgba(0,0,0,.15); --cr-note-sel-bg:rgba(255,255,255,.65); --input-text:#1A2330;
+}
+/* Rome — wine-black travertine, pitted and layered */
+body.theme-imperium {
+  --mat-grain:
+    repeating-linear-gradient(180deg, rgba(255,230,210,.025) 0 1px, transparent 1px 14px),
+    radial-gradient(circle at 30% 40%, rgba(0,0,0,.14) 1px, transparent 2px) 0 0 / 23px 19px,
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22130%22 height=%22130%22><filter id=%22imn%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.35%22 numOctaves=%223%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22130%22 height=%22130%22 filter=%22url(%23imn)%22 opacity=%220.08%22/></svg>');
+  --bg:#170E11; --bg2:#22151A; --bg3:#301D24; --bg4:#3F262F;
+  --border:#2D1B21; --border2:#5E3A45;
+  --text:#F4E6DD; --muted:#B39A9A; --dim:#67505A;
+  --tap:#D65C6C; --tap2:#E8788A; --dtap:#D9B04C; --dtap2:#EBCB7A;
+  --good:#86B97A; --perfect:#EBCB7A; --miss:#F27A5A;
+  --lane-flash:#3A1A22; --glow-tap:rgba(214,92,108,.36); --glow-dtap:rgba(217,176,76,.34);
+  --accent:#D9B04C;
+}
+/* Aztec — volcanic glass: a conchoidal sheen over near-black */
+body.theme-obsidian {
+  --mat-grain:
+    linear-gradient(125deg, rgba(255,255,255,.055) 0%, transparent 28%, transparent 60%, rgba(120,220,255,.04) 74%, transparent 90%),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2280%22 height=%2280%22><filter id=%22obn%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%221.3%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2280%22 height=%2280%22 filter=%22url(%23obn)%22 opacity=%220.06%22/></svg>');
+  --bg:#090B0E; --bg2:#10151A; --bg3:#182027; --bg4:#212C35;
+  --border:#161D23; --border2:#2F4250;
+  --text:#E4F1F0; --muted:#8AA3A8; --dim:#44585F;
+  --tap:#2CC7B4; --tap2:#6EE3D4; --dtap:#F07A38; --dtap2:#FFA066;
+  --good:#6FD39A; --perfect:#FFC15E; --miss:#FF6A5E;
+  --lane-flash:#0E2A2C; --glow-tap:rgba(44,199,180,.38); --glow-dtap:rgba(240,122,56,.38);
+  --accent:#2CC7B4;
+}
+/* Maya — carved stone hatching over deep jade */
+body.theme-jade {
+  --mat-grain:
+    repeating-linear-gradient(45deg,  rgba(0,0,0,.13) 0 1px, transparent 1px 9px),
+    repeating-linear-gradient(-45deg, rgba(120,255,190,.035) 0 1px, transparent 1px 9px),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2290%22 height=%2290%22><filter id=%22jdn%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.8%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%2290%22 height=%2290%22 filter=%22url(%23jdn)%22 opacity=%220.07%22/></svg>');
+  --bg:#06130F; --bg2:#0B1F18; --bg3:#112C22; --bg4:#183A2D;
+  --border:#123024; --border2:#24604A;
+  --text:#DDF7EA; --muted:#7FB59C; --dim:#3B6B58;
+  --tap:#3FD98E; --tap2:#86EEB9; --dtap:#E3C158; --dtap2:#F2D98A;
+  --good:#9BE15D; --perfect:#F2D98A; --miss:#F2705E;
+  --lane-flash:#0F3325; --glow-tap:rgba(63,217,142,.36); --glow-dtap:rgba(227,193,88,.34);
+  --accent:#3FD98E;
+}
+/* Old England — organ pipes, vertical, over moss */
+body.theme-oakmoss {
+  --mat-grain:
+    repeating-linear-gradient(90deg, rgba(255,255,230,.032) 0 1px, rgba(0,0,0,.11) 1px 2px, transparent 2px 15px),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22100%22 height=%22100%22><filter id=%22okn%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.9%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22100%22 height=%22100%22 filter=%22url(%23okn)%22 opacity=%220.08%22/></svg>');
+  --bg:#14150D; --bg2:#1D2014; --bg3:#282C1C; --bg4:#343A25;
+  --border:#2A2E1D; --border2:#535B36;
+  --text:#ECE6CC; --muted:#A7A988; --dim:#5A5E40;
+  --tap:#9CC25E; --tap2:#BDDC89; --dtap:#CF6A57; --dtap2:#E27C66;
+  --good:#7FC8A0; --perfect:#E8CF7A; --miss:#E0705A;
+  --lane-flash:#252E14; --glow-tap:rgba(156,194,94,.32); --glow-dtap:rgba(207,106,87,.34);
+  --accent:#9CC25E;
+}
+/* Napoleonic — diagonal wool twill under navy */
+body.theme-braid {
+  --mat-grain:
+    repeating-linear-gradient(45deg, rgba(255,255,255,.042) 0 2px, transparent 2px 6px),
+    repeating-linear-gradient(45deg, rgba(0,0,0,.12) 0 1px, transparent 1px 6px);
+  --bg:#0A0F22; --bg2:#111A38; --bg3:#19254C; --bg4:#223260;
+  --border:#17224A; --border2:#2F4488;
+  --text:#E8ECFA; --muted:#8E9CCB; --dim:#435181;
+  --tap:#DDB647; --tap2:#F0D17B; --dtap:#DF5B54; --dtap2:#F27B74;
+  --good:#7CCB9A; --perfect:#F0D17B; --miss:#FF7568;
+  --lane-flash:#14214A; --glow-tap:rgba(221,182,71,.36); --glow-dtap:rgba(223,91,84,.36);
+  --accent:#DDB647;
+}
+/* Modern — poured concrete: speckle, formwork seams, tie holes (light) */
+body.theme-concrete {
+  --mat-grain:
+    radial-gradient(circle at 20px 20px, rgba(0,0,0,.13) 2px, transparent 3px) 0 0 / 120px 120px,
+    repeating-linear-gradient(180deg, transparent 0 119px, rgba(0,0,0,.07) 119px 120px),
+    url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22120%22 height=%22120%22><filter id=%22ccn%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.6%22 numOctaves=%223%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22120%22 height=%22120%22 filter=%22url(%23ccn)%22 opacity=%220.10%22/></svg>');
+  --bg:#CFD3D7; --bg2:#DEE1E4; --bg3:#EAECEE; --bg4:#F5F6F7;
+  --border:#BCC1C6; --border2:#9AA1A8;
+  --text:#151A1F; --muted:#4F5963; --dim:#98A0A8;
+  --tap:#085F70; --tap2:#17A2BC; --dtap:#9A3814; --dtap2:#E87347;
+  --good:#23794A; --perfect:#715000; --miss:#B3301F;
+  --lane-flash:#BEE0E8; --glow-tap:rgba(8,95,112,.28); --glow-dtap:rgba(154,56,20,.28);
+  --accent:#9A3814;
+  --overlay-bg:rgba(222,225,228,.95); --scanline-clr:rgba(0,0,0,.015);
+  --note-key-text:rgba(21,26,31,.8); --lane-hitglow-clr:rgba(8,95,112,.08);
+  --cr-note-sel-border:rgba(0,0,0,.15); --cr-note-sel-bg:rgba(255,255,255,.6); --input-text:#151A1F;
+}
+/* Retro-Future — a neon grid and scanlines over indigo */
+body.theme-chrome {
+  --mat-grain:
+    repeating-linear-gradient(0deg,  rgba(63,224,255,.06) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(255,92,168,.05) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(0deg,  rgba(0,0,0,.15) 0 1px, transparent 1px 3px);
+  --bg:#0D0A20; --bg2:#15103A; --bg3:#1F1852; --bg4:#2A216B;
+  --border:#1E1650; --border2:#3F3392;
+  --text:#EFEAFF; --muted:#9C93D6; --dim:#50498F;
+  --tap:#3FE0FF; --tap2:#8DEEFF; --dtap:#FF5CA8; --dtap2:#FF8FC4;
+  --good:#5CF0B0; --perfect:#FFD866; --miss:#FF6B7A;
+  --lane-flash:#1B1A5E; --glow-tap:rgba(63,224,255,.45); --glow-dtap:rgba(255,92,168,.45);
+  --accent:#FF5CA8;
+}
+
 /* Material grain layer — a texture over each screen's faceplate,
    behind all content. Shows only when the theme sets --mat-grain;
    every other theme leaves it `none` and paints nothing, so this is
@@ -345,7 +499,8 @@ html {
 /* Light themes are genuinely light surfaces — tell the UA so its own
    chrome (form controls, the resize grip, autofill) matches instead of
    painting dark widgets onto a paper background. */
-body.theme-paper, body.theme-arctic, body.theme-bone { color-scheme:light; }
+body.theme-paper, body.theme-arctic, body.theme-bone,
+body.theme-marble, body.theme-concrete { color-scheme:light; }
 body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--font-body); transition:background .3s, color .3s;
   /* The two-LED brand gradient — every theme's tap and dtap, the two
      lights that do its colour work, swept into one. Declared here on
@@ -526,6 +681,17 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 }
 .theme-card.selected { border-color:var(--accent); }
 .theme-card:hover { transform:scale(1.02); }
+/* Campaign themes: a header across the grid, and a locked state that
+   still shows what is being earned — dimmed, not hidden. */
+.themes-section {
+  grid-column:1 / -1; display:flex; align-items:baseline; justify-content:space-between;
+  margin-top:8px; font-family:var(--font-data); font-size:10px; font-weight:700;
+  letter-spacing:2px; text-transform:uppercase; color:var(--muted);
+}
+.themes-section b { color:var(--perfect); font-weight:700; letter-spacing:.5px; }
+.theme-card.locked { opacity:.55; cursor:not-allowed; }
+.theme-card.locked:hover { transform:none; }
+.tc-lock { margin-top:8px; font-family:var(--font-data); font-size:10px; font-weight:700; }
 .tc-name { font-size:13px; font-weight:700; margin-bottom:4px; }
 .tc-subs { font-size:11px; opacity:.6; }
 .tc-dots { display:flex; gap:5px; margin-top:8px; }
@@ -709,10 +875,11 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 
 /* Level-up and XP on the results overlay. */
 #ov-xp { font-size:12px; color:var(--tap); font-family:var(--font-data); display:none; }
-#ov-levelup {
+#ov-levelup, #ov-theme {
   font-size:13px; font-weight:700; color:var(--perfect);
   font-family:var(--font-data); display:none;
 }
+#ov-theme { color:var(--accent); text-align:center; }
 
 
 /* ══════════════════════════════════════
@@ -902,12 +1069,22 @@ body.gfx-modern.theme-paper #daily-card,
 body.gfx-modern.theme-arctic .song-row,
 body.gfx-modern.theme-arctic .area-chip,
 body.gfx-modern.theme-arctic .avatar-card,
-body.gfx-modern.theme-arctic #daily-card {
+body.gfx-modern.theme-arctic #daily-card,
+body.gfx-modern.theme-marble .song-row,
+body.gfx-modern.theme-marble .area-chip,
+body.gfx-modern.theme-marble .avatar-card,
+body.gfx-modern.theme-marble #daily-card,
+body.gfx-modern.theme-concrete .song-row,
+body.gfx-modern.theme-concrete .area-chip,
+body.gfx-modern.theme-concrete .avatar-card,
+body.gfx-modern.theme-concrete #daily-card {
   background-image:linear-gradient(180deg, rgba(255,255,255,.55), rgba(255,255,255,0) 60%);
   box-shadow:inset 0 1px 0 rgba(255,255,255,.7), 0 3px 10px -7px rgba(0,0,0,.45);
 }
 body.gfx-modern.theme-paper .lane::after,
-body.gfx-modern.theme-arctic .lane::after {
+body.gfx-modern.theme-arctic .lane::after,
+body.gfx-modern.theme-marble .lane::after,
+body.gfx-modern.theme-concrete .lane::after {
   background:
     linear-gradient(180deg, rgba(0,0,0,.16) 0%, rgba(0,0,0,0) 24%),
     linear-gradient(0deg,   rgba(0,0,0,.10) 0%, rgba(0,0,0,0) 16%);
@@ -1320,8 +1497,13 @@ body.adv-overlay #adv-panel.open {
 .lane-fb.show { opacity:1; }
 
 /* tiles */
+/* A tile is placed by transform alone (play.js: translateY(y)), anchored
+   at top:0. Moving it by `top` forced a layout and a repaint of the lane
+   every frame for every tile; a transform on its own layer is handled
+   by the compositor and costs the main thread nothing. */
 .tile {
-  position:absolute; left:5px; right:5px; border-radius:7px; z-index:4;
+  position:absolute; top:0; left:5px; right:5px; border-radius:7px; z-index:4;
+  will-change:transform;
 }
 .tile-tap {
   background:linear-gradient(180deg,var(--tap2) 0%,var(--tap) 100%);
@@ -1960,6 +2142,7 @@ body.adv-overlay #adv-panel.open {
     <div id="ov-currency-reward"></div>
     <div id="ov-xp"></div>
     <div id="ov-levelup"></div>
+    <div id="ov-theme"></div>
     <div id="ov-streak-bonus"></div>
     <div class="ov-keys"><div class="ov-key">A</div><div class="ov-key">S</div><div class="ov-key">D</div><div class="ov-key">F</div></div>
     <button class="chaos-toggle" id="ov-chaos-toggle">🎲 Chaos Keys: OFF</button>
@@ -2074,6 +2257,8 @@ body.adv-overlay #adv-panel.open {
 <script src="audio.js"></script>
 <!-- V7's composer, bundled for live generation and endless mode. -->
 <script src="generator.js"></script>
+<!-- Makes every generated row one kind of note; play.js applies it. -->
+<script src="rowtypes.js"></script>
 <!-- The creator (and its note picker) and the gameplay engine, split out
      of game.js. They load before game.js so its boot code (which wires
      everything and starts the game) still runs last. -->

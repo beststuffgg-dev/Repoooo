@@ -24,6 +24,7 @@ const vm = require('vm');
 const ROOT = path.join(__dirname, '..', '..');
 const GENERATOR = path.join(ROOT, 'other', 'v7', 'RhythmDropV7', 'campaign.js');
 const OUT = path.join(ROOT, 'other', 'RhythmDropV8', 'levels.js');
+const ROWTYPES = path.join(ROOT, 'other', 'RhythmDropV8', 'rowtypes.js');
 
 // The instrument roster V8 ships. The composer resolves each area's
 // voice against whatever `window.RD_INSTRUMENTS` says the target build
@@ -73,6 +74,14 @@ function loadGenerator() {
   return C;
 }
 
+// The one-type-per-row rule is V8's, not the composer's, so it is
+// loaded from the game's own module rather than reimplemented here.
+function loadRowTypes() {
+  const sandbox = { window: {} };
+  vm.runInContext(fs.readFileSync(ROWTYPES, 'utf8'), vm.createContext(sandbox));
+  return sandbox.window.RD_RowTypes;
+}
+
 // Pitches are stored as MIDI numbers rather than frequencies: the
 // composer draws every note from an equal-tempered table, so the
 // number is exact, a third of the size, and readable by a human.
@@ -81,6 +90,7 @@ const toFreq = m => parseFloat((440 * Math.pow(2, (m - 69) / 12)).toFixed(2));
 
 function main() {
   const C = loadGenerator();
+  const RowTypes = loadRowTypes();
   const instruments = [];
   const instIdx = id => {
     const i = instruments.indexOf(id || '');
@@ -100,6 +110,7 @@ function main() {
       const cap = capToLength(l);
       l.grid = cap.grid;                 // trimmed to whole bars under MAX_SECONDS
       if (cap.capped) capped++;
+      RowTypes.uniformRowTypes(l.grid);  // one kind of note per row
       // Flat note list: row, lane, type, midi, sustain in tenths, instrument.
       // Five small integers beats an object per note by a wide margin at
       // 150 charts, and the shape is still obvious at a glance.

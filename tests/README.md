@@ -1,6 +1,6 @@
 # RhythmDrop — test harnesses
 
-Twenty-eight suites, one command. Three cover **V8**, the current game;
+Thirty-eight suites, one command. Thirteen cover **V8**, the current game;
 the other twenty-five cover **V7**, kept alongside it under `other/v7/`
 and still green. Most boot the build in jsdom with a stubbed Web Audio
 graph; six drive real Chromium, because jsdom has no layout engine and
@@ -12,10 +12,20 @@ structurally cannot catch a layout bug.
 |---|---|
 | `v8levels.js` | The 150 baked songs against the build that plays them: the flat encoding decoding back to real charts, every voice the charts reference existing in `audio.js`, zero minor seconds across 8,658 chords, and the generator still being present to re-bake with |
 | `v8campaign.js` | Flat coins per clear, partial runs, the XP curve and its linearity in speed, the density cap, unlock chaining, and the seven-day daily including its lapse |
-| `v8ui.js` | Real Chromium: the pinned height, the advanced panel widening the window without moving the grid, the overlay fallback at the cap, and one whole run from the campaign list to the results screen |
+| `v8audio.js` | Every instrument rendered through an OfflineAudioContext and measured, not just present |
+| `v8graphics.js` | The graphics layer is strictly additive; Classic and Modern really differ and each renders deterministically |
+| `v8codec.js` | The compact share codes, and every theme carrying a texture (a shared base grain, six distinct material grains) |
+| `v8settings.js` | Every setting driven and its effect measured. **Known intermittent failure** in its reload section, also present on the original build — see HANDOFF §8 |
+| `v8generate.js` | V7's composer bundled verbatim; Generate, Keep and Endless |
+| `v8rowtypes.js` | One kind of note per row — the rule, the 150 baked songs, 160 generated charts, and every generation path |
+| `v8themes.js` | The ten campaign themes: one per area, the unlock following the whole area, the announcement, saved-theme fallback, contrast floors |
+| `v8gameplay.js` | The hit window and the Double; tiles drawn where they are judged |
+| `v8creator.js` | The generation menu, Endless as a tab, aspect ratios |
+| `v8editor.js` | Keyboard entry, multi-select, vertical resize |
+| `v8ui.js` | Real Chromium: the pinned height, the advanced panel widening the window without moving the grid, the overlay fallback at the cap, hidden panes built on show, and one whole run from the campaign list to the results screen |
 
 ```bash
-npm run test:v8          # just these three
+npm run test:v8          # just the V8 suites
 V8_DIR=/path/to/build npm run test:v8
 ```
 
@@ -39,7 +49,7 @@ drops straight into CI or a pre-commit hook.
 `APP_DIR` picks it. Unset, it's the shipping one:
 
 ```bash
-npm test                                    # everything, 28 suites
+npm test                                    # everything, 38 suites
 APP_DIR=RhythmDropV7-Redesign npm test      # V7's suites against its variant
 ```
 

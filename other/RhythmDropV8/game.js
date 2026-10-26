@@ -371,7 +371,30 @@ const THEMES = [
   { id:'paper',      name:'Paper',        subs:'Light & Warm',   dots:['#1a6bbf','#c0392b','#ede8dc'] },
   { id:'arctic',     name:'Arctic',       subs:'Light & Cool',   dots:['#0070c0','#7b2fbe','#e4eefa'] },
   { id:'custom',     name:'Custom',       subs:'Your colors',    dots:['#888','#888','#333'] },
+
+  // Campaign themes — one per area, in campaign order, earned by clearing
+  // every song in that area. `area` is the RD_Campaign area id; `card` is
+  // the preview surface, since unlike the themes above these have no
+  // per-theme card rule in the stylesheet. dots = tap, dtap, surface.
+  { id:'harvest',  name:'Harvest',    subs:'Straw & poppy',     area:1,  dots:['#E5C46A','#DC6351','#172218'], card:{ bg:'#172218', text:'#EEE8CF' } },
+  { id:'lapis',    name:'Lapis',      subs:'Lapis & sandstone', area:2,  dots:['#4F86E0','#D9AE3E','#1D1810'], card:{ bg:'#1D1810', text:'#F3E6C6' } },
+  { id:'marble',   name:'Marble',     subs:'Aegean light',      area:3,  dots:['#1F5FAE','#925719','#EFF2F5'], card:{ bg:'#EFF2F5', text:'#1A2330' } },
+  { id:'imperium', name:'Imperium',   subs:'Crimson & laurel',  area:4,  dots:['#D65C6C','#D9B04C','#22151A'], card:{ bg:'#22151A', text:'#F4E6DD' } },
+  { id:'obsidian', name:'Obsidian',   subs:'Volcanic glass',    area:5,  dots:['#2CC7B4','#F07A38','#10151A'], card:{ bg:'#10151A', text:'#E4F1F0' } },
+  { id:'jade',     name:'Jade',       subs:'Carved stone',      area:6,  dots:['#3FD98E','#E3C158','#0B1F18'], card:{ bg:'#0B1F18', text:'#DDF7EA' } },
+  { id:'oakmoss',  name:'Oakmoss',    subs:'Pipes & moss',      area:7,  dots:['#9CC25E','#CF6A57','#1D2014'], card:{ bg:'#1D2014', text:'#ECE6CC' } },
+  { id:'braid',    name:'Gold Braid', subs:'Navy & scarlet',    area:8,  dots:['#DDB647','#DF5B54','#111A38'], card:{ bg:'#111A38', text:'#E8ECFA' } },
+  { id:'concrete', name:'Concrete',   subs:'Poured & glass',    area:9,  dots:['#085F70','#9A3814','#DEE1E4'], card:{ bg:'#DEE1E4', text:'#151A1F' } },
+  { id:'chrome',   name:'Chrome',     subs:'Neon grid',         area:10, dots:['#3FE0FF','#FF5CA8','#15103A'], card:{ bg:'#15103A', text:'#EFEAFF' } },
 ];
+
+const themeById = id => THEMES.find(t => t.id === id) || null;
+
+// A campaign theme is locked until its area is cleared. Derived from
+// progress rather than stored, so there is nothing to migrate, nothing
+// to keep in sync, and anyone who had already cleared an area simply has
+// the theme.
+const isThemeLocked = th => !!(th && th.area && !CAM().areaCleared(progress, th.area));
 
 // Inline CSS vars set by the custom theme — must be cleared when switching away
 const CUSTOM_VARS = ['--bg','--bg2','--bg3','--bg4','--text','--tap','--tap2','--dtap','--dtap2','--accent','--muted','--dim','--border','--border2','--glow-tap','--glow-dtap'];
@@ -442,9 +465,26 @@ function buildThemesGrid() {
   const g = document.getElementById('themes-grid');
   g.innerHTML = '';
   const cur = store.loadTheme();
+  const txt = { void:'#fff', neon:'#00ffff', forest:'#c8ffdd', sunset:'#ffe8c8',
+    dune:'#f0d9a8', lotr:'#e8e0c0', foundation:'#bfe9f5', nintendo:'#ffffff', glass:'#eaf2ff',
+    paper:'#1a1510', arctic:'#0a1828' };
+
+  const earned = THEMES.filter(t => t.area && !isThemeLocked(t)).length;
+  const total  = THEMES.filter(t => t.area).length;
+  let headed = false;
+
   THEMES.forEach(th => {
+    if (th.area && !headed) {
+      headed = true;
+      const h = document.createElement('div');
+      h.className = 'themes-section';
+      h.innerHTML = '<span>Campaign themes</span><b>' + earned + '/' + total + ' earned</b>';
+      g.appendChild(h);
+    }
+    const locked = isThemeLocked(th);
+    const area = th.area ? CAM().areaById(th.area) : null;
     const c = document.createElement('div');
-    c.className = 'theme-card' + (th.id === cur ? ' selected' : '');
+    c.className = 'theme-card' + (th.id === cur ? ' selected' : '') + (locked ? ' locked' : '');
     c.dataset.theme = th.id;
     c.innerHTML = `
       <div class="tc-name">${th.name}</div>
@@ -453,12 +493,14 @@ function buildThemesGrid() {
         <div class="tc-dot" style="background:${th.dots[0]}"></div>
         <div class="tc-dot" style="background:${th.dots[1]}"></div>
         <div class="tc-dot" style="background:${th.dots[2]}"></div>
-      </div>`;
-    const txt = { void:'#fff', neon:'#00ffff', forest:'#c8ffdd', sunset:'#ffe8c8',
-      dune:'#f0d9a8', lotr:'#e8e0c0', foundation:'#bfe9f5', nintendo:'#ffffff', glass:'#eaf2ff',
-      paper:'#1a1510', arctic:'#0a1828' };
-    c.style.color = txt[th.id] || '#e8e8ff';
-    c.addEventListener('click', () => applyTheme(th.id));
+      </div>`
+      + (locked ? '<div class="tc-lock">🔒 Clear ' + area.name + '</div>' : '');
+    if (th.card) c.style.background = th.card.bg;
+    c.style.color = th.card ? th.card.text : (txt[th.id] || '#e8e8ff');
+    c.addEventListener('click', () => {
+      if (locked) { showToast('Clear every song in ' + area.name + ' to unlock ' + th.name, true); return; }
+      applyTheme(th.id);
+    });
     g.appendChild(c);
   });
 }
@@ -597,10 +639,11 @@ function renderCampaign() {
   songs.className = 'cam-songs';
   list.appendChild(songs);
 
+  const bests = store.loadBests();      // once, not once per song
   C.areaMeta(camArea).forEach(m => {
     const unlocked = C.isLevelUnlocked(progress, camArea, m.levelIdx);
     const cleared  = C.isLevelCleared(progress, camArea, m.levelIdx);
-    const best     = store.loadBests()['cam:' + m.id];
+    const best     = bests['cam:' + m.id];
     const row = document.createElement('div');
     row.className = 'song-row' + (cleared ? ' done' : '') + (!unlocked ? ' locked' : '');
     const mins = Math.floor(m.seconds / 60), secs = String(m.seconds % 60).padStart(2, '0');
@@ -727,15 +770,23 @@ function renderDaily() {
 // ══════════════════════════════════════
 //  HOME
 // ══════════════════════════════════════
+// The Themes, Settings and Shop panes sit behind tabs that most visits
+// never open, and between them were nearly half the cost of every return
+// to the menu (and, at startup, the first toLocaleString() of the shop's
+// prices, which alone initialises the browser's locale data: ~14 ms). So a
+// pane is built when its tab is shown (selectHomeTab) and refreshed with
+// the home screen only while it is the one in view.
+const HOME_PANES = { themes: buildThemesGrid, settings: buildSettingsPanel, shop: renderShop };
+
 function renderHome() {
-  buildThemesGrid();
   renderCampaign();
   renderDaily();
   renderXpStrip();
   renderCustoms();
-  buildSettingsPanel();
-  renderShop();
   updateProfileBar();
+  const showing = document.querySelector('.hnav.active');
+  const build = showing && HOME_PANES[showing.dataset.tab];
+  if (build) build();
 }
 
 function renderCustoms() {
@@ -793,12 +844,10 @@ function selectHomeTab(tab) {
   document.querySelectorAll('.tab-pane').forEach(x => {
     x.classList.toggle('active', x.id === 'tab-' + tab);
   });
+  if (HOME_PANES[tab]) HOME_PANES[tab]();     // built on show; see renderHome
 }
 
-document.querySelectorAll('.hnav').forEach(t => t.addEventListener('click', () => {
-  selectHomeTab(t.dataset.tab);
-  if (t.dataset.tab === 'shop') renderShop();
-}));
+document.querySelectorAll('.hnav').forEach(t => t.addEventListener('click', () => selectHomeTab(t.dataset.tab)));
 
 // ── Shop render ─────────────────────────────
 let shopSubTab = 'avatars';
@@ -1686,10 +1735,7 @@ btnEls.forEach((el, i) => {
 // Avatar click → open shop tab
 const pbarAvatar = document.getElementById('pbar-avatar');
 if (pbarAvatar) {
-  pbarAvatar.addEventListener('click', () => {
-    selectHomeTab('shop');
-    renderShop();
-  });
+  pbarAvatar.addEventListener('click', () => selectHomeTab('shop'));
 }
 
 document.getElementById('g-menu-btn').addEventListener('click', quitToMenu);
@@ -1697,7 +1743,9 @@ document.getElementById('g-menu-btn').addEventListener('click', quitToMenu);
 // ── Boot ──────────────────────────────────────────
 loadAndApplySettings();
 observeManualResize();
-applyTheme(store.loadTheme());
+// A saved campaign theme that is not (or no longer) earned falls back to
+// the default rather than being worn unearned.
+applyTheme(isThemeLocked(themeById(store.loadTheme())) ? 'graphite' : store.loadTheme());
 const ct = store.loadCustomTheme();
 if (ct && store.loadTheme() === 'custom') applyCustomTheme(ct);
 

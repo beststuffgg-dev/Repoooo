@@ -146,6 +146,40 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
     ok(!r.doubleMode, 'launching a level from the list clears the Double flag');
   }
 
+  console.log('== a tile is drawn exactly where the game judges it ==');
+  {
+    // Tiles are placed by transform (a compositor-only move) and judged
+    // by their JS position, so the two have to agree or the picture lies
+    // about the hit. Measured on the real layout, at two UI scales.
+    for (const scale of [1, 1.4]) {
+      const r = await page.evaluate(async scale => {
+        currentSettings.uiScale = scale; applySettingsToDOM();
+        launchCampaignLevel(1, 0);
+        document.getElementById('g-overlay').classList.remove('show'); startGame();
+        const t0 = Date.now();
+        while (activeTiles.length < 2 && Date.now() - t0 < 6000) await new Promise(r => setTimeout(r, 60));
+        await new Promise(r => setTimeout(r, 500));          // let them fall a while
+        const worst = { drift: 0, n: 0, usesTop: 0, transform: 0 };
+        activeTiles.forEach(t => {
+          const lane = t.el.parentElement.getBoundingClientRect();
+          const box = t.el.getBoundingClientRect();
+          // Both rects are in screen px, which the UI-scale zoom has multiplied.
+          const z = lane.height / t.el.parentElement.clientHeight;
+          const drawn = (box.top - lane.top) / z;
+          worst.drift = Math.max(worst.drift, Math.abs(drawn - t.y));
+          worst.n++;
+          if (t.el.style.top) worst.usesTop++;
+          if (/translateY/.test(t.el.style.transform)) worst.transform++;
+        });
+        quitToMenu(); currentSettings.uiScale = 1; applySettingsToDOM();
+        return worst;
+      }, scale);
+      ok(r.n >= 2, 'x' + scale + ': measured ' + r.n + ' falling tiles');
+      ok(r.drift < 1, 'x' + scale + ': each is drawn within ' + r.drift.toFixed(2) + 'px of where the game thinks it is');
+      ok(r.transform === r.n && r.usesTop === 0, 'x' + scale + ': placed by transform, not by top');
+    }
+  }
+
   ok(errors.length === 0, 'no page errors (' + errors.join('; ') + ')');
   await b.close();
   console.log('\n--- notes ---');

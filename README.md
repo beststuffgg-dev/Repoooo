@@ -34,12 +34,12 @@
 
 Hit **A · S · D · F** as slabs cross the strike line. Tap once for a single note, twice for the bordered ×2 slabs. That's the whole input model — everything else is depth: a 150-level campaign, a chord-aware music generator, a chart editor, and a full customization economy sitting on top of it.
 
-- **Campaign** — 10 areas × 15 levels, **shipped as data rather than generated at boot**. The songs were composed once by a deterministic generator and baked into `levels.js`; the generator is kept as a build tool, so the campaign can be regenerated deliberately but never rewrites itself under you. Areas: Farmstead, Egypt, Greece, Rome, Aztec, Maya, Old England, Napoleonic, Modern, Retro-Future — each with its own scale, instrument and rhythmic character, so Egypt's double-harmonic scale sounds nothing like Farmstead's folk pentatonic. Melody moves in phrases with real cadences and chords stack in actual thirds: 8,658 simultaneous chords across the 150 charts and not one minor second.
-- **Progression** — songs unlock in order and areas unlock behind them, XP is keyed off note count and tempo, every level keeps its own record, and a seven-day daily lapses if you miss a day.
+- **Campaign** — 10 areas × 15 levels, **shipped as data rather than generated at boot**. The songs were composed once by a deterministic generator and baked into `levels.js`; the generator is kept as a build tool, so the campaign can be regenerated deliberately but never rewrites itself under you. Areas: Farmstead, Egypt, Greece, Rome, Aztec, Maya, Old England, Napoleonic, Modern, Retro-Future — each with its own scale, instrument and rhythmic character, so Egypt's double-harmonic scale sounds nothing like Farmstead's folk pentatonic. Melody moves in phrases with real cadences and chords stack in actual thirds: 8,658 simultaneous chords across the 150 charts and not one minor second. A row is never a mix — a tap and a ×2 slab don't share a line, in the campaign or in anything generated.
+- **Progression** — songs unlock in order and areas unlock behind them, XP is keyed off note count and tempo, every level keeps its own record, and a seven-day daily lapses if you miss a day. Clearing every song in an area also earns that area's own theme.
 - **Level creator** — a grid editor with per-lane default pitches, a per-note picker, sustain and a configurable drum/bass backing. Its advanced panel opens **sideways** and widens the window rather than covering the chart you're editing.
 - **Economy** — every level pays a flat coin reward, so grinding a long chart isn't better than clearing a short one. Every purchase is two clicks: the first previews (an avatar goes on your profile, an effect plays live on the board, a mystery box shows its real odds), only the second spends.
-- **12 instruments**, synthesized from oscillators — no samples, no network — plus avatars, note trails, mystery boxes and 12 themes including frosted glass, warm paper and arctic white.
-- **A Material-3-flavoured shell.** Both graphics styles share it: a rounded shape scale, tonal raised surfaces, state-layer hovers, a faint material grain on *every* theme and an expressive display type. It's a refresh over the original look, not a reskin of one theme — the twelve palettes and their identities are untouched.
+- **12 instruments**, synthesized from oscillators — no samples, no network — plus avatars, note trails, mystery boxes and 20 themes — frosted glass, warm paper, arctic white, six textured materials — and ten more you earn: one per campaign area, each with its own texture (burlap, sandstone, marble, travertine, obsidian, carved jade, organ pipes, wool twill, poured concrete, a neon grid).
+- **A Material-3-flavoured shell.** Both graphics styles share it: a rounded shape scale, tonal raised surfaces, state-layer hovers, a faint material grain on *every* theme and an expressive display type. It's a refresh over the original look, not a reskin of one theme — the existing palettes and their identities are untouched.
 - **Two graphics styles.** On top of that shell, *Modern* (default) adds real depth — lit tile edges, raised cards and a glowing strike line. *Classic* keeps the flat look, with no dimensional lighting. The whole depth layer is scoped under one class and stays strictly additive, so turning it off genuinely removes it; `v8graphics` proves the two render differently and that each renders deterministically.
 - **Settings** for key remapping, starting lives, UI scale, master and music volume, and instrument choice.
 - **Width, not height.** Chrome caps an extension popup at 800×600 and clips the rest, which is why vertical resizing never worked. The height is pinned to that ceiling and only the width is adjustable — everything vertical scrolls.
@@ -64,7 +64,7 @@ RhythmDropV8.zip            the game, zipped — hand this to someone
 htmls/
   RhythmDrop.html             the whole game as one file — generated
 
-tests/                      28 suites — 3 for V8, 25 for V7
+tests/                      38 suites — 13 for V8, 25 for V7
 
 other/
   RhythmDropV8/               the source — load this as an unpacked extension
@@ -72,6 +72,7 @@ other/
     game.js                     screens, input, scoring, campaign UI, shop, creator
     campaign.js                 unlocks, XP, coins, records, dailies
     levels.js                   the 150 songs, baked — generated, not hand-edited
+    rowtypes.js                 one kind of note per row; shared by the game and the baker
     audio.js                    12 synthesized instruments, limiter, backing layer
   v7/                         the previous game, kept whole and still working
   tools/
@@ -97,7 +98,7 @@ Never hand-edit anything in `htmls/`, any `.zip`, or `other/RhythmDropV8/levels.
 cd tests && npm install && node run-all.js
 ```
 
-Thirty harnesses. Five cover V8 — the baked campaign against the build that plays it, the progression rules, every instrument rendered and measured through an OfflineAudioContext, the graphics layer, and a real-Chromium pass over the layout and one whole run. The other twenty-five are V7's, unchanged, still green against `other/v7/`.
+Thirty-eight harnesses. Thirteen cover V8 — the baked campaign against the build that plays it, the progression rules, every instrument rendered and measured through an OfflineAudioContext, the graphics layer, generation and its one-type-per-row rule, the campaign themes and their unlocks, and real-Chromium passes over the layout, gameplay and whole runs. The other twenty-five are V7's, unchanged, still green against `other/v7/`.
 
 Eight suites drive a real browser rather than jsdom, because jsdom has no layout engine or audio engine and structurally cannot catch a layout or a silence bug — those are the ones that found the strike line sitting 12–19px off the bar it was drawn on, the campaign list collapsing to a 39px viewport, and the master bus peaking a third past full scale on a seven-note chord.
 
