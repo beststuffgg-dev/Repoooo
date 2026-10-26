@@ -5,7 +5,7 @@
 //   node run-all.js
 //   APP_DIR=RhythmDropV7-Redesign node run-all.js
 //
-// The V8 suites always test other/RhythmDropV8 (V8_DIR overrides).
+// The V8 suites always test RhythmDrop/RhythmDropV8 (V8_DIR overrides).
 // APP_DIR selects which V7 build the V7 suites run against.
 //
 // Most suites run under jsdom, which has no layout engine — they can
@@ -33,7 +33,7 @@ const SUITES = [
   ['v8creator.js',  'V8 creator — the generation menu, Endless as a tab, aspect ratios'],
   ['v8editor.js',   'V8 creator tools — keyboard entry, multi-select, vertical resize'],
   ['v8ui.js',       'V8 layout — the side panel, resizable both ways, one whole run'],
-  // ══ V7 — kept alongside, under other/v7/ ══
+  // ══ V7 — kept alongside, under RhythmDrop/v7/ ══
   // ── core ──
   ['smoke.js',        'UI — boot, tabs, campaign, shop, editor, themes'],
   ['smoke2.js',       'Gameplay — scoring, lives, tile pool, migration'],

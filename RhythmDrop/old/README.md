@@ -1,4 +1,4 @@
-# other/old — archived builds
+# RhythmDrop/old — archived builds
 
 The build artifacts from the old flat repo layout, kept from the
 `claude/rhythmdrop-upd7-campaign-vwj3xl` branch before it was retired.
@@ -11,6 +11,6 @@ builds and the two V7 zips:
 - `RhythmDropV7-Redesign.zip` — V7 redesign zip
 
 Everything else from that branch (the V7 source folders, the test
-suite, docs) already lives in the current tree under `other/v7/` and
+suite, docs) already lives in the current tree under `RhythmDrop/v7/` and
 `tests/`, so it is not duplicated here. These files are frozen history;
-regenerate current builds with `other/tools/package.sh`.
+regenerate current builds with `RhythmDrop/tools/package.sh`.

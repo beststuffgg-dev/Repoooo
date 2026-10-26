@@ -10,7 +10,7 @@
 //
 //  It is shared on purpose: the game runs it over every freshly
 //  generated chart (play.js, generateLevel) and the baker runs it over
-//  the campaign (other/tools/bake-levels.js). The composer itself stays
+//  the campaign (RhythmDrop/tools/bake-levels.js). The composer itself stays
 //  V7's, verbatim, so a fix to it keeps reaching V8.
 //
 //  No DOM, no randomness — the same grid always comes out the same.

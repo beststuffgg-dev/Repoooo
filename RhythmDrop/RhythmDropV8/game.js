@@ -530,7 +530,7 @@ document.querySelectorAll('.glass-trans-btn').forEach(b => {
 //  CAMPAIGN
 //
 //  Ten areas of fifteen songs. The songs themselves are baked data —
-//  see levels.js and other/tools/bake-levels.js — so everything here
+//  see levels.js and RhythmDrop/tools/bake-levels.js — so everything here
 //  is about which of them you can reach and what you have done to
 //  them, never about composing one.
 // ══════════════════════════════════════

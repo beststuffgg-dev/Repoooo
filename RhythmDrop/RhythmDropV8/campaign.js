@@ -7,7 +7,7 @@
 //
 //  The 150 songs are NOT composed here. They were composed once by the
 //  deterministic generator and baked to levels.js — see
-//  other/tools/bake-levels.js. This file reads that data and hands the
+//  RhythmDrop/tools/bake-levels.js. This file reads that data and hands the
 //  rest of the game playable level objects. The practical difference:
 //  a song is a file you can read and diff, not a seed that silently
 //  rewrites itself the day someone touches the composer.

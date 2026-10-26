@@ -143,9 +143,9 @@ console.log('== the songs are songs, not noise ==');
 
 console.log('== the generator is still there to re-bake with ==');
 {
-  const baker = path.join(__dirname, '..', 'other', 'tools', 'bake-levels.js');
-  ok(fs.existsSync(baker), 'other/tools/bake-levels.js exists');
-  const gen = path.join(__dirname, '..', 'other', 'v7', 'RhythmDropV7', 'campaign.js');
+  const baker = path.join(__dirname, '..', 'RhythmDrop', 'tools', 'bake-levels.js');
+  ok(fs.existsSync(baker), 'RhythmDrop/tools/bake-levels.js exists');
+  const gen = path.join(__dirname, '..', 'RhythmDrop', 'v7', 'RhythmDropV7', 'campaign.js');
   ok(fs.existsSync(gen), 'the composer it bakes from is still in the repo');
   const src = fs.readFileSync(path.join(DIR, 'levels.js'), 'utf8');
   ok(/GENERATED FILE/.test(src), 'levels.js says it is generated');

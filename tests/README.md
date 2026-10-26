@@ -1,7 +1,7 @@
 # RhythmDrop — test harnesses
 
 Thirty-eight suites, one command. Thirteen cover **V8**, the current game;
-the other twenty-five cover **V7**, kept alongside it under `other/v7/`
+the other twenty-five cover **V7**, kept alongside it under `RhythmDrop/v7/`
 and still green. Most boot the build in jsdom with a stubbed Web Audio
 graph; six drive real Chromium, because jsdom has no layout engine and
 structurally cannot catch a layout bug.
@@ -29,7 +29,7 @@ npm run test:v8          # just the V8 suites
 V8_DIR=/path/to/build npm run test:v8
 ```
 
-The V8 suites always test `other/RhythmDropV8` unless `V8_DIR` says
+The V8 suites always test `RhythmDrop/RhythmDropV8` unless `V8_DIR` says
 otherwise, so `APP_DIR` never affects them.
 
 ## V7 — kept alongside
@@ -54,9 +54,9 @@ APP_DIR=RhythmDropV7-Redesign npm test      # V7's suites against its variant
 ```
 
 `APP_DIR` selects which **V7** build its suites run against. It accepts
-a bare folder name, or a path relative to this folder, to `other/`, to
-`other/v7/`, or to the repo root — whichever you happen to type. Unset,
-it's `other/v7/RhythmDropV7/`, with fallbacks for this folder sitting
+a bare folder name, or a path relative to this folder, to `RhythmDrop/`, to
+`RhythmDrop/v7/`, or to the repo root — whichever you happen to type. Unset,
+it's `RhythmDrop/v7/RhythmDropV7/`, with fallbacks for this folder sitting
 beside a bare extension (which is how it works if you unzip it on its
 own):
 

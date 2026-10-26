@@ -2,7 +2,7 @@
 
 A four-lane rhythm game shipped as a Chrome extension popup. No build step for the app itself, no dependencies, no network calls.
 
-V8 is built on the **v3.0** source — its look, its themes, its intro splash, its shop — with the campaign and progression systems from V7 ported onto it. V7 is not gone: it lives whole under `other/v7/`, still builds, and still passes its own 25 test suites. See [`other/v7/HANDOFF.md`](v7/HANDOFF.md) for that one.
+V8 is built on the **v3.0** source — its look, its themes, its intro splash, its shop — with the campaign and progression systems from V7 ported onto it. V7 is not gone: it lives whole under `RhythmDrop/v7/`, still builds, and still passes its own 25 test suites. See [`RhythmDrop/v7/HANDOFF.md`](v7/HANDOFF.md) for that one.
 
 ---
 
@@ -12,7 +12,7 @@ V8 is built on the **v3.0** source — its look, its themes, its intro splash, i
 RhythmDropV8.zip          the game, zipped
 htmls/RhythmDrop.html     the game as one self-contained file (generated)
 tests/                    38 suites — 13 for V8, 25 for V7
-other/
+RhythmDrop/
   RhythmDropV8/           the source — load this as an unpacked extension
     popup.html              markup, styling, the v3 theme system
     game.js                 shell: screens, profile/coins, shop, themes, settings, boot
@@ -31,7 +31,7 @@ other/
 Regenerate every derived artifact:
 
 ```
-bash other/tools/package.sh
+bash RhythmDrop/tools/package.sh
 ```
 
 That rebuilds V8's single file and zip, and V7's in place. It deliberately does **not** re-bake the campaign — see §3.
@@ -71,10 +71,10 @@ Deliberately **not** ported from V7: share/sync codes as a general import format
 The 150 songs were composed once and written to `levels.js`. They are not generated at boot.
 
 ```
-node other/tools/bake-levels.js
+node RhythmDrop/tools/bake-levels.js
 ```
 
-loads the deterministic composer that still lives at `other/v7/RhythmDropV7/campaign.js`, runs it over every area and level, and writes the result out. **The composer is kept, not replaced** — the campaign can be regenerated deliberately.
+loads the deterministic composer that still lives at `RhythmDrop/v7/RhythmDropV7/campaign.js`, runs it over every area and level, and writes the result out. **The composer is kept, not replaced** — the campaign can be regenerated deliberately.
 
 Why bake at all: a song that exists as a file can be read, diffed and reviewed. A song that only exists as a seed can only be re-derived, and any change to the composer silently rewrites all 150 under the player's feet.
 
@@ -98,7 +98,7 @@ Why bake at all: a song that exists as a file can be read, diffed and reviewed. 
 
 ## 4a. Live generation
 
-V8 ships a baked campaign, but V7's deterministic composer is bundled as `other/RhythmDropV8/generator.js` — the same file as `other/v7/RhythmDropV7/campaign.js`, verbatim but for exposing `window.RD_Generator` instead of `window.RD_Campaign` (V8 already has an `RD_Campaign`, its progression engine; the two do not collide). It loads after `audio.js` because it reads `window.RD_INSTRUMENTS` to resolve each area's voice.
+V8 ships a baked campaign, but V7's deterministic composer is bundled as `RhythmDrop/RhythmDropV8/generator.js` — the same file as `RhythmDrop/v7/RhythmDropV7/campaign.js`, verbatim but for exposing `window.RD_Generator` instead of `window.RD_Campaign` (V8 already has an `RD_Campaign`, its progression engine; the two do not collide). It loads after `audio.js` because it reads `window.RD_INSTRUMENTS` to resolve each area's voice.
 
 Two entry points use it:
 
@@ -189,7 +189,7 @@ cd tests && npm install && node run-all.js
 | `v8gameplay.js` | The hit window widens the tolerance in order and is applied to judging; the Double runs at half the beat, pays double, is offered only off a clear and never chains; tiles are drawn within a pixel of where they are judged, by transform, at two UI scales |
 | `v8ui.js` | Real Chromium: the pinned height, the side panel widening the window without moving the grid, the overlay fallback, hidden panes built on show and the visible one refreshed on return, and one whole run from the campaign list to the results screen |
 
-The remaining 25 are V7's, unchanged, running against `other/v7/`. `APP_DIR` selects which V7 build they test; `V8_DIR` overrides the V8 one.
+The remaining 25 are V7's, unchanged, running against `RhythmDrop/v7/`. `APP_DIR` selects which V7 build they test; `V8_DIR` overrides the V8 one.
 
 **On audio testing.** Everything before `v8audio` was structural — the roster has twelve ids, the file parses, the functions exist — and none of it would have caught a voice that was lifted from another build and no longer works. Rendering the samples caught two real bugs: the limiter was not actually limiting (seven simultaneous double-taps peaked at 1.318, a third past full scale), and `ctx()` called `resume()` unguarded on a context that could not be resumed, where the throw takes the note with it.
 

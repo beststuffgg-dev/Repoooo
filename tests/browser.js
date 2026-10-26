@@ -12,9 +12,9 @@ const path = require('path');
 
 // The repo layout, in one place. Every suite asks here rather than
 // spelling out '../..' itself, so a move like the one that put the
-// source folders under other/ is a single edit.
+// source folders under RhythmDrop/ is a single edit.
 const ROOT = path.join(__dirname, '..');
-const SRC  = path.join(ROOT, 'other');        // where the builds live
+const SRC  = path.join(ROOT, 'RhythmDrop');        // where the builds live
 const V8   = path.join(SRC, 'RhythmDropV8');  // the current game
 const V7   = path.join(SRC, 'v7');            // the previous one, kept whole
 const HTML = path.join(ROOT, 'htmls');        // generated single-file builds

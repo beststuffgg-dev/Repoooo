@@ -5,7 +5,7 @@
 //  module so the campaign can be regenerated and endless runs can roll
 //  a fresh song every time — the live generation V7 had that V8's
 //  baked campaign gave up. It is a byte-for-byte copy of
-//  other/v7/RhythmDropV7/campaign.js with one change: it exposes
+//  RhythmDrop/v7/RhythmDropV7/campaign.js with one change: it exposes
 //  window.RD_Generator instead of window.RD_Campaign, because V8
 //  already has an RD_Campaign of its own (the progression engine that
 //  reads the baked data). The two do not collide.

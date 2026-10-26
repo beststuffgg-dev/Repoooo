@@ -12,7 +12,7 @@
 // can only be re-derived, and any change to the composer silently
 // rewrites all 150 songs under the player's feet.
 //
-//   node other/tools/bake-levels.js
+//   node RhythmDrop/tools/bake-levels.js
 //
 // Re-run it deliberately, and expect the diff to show every song that
 // moved.
@@ -22,9 +22,9 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..', '..');
-const GENERATOR = path.join(ROOT, 'other', 'v7', 'RhythmDropV7', 'campaign.js');
-const OUT = path.join(ROOT, 'other', 'RhythmDropV8', 'levels.js');
-const ROWTYPES = path.join(ROOT, 'other', 'RhythmDropV8', 'rowtypes.js');
+const GENERATOR = path.join(ROOT, 'RhythmDrop', 'v7', 'RhythmDropV7', 'campaign.js');
+const OUT = path.join(ROOT, 'RhythmDrop', 'RhythmDropV8', 'levels.js');
+const ROWTYPES = path.join(ROOT, 'RhythmDrop', 'RhythmDropV8', 'rowtypes.js');
 
 // The instrument roster V8 ships. The composer resolves each area's
 // voice against whatever `window.RD_INSTRUMENTS` says the target build
@@ -139,14 +139,14 @@ function main() {
 
   const body = {
     v: 1,
-    generated: 'other/tools/bake-levels.js',
+    generated: 'RhythmDrop/tools/bake-levels.js',
     areas, instruments, levels,
   };
 
   const out = [
     '// GENERATED FILE — do not hand-edit the note data.',
-    '// Written by other/tools/bake-levels.js from the deterministic',
-    '// composer in other/v7/RhythmDropV7/campaign.js. Re-run that tool',
+    '// Written by RhythmDrop/tools/bake-levels.js from the deterministic',
+    '// composer in RhythmDrop/v7/RhythmDropV7/campaign.js. Re-run that tool',
     '// to regenerate; expect the diff to show every song that moved.',
     '//',
     '// ' + levels.length + ' levels, ' + notesTotal.toLocaleString() + ' notes, ' + areas.length + ' areas.',

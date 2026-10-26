@@ -34,7 +34,7 @@ console.log('== the composer is bundled, and does not collide with the engine ==
   // The bundled composer must be a faithful copy of V7's, or a fix to
   // V7 silently stops reaching V8.
   const bundled = fs.readFileSync(path.join(DIR, 'generator.js'), 'utf8');
-  const v7src = fs.readFileSync(path.join(__dirname, '..', 'other', 'v7', 'RhythmDropV7', 'campaign.js'), 'utf8');
+  const v7src = fs.readFileSync(path.join(__dirname, '..', 'RhythmDrop', 'v7', 'RhythmDropV7', 'campaign.js'), 'utf8');
   // The bundle must be V7's composer, not a fork of it — otherwise a
   // fix to the campaign generator silently stops reaching V8. Compare
   // the two with whitespace collapsed (the bundle adds a header banner
