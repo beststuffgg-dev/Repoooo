@@ -1,16 +1,6 @@
-// Boots RhythmDrop in jsdom and reports any runtime error.
-// Catches the class of bug that only appears when the code
-// actually runs — undefined refs, null DOM lookups on boot,
-// broken handlers — which linting can't see.
 const { JSDOM } = require('jsdom');
-// ── Locate the extension ──
-// Looks next to this folder, then inside it, then falls back to
-// the APP_DIR environment variable. Works from a checkout, a
-// download folder, or CI without editing anything.
 const path = require('path');
 const fs = require('fs');
-// Resolving the build under test is browser.js's job — it is the one
-// file that knows the repo layout.
 const findApp = require('./browser').appDir;
 const DIR = findApp();
 
@@ -29,7 +19,6 @@ const { window } = dom;
 
 window.onerror = (m) => errors.push('window.onerror: ' + m);
 
-// Web Audio stub — enough surface for the engine to build graphs.
 function stubNode(extra = {}) {
   return Object.assign({
     connect() { return this; },
@@ -38,7 +27,6 @@ function stubNode(extra = {}) {
     frequency: { value: 0, setValueAtTime() {}, exponentialRampToValueAtTime() {}, linearRampToValueAtTime() {} },
     gain:      { value: 1, setValueAtTime() {}, exponentialRampToValueAtTime() {}, linearRampToValueAtTime() {} },
     Q:         { value: 1 },
-    // DynamicsCompressorNode params (master-bus limiter)
     threshold: { value: 0 }, knee: { value: 0 }, ratio: { value: 1 },
     attack:    { value: 0 }, release: { value: 0 },
     type: '',
@@ -71,12 +59,9 @@ const origError = window.console.error;
 window.console.error = (...a) => { logs.push('console.error: ' + a.join(' ')); };
 window.console.warn = () => {};
 
-// Fund the test account so shop paths are reachable, but leave
-// username null so the first-boot flow still runs.
 window.localStorage.setItem('rd_profile',
   JSON.stringify({ username: null, coins: 9999, bestScore: 0 }));
 
-// Run the scripts in load order.
 for (const f of ['lighting.js', 'campaign.js', 'codec.js', 'loading.js', 'audio.js', 'game.js']) {
   try {
     window.eval(fs.readFileSync(path.join(DIR, f), 'utf8'));
@@ -86,7 +71,6 @@ for (const f of ['lighting.js', 'campaign.js', 'codec.js', 'loading.js', 'audio.
   }
 }
 
-// Exercise the paths a user hits immediately.
 const probes = [
   ['set username', () => {
     window.document.getElementById('uname-input').value = 'TestUser';
@@ -120,8 +104,6 @@ const probes = [
     row.click();
     if (!D.getElementById('game').classList.contains('active')) throw new Error('game did not open');
   }],
-  // Beta 14 split the campaign into one tab per era: the pane renders
-  // only the open era, so the ten blocks are now ten tabs.
   ['campaign era tabs', () => {
     const D = window.document;
     D.querySelector('.hnav[data-tab="levels"]').click();
@@ -167,7 +149,7 @@ const probes = [
   }],
   ['locked eras still show their songs behind the veil', () => {
     const D = window.document;
-    D.querySelectorAll('#cam-areas .cam-tab')[3].click();   // a locked era
+    D.querySelectorAll('#cam-areas .cam-tab')[3].click();
     const locked = D.querySelector('#cam-scroll .theme-block.locked');
     if (!locked) throw new Error('locked era did not render');
     const rows = locked.querySelectorAll('.lvl-row');
@@ -202,11 +184,11 @@ const probes = [
     window.document.querySelector('.hnav[data-tab="settings"]').click();
     const btns = [...window.document.querySelectorAll('#tab-settings .sync-btn')];
     if (btns.length !== 3) throw new Error('expected 3 sync buttons, got ' + btns.length);
-    btns[0].click();  // Generate
+    btns[0].click();
     const box = window.document.getElementById('sync-box');
     if (!box.value.startsWith('RDSYNC1:')) throw new Error('no code generated');
     logs.push('  sync code: ' + box.value.length + ' chars');
-    btns[2].click();  // Restore its own code — must not corrupt anything
+    btns[2].click();
     if (!window.document.getElementById('pbar-username').textContent) throw new Error('profile lost');
   }],
   ['first-boot restore panel', () => {
@@ -221,11 +203,10 @@ const probes = [
     D.querySelector('.hnav[data-tab="settings"]').click();
     const opts = [...D.querySelectorAll('#tab-settings .style-opt')];
     if (opts.length !== 2) throw new Error('expected 2 style options, got ' + opts.length);
-    opts[1].click();                                  // pick Light
+    opts[1].click();
     if (!D.body.classList.contains('lane-light')) throw new Error('lane-light class not applied');
     logs.push('  after picking Light, body = "' + D.body.className + '"');
 
-    // theme switch must not drop the lane class
     D.querySelector('.hnav[data-tab="themes"]').click();
     const walnut = D.querySelector('.theme-card[data-theme="walnut"]');
     if (walnut) walnut.click();
@@ -233,7 +214,6 @@ const probes = [
       throw new Error('lane style lost when theme changed: "' + D.body.className + '"');
     logs.push('  after theme change, body = "' + D.body.className + '"');
 
-    // and back to Button
     D.querySelector('.hnav[data-tab="settings"]').click();
     [...D.querySelectorAll('#tab-settings .style-opt')][0].click();
     if (D.body.classList.contains('lane-light')) throw new Error('did not revert to keycap');
@@ -251,15 +231,11 @@ const probes = [
     const D = window.document;
     const sw = [...D.querySelectorAll('#shop-colourways .cw')];
     if (sw.length !== 7) throw new Error('expected 7 colourways (As drawn + 6 tints), got ' + sw.length);
-    // Buy one so there is something equipped to tint. Buying takes two
-    // clicks now: the first previews the avatar and arms the card, the
-    // second spends. Re-query between them — arming re-renders the grid.
     D.querySelector('#shop-avatar-grid .avatar-card').click();
     D.querySelector('#shop-avatar-grid .avatar-card').click();
     if (!D.querySelector('#shop-avatar-grid .avatar-card.owned, #shop-avatar-grid .avatar-card.equipped'))
       throw new Error('two clicks did not buy an avatar');
     const before = D.querySelector('#pbar-avatar svg.av').style.getPropertyValue('--av-p');
-    // index 0 is 'As drawn'; pick a real tint
     sw[4].click();
     const after = D.querySelector('#pbar-avatar svg.av').style.getPropertyValue('--av-p');
     if (before === after) throw new Error('tint did not change (' + before + ')');
@@ -307,7 +283,6 @@ const probes = [
     const f = D.querySelectorAll('#shop-hitfx .fx-card');
     if (t.length < 30) throw new Error('expected 30+ trails, got ' + t.length);
     if (f.length < 30) throw new Error('expected 30+ hit effects, got ' + f.length);
-    // free options equip without charge
     const before = D.querySelectorAll('#shop-trails .fx-card.on').length;
     if (before !== 1) throw new Error('expected exactly 1 equipped trail');
     logs.push('  cosmetics: ' + t.length + ' trails, ' + f.length + ' effects');
@@ -315,7 +290,7 @@ const probes = [
   ['buying a trail applies its class', () => {
     const D = window.document;
     const cards = [...D.querySelectorAll('#shop-trails .fx-card')];
-    cards[1].click();                       // Comet, 250 coins
+    cards[1].click();
     if (!D.body.classList.contains('trail-comet'))
       throw new Error('trail class not applied: "' + D.body.className + '"');
     logs.push('  after buying Comet: "' + D.body.className + '"');
@@ -325,7 +300,7 @@ const probes = [
     D.querySelector('.hnav[data-tab="themes"]').click();
     const bone = D.querySelector('.theme-card[data-theme="bone"]');
     if (!bone) throw new Error('bone theme card missing');
-    bone.click();                                   // may be locked -> buys
+    bone.click();
     bone.click();
     if (!D.body.classList.contains('light'))
       throw new Error('light class not set on Bone: "' + D.body.className + '"');
@@ -337,9 +312,6 @@ const probes = [
   }],
   ['dark area overrides light theme, restores after', () => {
     const D = window.document;
-    // Bone is earned by clearing area 9 now rather than bought, so this
-    // picks whichever light theme is actually available — the point of
-    // the probe is the light/dark handoff, not which theme does it.
     D.querySelector('.hnav[data-tab="themes"]').click();
     const light = [...D.querySelectorAll('.theme-card:not(.locked)')]
       .find(c => window.themeIsLight(c.dataset.theme));
@@ -365,8 +337,6 @@ const probes = [
     if (!em.length) throw new Error('no emblems rendered');
     logs.push('  emblems rendered on ' + em.length + ' theme block(s)');
   }],
-  // Beta 14 moved the daily from a card in the list to a pill docked to
-  // the bottom of the popup, which exists only while a reward is due.
   ['daily pill docks and claims', () => {
     const D = window.document;
     window.localStorage.removeItem('rd_daily');
@@ -390,7 +360,7 @@ const probes = [
     const adv = D.getElementById('adv-toggle'); if (adv) adv.click();
     const opts = D.querySelectorAll('#adv-theme-pick .tp-opt');
     if (opts.length !== 11) throw new Error('expected None + 10 themes, got ' + opts.length);
-    opts[3].click();                                  // pick a theme
+    opts[3].click();
     if (!D.querySelector('#adv-theme-pick .tp-opt.on'))
       throw new Error('theme not marked selected');
     logs.push('  theme picker: ' + opts.length + ' options, selection sticks');
@@ -400,7 +370,6 @@ const probes = [
     const D = window.document;
     D.querySelector('.hnav[data-tab="levels"]').click();
     const badges = D.querySelectorAll('#cam-scroll .diff-badge');
-    // One era renders at a time now, so a full era is 15 badges.
     if (badges.length !== 15) throw new Error('only ' + badges.length + ' difficulty badges');
     const vals = [...new Set([...badges].map(b => b.textContent))].sort();
     vals.forEach(v => { if (!/^[1-9]$/.test(v)) throw new Error('bad difficulty "' + v + '"'); });

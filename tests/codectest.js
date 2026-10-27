@@ -1,12 +1,6 @@
 const {JSDOM}=require('jsdom');
-// ── Locate the extension ──
-// Looks next to this folder, then inside it, then falls back to
-// the APP_DIR environment variable. Works from a checkout, a
-// download folder, or CI without editing anything.
 const path = require('path');
 const fs = require('fs');
-// Resolving the build under test is browser.js's job — it is the one
-// file that knows the repo layout.
 const findApp = require('./browser').appDir;
 const DIR = findApp();
 const dom=new JSDOM('<body></body>',{runScripts:'outside-only'});
@@ -16,14 +10,12 @@ const C=w.RD_Codec;
 let fail=0;
 const ok=(n,c)=>{console.log((c?'  ok  ':'  FAIL')+' '+n); if(!c)fail++;};
 
-// ── LZW round trip on nasty inputs ──
 ['', 'a', 'aaaaaaaaaa', 'ababababab', 'Café ☕ ünïcode',
  '.'.repeat(500), JSON.stringify({a:[1,2,3],b:'x'.repeat(200)}),
  'TATATATATAT'.repeat(50)].forEach((s,i)=>{
   ok('lzw roundtrip #'+i+' (len '+s.length+')', C.unpack(C.pack(s))===s);
 });
 
-// ── Build a realistic 64-beat level ──
 function makeLevel(beats){
   const grid=[];
   for(let r=0;r<beats;r++){
@@ -53,7 +45,6 @@ function makeLevel(beats){
     JSON.stringify(back.bassPattern)===JSON.stringify(lvl.bassPattern));
 });
 
-// ── Backward compatibility with v5 codes ──
 const v5lvl=makeLevel(48);
 const v5code='RHYTHMDROP:'+Buffer.from(JSON.stringify(v5lvl)).toString('base64');
 const fromV5=C.decodeLevel(v5code);
@@ -61,18 +52,15 @@ ok('reads v5 RHYTHMDROP: code', fromV5.name===v5lvl.name && fromV5.grid.length==
 ok('reads bare v5 base64 (no prefix)',
    C.decodeLevel(Buffer.from(JSON.stringify(v5lvl)).toString('base64')).bpm===128);
 
-// ── Unicode level name ──
 const uni=makeLevel(16); uni.name='Café ☕ 夜';
 ok('unicode name survives', C.decodeLevel(C.encodeLevel(uni)).name==='Café ☕ 夜');
 
-// ── Sustain + custom pitch fidelity ──
 const s2=makeLevel(8);
 s2.grid[1][0]={type:'tap',freq:466.16,sustain:2.5};
 const r2=C.decodeLevel(C.encodeLevel(s2));
 ok('custom pitch exact', Math.abs(r2.grid[1][0].freq-466.16)<0.02);
 ok('sustain exact', r2.grid[1][0].sustain===2.5);
 
-// ── Sync code ──
 const sync=C.encodeSync({
   profile:{username:'Alex',coins:4230,bestScore:88120},
   shop:{owned:['av_star','av_dj','custom'],equipped:'av_dj'},
@@ -100,7 +88,6 @@ const noLevels=C.encodeSync({
 console.log('  sync code length (profile only): '+noLevels.length+' chars');
 ok('sync without levels', C.decodeSync(noLevels).levels.length===0);
 
-// ── Rejects garbage ──
 let threw=false; try{C.decodeSync('RDSYNC1:@@@@')}catch(e){threw=true}
 ok('rejects corrupt sync code', threw);
 threw=false; try{C.decodeLevel('not a code at all')}catch(e){threw=true}

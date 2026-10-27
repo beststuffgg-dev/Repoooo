@@ -1,4 +1,3 @@
-// V8 progression: what a run is worth, what it unlocks, and the daily.
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -26,7 +25,6 @@ console.log('== coins count levels cleared, not chart length ==');
   ok(paid.size === 1, 'every level pays the same on a clear');
   ok([...paid][0] === C.COINS_PER_CLEAR, 'and that is COINS_PER_CLEAR (' + C.COINS_PER_CLEAR + ')');
 
-  // The shortest and longest charts differ by a factor of 14 in notes.
   let shortest = null, longest = null;
   for (const a of C.AREAS) for (let i = 0; i < C.LEVELS_PER_AREA; i++) {
     const l = C.levelAt(a.id, i), n = C.countNotes(l);
@@ -55,14 +53,12 @@ console.log('== XP tracks the chart, and finishing beats dying ==');
   const half = C.xpFor(l, { completed: false, progress: 0.5 });
   notes.push('area 1 level 1: ' + full + ' XP cleared, ' + half + ' XP at half');
   ok(full > half, 'clearing pays more than getting halfway');
-  // Speed is in the formula, not bolted on: it should stay linear.
   const base = C.xpFor(l, { completed: true, speedMult: 1 });
   for (const m of [1.5, 2, 3]) {
     const got = C.xpFor(l, { completed: true, speedMult: m });
     ok(Math.abs(got - base * m) <= Math.max(2, base * m * 0.01),
       'speed ' + m + '× pays ' + m + '× (' + got + ' vs ' + Math.round(base * m) + ')');
   }
-  // Later areas are worth more than the first.
   const early = C.xpFor(C.levelAt(1, 0), { completed: true });
   const late  = C.xpFor(C.levelAt(10, 14), { completed: true });
   notes.push('area 1 level 1: ' + early + ' XP; area 10 level 15: ' + late + ' XP');
@@ -131,15 +127,12 @@ console.log('== the daily runs seven days and lapses on a miss ==');
   ok(seen.every(c => c > 0), 'each of the seven days pays');
   ok(seen[6] > seen[0], 'day seven pays more than day one');
 
-  // Claiming twice in one day pays once.
   const again = C.claimDaily(daily, t0 + 6 * DAY);
   ok(again.coins === 0, 'a second claim on the same day pays nothing');
 
-  // Missing a day restarts the run.
   const lapsed = C.dailyState(daily, t0 + 9 * DAY);
   ok(lapsed.claimable && lapsed.streak === 1, 'missing a day starts the cycle over (streak ' + lapsed.streak + ')');
 
-  // And an unbroken run caps rather than running off the end of the table.
   let long = null;
   for (let d = 0; d < 20; d++) long = C.claimDaily(long, t0 + d * DAY).daily;
   const st = C.dailyState(long, t0 + 20 * DAY);

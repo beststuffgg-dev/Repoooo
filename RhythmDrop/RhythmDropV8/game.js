@@ -1,25 +1,5 @@
-// ═══════════════════════════════════════════════════
-//  RhythmDrop game.js v4
-//  Changes from v3:
-//  1. No audio preview when selecting notes in creator
-//  2. A/S/D/F keys play lane notes when NOT in-game
-//  3. Note picker opens by clicking the note label
-//     inside the cell itself (no separate trigger button)
-//  4. Uses full chromatic freq table from audio.js v4
-// ═══════════════════════════════════════════════════
-
-// How much extra width the advanced creator panel is currently
-// borrowing from the window. Declared here rather than beside the
-// sizing code because showScreen reads it, and showScreen can run
-// before that point during boot — a `let` is in the temporal dead zone
-// until its own line executes.
 let advExpansion = 0;
 
-// The four demo levels the v3 build shipped are gone: the campaign in
-// levels.js is the level list now, and a second parallel one that
-// nothing linked to was only ever going to drift.
-
-// ── Persistence ──────────────────────────────────
 const store = {
   load:             ()  => { try { return JSON.parse(localStorage.getItem('rd_levels')||'[]'); } catch { return []; } },
   save:             a   => localStorage.setItem('rd_levels', JSON.stringify(a)),
@@ -31,16 +11,12 @@ const store = {
   saveGlassTrans:   v   => localStorage.setItem('rd_glass_trans', v),
   loadSettings:     ()  => { try { return JSON.parse(localStorage.getItem('rd_settings')||'null'); } catch { return null; } },
   saveSettings:     s   => localStorage.setItem('rd_settings', JSON.stringify(s)),
-  // Profile
   loadProfile:      ()  => { try { return JSON.parse(localStorage.getItem('rd_profile')||'null'); } catch { return null; } },
   saveProfile:      p   => localStorage.setItem('rd_profile', JSON.stringify(p)),
-  // High scores: array of {name, score, level, coins, date}
   loadScores:       ()  => { try { return JSON.parse(localStorage.getItem('rd_scores')||'[]'); } catch { return []; } },
   saveScores:       a   => localStorage.setItem('rd_scores', JSON.stringify(a)),
-  // Per-level best: { [levelName]: {name, score, coins, date} } — never evicted
   loadBests:        ()  => { try { return JSON.parse(localStorage.getItem('rd_bests')||'{}'); } catch { return {}; } },
   saveBests:        b   => localStorage.setItem('rd_bests', JSON.stringify(b)),
-  // Shop: owned avatar ids + equipped, plus owned trail ids + equipped trail
   loadShop:         ()  => {
     try {
       const s = JSON.parse(localStorage.getItem('rd_shop')||'{}');
@@ -53,10 +29,8 @@ const store = {
     } catch { return { owned:[], equipped:null, ownedTrails:[], equippedTrail:null }; }
   },
   saveShop:         s   => localStorage.setItem('rd_shop', JSON.stringify(s)),
-  // Custom avatar data URL
   loadCustomAv:     ()  => localStorage.getItem('rd_custom_av')||null,
   saveCustomAv:     d   => localStorage.setItem('rd_custom_av', d),
-  // Campaign progress: total XP and which levels are cleared.
   loadProgress:     ()  => {
     try {
       const p = JSON.parse(localStorage.getItem('rd_progress')||'{}');
@@ -64,12 +38,10 @@ const store = {
     } catch { return { xp: 0, cleared: {} }; }
   },
   saveProgress:     p   => localStorage.setItem('rd_progress', JSON.stringify(p)),
-  // Daily reward: { day, streak }
   loadDaily:        ()  => { try { return JSON.parse(localStorage.getItem('rd_daily')||'null'); } catch { return null; } },
   saveDaily:        d   => localStorage.setItem('rd_daily', JSON.stringify(d)),
 };
 
-// ── Profile state ──────────────────────────────
 let profile = store.loadProfile() || { username: null, coins: 0, bestScore: 0 };
 function saveProfile() { store.saveProfile(profile); }
 
@@ -128,7 +100,6 @@ function renderAvatarInto(el, avatarId) {
   }
 }
 
-// ── Shop avatars catalog ────────────────────
 const SHOP_AVATARS = [
   { id:'av_star',   name:'Star',    emoji:'⭐', price:200 },
   { id:'av_fire',   name:'Blaze',   emoji:'🔥', price:300 },
@@ -139,7 +110,6 @@ const SHOP_AVATARS = [
   { id:'av_crown',  name:'Crown',   emoji:'👑', price:800 },
   { id:'av_gem',    name:'Gem',     emoji:'💎', price:600 },
   { id:'av_space',  name:'Space',   emoji:'🚀', price:450 },
-  // ── Ultra-expensive / prestige tier ──
   { id:'av_unicorn', name:'Unicorn',  emoji:'🦄', price:5000 },
   { id:'av_dragon',  name:'Dragon',   emoji:'🐉', price:12000 },
   { id:'av_galaxy',  name:'Galaxy',   emoji:'🌌', price:25000 },
@@ -147,7 +117,6 @@ const SHOP_AVATARS = [
   { id:'av_phoenix', name:'Phoenix',  emoji:'🔥🦅', price:100000 },
   { id:'av_goat',    name:'G.O.A.T.', emoji:'🐐', price:250000 },
   { id:'av_deity',   name:'Deity',    emoji:'⚡👑', price:1000000 },
-  // ── Beyond-prestige tier ──
   { id:'av_blackhole', name:'Black Hole', emoji:'🕳️',  price:2000000 },
   { id:'av_infinity',  name:'Infinity',   emoji:'♾️',  price:5000000 },
   { id:'av_diadem',    name:'Diadem',     emoji:'👑💎', price:10000000 },
@@ -155,7 +124,6 @@ const SHOP_AVATARS = [
   { id:'av_ascended',  name:'Ascended',   emoji:'😇⚡', price:100000000 },
 ];
 
-// Special multi-color trails (gradient + particle palette)
 const SPECIAL_TRAILS = {
   rainbow: { grad:'linear-gradient(0deg,#ff3a6e,#f59e0b,#22c55e,#3b82f6,#a855f7)', palette:['#ff3a6e','#f59e0b','#22c55e','#3b82f6','#a855f7'] },
   aurora:  { grad:'linear-gradient(0deg,#34d399,#22d3ee,#a78bfa)',                 palette:['#34d399','#22d3ee','#a78bfa'] },
@@ -164,7 +132,6 @@ const SPECIAL_TRAILS = {
 function trailGradient(color)       { return SPECIAL_TRAILS[color] ? SPECIAL_TRAILS[color].grad : 'linear-gradient(0deg,' + color + ',transparent)'; }
 function trailParticleColor(color)  { const s = SPECIAL_TRAILS[color]; return s ? s.palette[Math.floor(Math.random() * s.palette.length)] : color; }
 
-// ── Note trail effects catalog (color by price/rarity) ──
 const SHOP_TRAILS = [
   { id:'tr_green',   name:'Green Flame',   color:'#22c55e', price:300 },
   { id:'tr_blue',    name:'Blue Flame',    color:'#3b82f6', price:500 },
@@ -173,7 +140,6 @@ const SHOP_TRAILS = [
   { id:'tr_red',     name:'Crimson Flame', color:'#ef4444', price:4000 },
   { id:'tr_gold',    name:'Gold Flame',    color:'#f59e0b', price:12000 },
   { id:'tr_rainbow', name:'Rainbow Flame', color:'rainbow', price:50000 },
-  // ── Higher-priced special trails ──
   { id:'tr_plasma',  name:'Plasma Flame',  color:'#e879f9', price:120000 },
   { id:'tr_ember',   name:'Ember Storm',   color:'#fb7185', price:350000 },
   { id:'tr_aurora',  name:'Aurora',        color:'aurora',  price:900000 },
@@ -182,9 +148,6 @@ const SHOP_TRAILS = [
 ];
 function trailById(id) { return SHOP_TRAILS.find(t => t.id === id) || null; }
 
-// ── Mystery boxes catalog ──
-// Each box draws from items priced within [minPrice, maxPrice]; pricier boxes
-// raise the floor, so their loot is much higher rarity.
 const MYSTERY_BOXES = [
   { id:'box_basic',  name:'Basic Box',  emoji:'📦', price:1000,     minPrice:0,        maxPrice:1000 },
   { id:'box_rare',   name:'Rare Box',   emoji:'🎁', price:6000,     minPrice:600,      maxPrice:5000 },
@@ -194,7 +157,6 @@ const MYSTERY_BOXES = [
   { id:'box_cosmic', name:'Cosmic Box', emoji:'💫', price:20000000, minPrice:5000000,  maxPrice:100000000 },
 ];
 
-// Rarity tier derived purely from an item's price (steeper at the top)
 function rarityForPrice(p) {
   if (p >= 10000000) return { name:'Celestial',  color:'#fde047' };
   if (p >= 1000000)  return { name:'Divine',     color:'#f0abfc' };
@@ -205,7 +167,6 @@ function rarityForPrice(p) {
   return               { name:'Common',     color:'#9ca3af' };
 }
 
-// One-time: seed the per-level bests map from any surviving legacy scores
 (function migrateBests() {
   const bests = store.loadBests();
   if (Object.keys(bests).length) return;
@@ -219,25 +180,15 @@ function rarityForPrice(p) {
   store.saveBests(bests);
 })();
 
-// ── High score management ───────────────────
-// Logs a run and pays the score-derived coin reward.
-//
-// `opts.logOnly` records the run without paying for it or writing a
-// per-level best: campaign runs take that path, because the campaign
-// pays a flat reward per clear and keeps its own record keyed by level
-// id. Without the flag a campaign clear was paid twice — once flat and
-// once again as score/1000 — which is exactly the score-derived payout
-// the flat reward exists to replace.
 function addHighScore(name, score, levelName, opts) {
   opts = opts || {};
   const coins = opts.logOnly ? 0 : Math.floor(score / 1000);
   const scores = store.loadScores();
   scores.push({ name, score, level: levelName, coins, date: Date.now() });
   scores.sort((a,b) => b.score - a.score);
-  store.saveScores(scores.slice(0, 50)); // keep top 50
+  store.saveScores(scores.slice(0, 50));
 
   if (!opts.logOnly) {
-    // Per-level best (kept separately so a level's best is never evicted)
     const bests = store.loadBests();
     const prev  = bests[levelName];
     if (!prev || score > prev.score) {
@@ -254,13 +205,7 @@ function addHighScore(name, score, levelName, opts) {
   return coins;
 }
 
-// ── Import / Export ──────────────────────────────
 function exportLevel(lvl) {
-  // The compact codec from V7: LZW + varint + base64url. A level that
-  // used to export as a multi-kilobyte base64-JSON blob is now a short
-  // RD2 code you can actually paste into a message. Falls back to the
-  // old base64-JSON form only if the codec somehow isn't loaded, so a
-  // share never silently produces nothing.
   const text = (window.RD_Codec && window.RD_Codec.encodeLevel)
     ? window.RD_Codec.encodeLevel(lvl)
     : 'RHYTHMDROP:' + btoa(unescape(encodeURIComponent(JSON.stringify(lvl))));
@@ -269,9 +214,6 @@ function exportLevel(lvl) {
     .catch(() => prompt('Copy this level code:', text));
 }
 
-// Secret cheat codes, typed into the same box as a share code. Returns
-// true when the input was a cheat and has been handled, so the import
-// path can bail before trying to decode it as a level.
 function tryCheatCode(text) {
   switch (text.trim().toLowerCase()) {
     case 'lemussia':
@@ -279,7 +221,7 @@ function tryCheatCode(text) {
       showToast('💰 +10,000,000 coins!');
       return true;
     case 'lemussia2':
-      addCoins(-Math.min(1000000, profile.coins)); // don't go below 0
+      addCoins(-Math.min(1000000, profile.coins));
       showToast('💸 -1,000,000 coins!', true);
       return true;
     default:
@@ -292,8 +234,6 @@ function importLevel() {
   if (!text) { showToast('Invalid code', true); return; }
   if (tryCheatCode(text)) return;
   const trimmed = text.trim();
-  // The codec reads the new RD2 codes and the old RHYTHMDROP: base64
-  // ones, so codes shared from an earlier build still import.
   const looksLikeCode = /^(RD2:|RHYTHMDROP:)/.test(trimmed) || (window.RD_Codec && /^[A-Za-z0-9_-]+$/.test(trimmed));
   if (!looksLikeCode) { showToast('Invalid code', true); return; }
   try {
@@ -330,11 +270,7 @@ function showToast(msg, isErr) {
   t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2400);
 }
 
-// ── Screen manager ───────────────────────────────
 const showScreen = id => {
-  // Leaving the creator gives back whatever width the advanced panel
-  // borrowed — otherwise the home screen inherits a window widened for
-  // a panel that is no longer on screen.
   if (id !== 'creator' && advExpansion) {
     crAdvOpen = false;
     const ap = document.getElementById('adv-panel');
@@ -345,13 +281,8 @@ const showScreen = id => {
   document.getElementById(id).classList.add('active');
 };
 
-// ══════════════════════════════════════
-//  THEMES
-// ══════════════════════════════════════
 const THEMES = [
   { id:'graphite',   name:'Graphite',   subs:'Instrument panel', dots:['#6FA8B5','#C4854E','#121517'] },
-  // Textured "material" themes, ported from V7 — each carries a real
-  // grain (wood, paper, brass, glass, blueprint, rubber).
   { id:'walnut',     name:'Walnut',     subs:'Oiled wood',       dots:['#6FB3A0','#E0894A','#2A1B0E'], mat:true },
   { id:'bone',       name:'Bone',       subs:'Matte paper',      dots:['#1E7A8C','#C2325C','#EDE8DE'], mat:true },
   { id:'amber',      name:'Amber',      subs:'Brushed brass',    dots:['#E8B355','#D9762E','#1F1508'], mat:true },
@@ -372,10 +303,6 @@ const THEMES = [
   { id:'arctic',     name:'Arctic',       subs:'Light & Cool',   dots:['#0070c0','#7b2fbe','#e4eefa'] },
   { id:'custom',     name:'Custom',       subs:'Your colors',    dots:['#888','#888','#333'] },
 
-  // Campaign themes — one per area, in campaign order, earned by clearing
-  // every song in that area. `area` is the RD_Campaign area id; `card` is
-  // the preview surface, since unlike the themes above these have no
-  // per-theme card rule in the stylesheet. dots = tap, dtap, surface.
   { id:'harvest',  name:'Harvest',    subs:'Straw & poppy',     area:1,  dots:['#E5C46A','#DC6351','#172218'], card:{ bg:'#172218', text:'#EEE8CF' } },
   { id:'lapis',    name:'Lapis',      subs:'Lapis & sandstone', area:2,  dots:['#4F86E0','#D9AE3E','#1D1810'], card:{ bg:'#1D1810', text:'#F3E6C6' } },
   { id:'marble',   name:'Marble',     subs:'Aegean light',      area:3,  dots:['#1F5FAE','#925719','#EFF2F5'], card:{ bg:'#EFF2F5', text:'#1A2330' } },
@@ -390,13 +317,8 @@ const THEMES = [
 
 const themeById = id => THEMES.find(t => t.id === id) || null;
 
-// A campaign theme is locked until its area is cleared. Derived from
-// progress rather than stored, so there is nothing to migrate, nothing
-// to keep in sync, and anyone who had already cleared an area simply has
-// the theme.
 const isThemeLocked = th => !!(th && th.area && !CAM().areaCleared(progress, th.area));
 
-// Inline CSS vars set by the custom theme — must be cleared when switching away
 const CUSTOM_VARS = ['--bg','--bg2','--bg3','--bg4','--text','--tap','--tap2','--dtap','--dtap2','--accent','--muted','--dim','--border','--border2','--glow-tap','--glow-dtap'];
 function clearCustomThemeVars() {
   const r = document.documentElement.style;
@@ -404,11 +326,7 @@ function clearCustomThemeVars() {
 }
 
 function applyTheme(id) {
-  // Clear any inline custom-theme overrides so other themes take effect
   clearCustomThemeVars();
-  // This replaces body.className outright, so anything on the body that
-  // is not a theme has to be carried across explicitly — otherwise
-  // picking a theme silently turns the graphics style off.
   const keep = ['gfx-modern', 'adv-overlay']
     .filter(c => document.body.classList.contains(c));
   document.body.className = [id === 'dark' ? '' : 'theme-' + id, ...keep]
@@ -419,14 +337,12 @@ function applyTheme(id) {
   document.querySelectorAll('.theme-card').forEach(c => {
     c.classList.toggle('selected', c.dataset.theme === id);
   });
-  // Show the right sub-form (custom colors / glass transparency)
   const cf = document.getElementById('custom-theme-form');
   const gf = document.getElementById('glass-trans-form');
   if (cf) cf.classList.toggle('show', id === 'custom');
   if (gf) gf.classList.toggle('show', id === 'glass');
 }
 
-// Liquid-glass transparency: 0.3 / 0.5 / 0.7 → panel alpha
 function applyGlassTrans(alpha) {
   document.documentElement.style.setProperty('--glass-a', alpha);
   store.saveGlassTrans(alpha);
@@ -518,7 +434,6 @@ document.getElementById('ct-apply').addEventListener('click', () => {
   applyTheme('custom');
 });
 
-// Liquid-glass transparency buttons
 document.querySelectorAll('.glass-trans-btn').forEach(b => {
   b.addEventListener('click', () => {
     applyTheme('glass');
@@ -526,22 +441,11 @@ document.querySelectorAll('.glass-trans-btn').forEach(b => {
   });
 });
 
-// ══════════════════════════════════════
-//  CAMPAIGN
-//
-//  Ten areas of fifteen songs. The songs themselves are baked data —
-//  see levels.js and RhythmDrop/tools/bake-levels.js — so everything here
-//  is about which of them you can reach and what you have done to
-//  them, never about composing one.
-// ══════════════════════════════════════
 const CAM = () => window.RD_Campaign;
 
 let progress = store.loadProgress();
 function saveProgress() { store.saveProgress(progress); }
 
-// Which area the browser is showing. Opens on the furthest one
-// reached rather than always on Farmstead, so picking the game back
-// up doesn't start with scrolling.
 let camArea = 1;
 function furthestArea() {
   const C = CAM(); if (!C) return 1;
@@ -550,8 +454,6 @@ function furthestArea() {
   return a;
 }
 
-// A campaign level's record is keyed by its id, not its name: two
-// areas can and do name a song the same thing.
 function bestKeyFor(lvl) {
   return lvl && lvl.campaign ? 'cam:' + lvl.id : (lvl ? lvl.name : null);
 }
@@ -569,6 +471,9 @@ function recordBest(lvl, score, coins) {
   return true;
 }
 
+const emblemSvg = key =>
+  '<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#emblem-' + key + '"/></svg>';
+
 function renderCampaign() {
   const C = CAM();
   const strip = document.getElementById('cam-areas');
@@ -576,7 +481,6 @@ function renderCampaign() {
   if (!C || !strip || !list) return;
   if (camArea !== 'endless' && !C.isAreaUnlocked(progress, camArea)) camArea = furthestArea();
 
-  // ── area strip ──
   strip.innerHTML = '';
   C.AREAS.forEach(area => {
     const unlocked = C.isAreaUnlocked(progress, area.id);
@@ -587,40 +491,36 @@ function renderCampaign() {
       + (area.id === camArea ? ' sel' : '')
       + (!unlocked ? ' locked' : '')
       + (done === C.LEVELS_PER_AREA ? ' done' : '');
-    chip.innerHTML = '<div class="ac-name">' + (unlocked ? area.name : '🔒 ' + area.name) + '</div>'
-      + '<div class="ac-prog">' + done + '/' + C.LEVELS_PER_AREA + '</div>';
+    chip.innerHTML = '<span class="ac-emblem">' + emblemSvg(area.key) + '</span>'
+      + '<div class="ac-text"><div class="ac-name">' + (unlocked ? area.name : '🔒 ' + area.name) + '</div>'
+      + '<div class="ac-prog">' + done + '/' + C.LEVELS_PER_AREA + '</div></div>';
     if (unlocked) chip.addEventListener('click', () => { camArea = area.id; renderCampaign(); });
     strip.appendChild(chip);
   });
 
-  // Endless is the eleventh tab, at the end of the row — unlocked once
-  // every area is cleared, the way V7 gated it.
   const endlessReady = C.AREAS.every(a => C.areaCleared(progress, a.id));
   const echip = document.createElement('div');
   echip.className = 'area-chip endless-chip'
     + (camArea === 'endless' ? ' sel' : '')
     + (!endlessReady ? ' locked' : '');
-  echip.innerHTML = '<div class="ac-name">' + (endlessReady ? '♾️ Endless' : '🔒 Endless') + '</div>'
-    + '<div class="ac-prog">' + (endlessReady ? 'no end' : 'clear all') + '</div>';
+  echip.innerHTML = '<div class="ac-text"><div class="ac-name">' + (endlessReady ? '♾️ Endless' : '🔒 Endless') + '</div>'
+    + '<div class="ac-prog">' + (endlessReady ? 'no end' : 'clear all') + '</div></div>';
   if (endlessReady) echip.addEventListener('click', () => { camArea = 'endless'; renderCampaign(); });
   strip.appendChild(echip);
 
-  // Keep the selected era in view — the strip scrolls, and Endless is
-  // the rightmost tab.
   const selChip = strip.querySelector('.area-chip.sel');
   if (selChip && selChip.scrollIntoView) {
     try { selChip.scrollIntoView({ inline: 'nearest', block: 'nearest' }); } catch (e) {}
   }
 
-  // ── the Endless pane replaces the song list on its tab ──
   if (camArea === 'endless') { renderEndlessPane(list, endlessReady); return; }
 
-  // ── song list ──
   const area = C.areaById(camArea);
   list.innerHTML = '';
   const head = document.createElement('div');
   head.className = 'cam-head';
-  head.innerHTML = '<span class="ch-name">' + area.name + '</span>'
+  head.innerHTML = '<span class="ch-emblem">' + emblemSvg(area.key) + '</span>'
+    + '<span class="ch-name">' + area.name + '</span>'
     + '<span class="ch-blurb">' + area.blurb + '</span>';
   list.appendChild(head);
 
@@ -633,13 +533,11 @@ function renderCampaign() {
     return;
   }
 
-  // The rows live in one grouped card, v7-style, rather than fifteen
-  // separate floating ones.
   const songs = document.createElement('div');
   songs.className = 'cam-songs';
   list.appendChild(songs);
 
-  const bests = store.loadBests();      // once, not once per song
+  const bests = store.loadBests();
   C.areaMeta(camArea).forEach(m => {
     const unlocked = C.isLevelUnlocked(progress, camArea, m.levelIdx);
     const cleared  = C.isLevelCleared(progress, camArea, m.levelIdx);
@@ -672,7 +570,6 @@ function renderCampaign() {
   });
 }
 
-// The three difficulty bands, launched as endless runs.
 const ENDLESS_BANDS = [
   ['1-4', '🌱', 'Casual',    'Gentle — a warm-up that never ends'],
   ['4-7', '🔥', 'Standard',  'The campaign\'s middle, rolling forever'],
@@ -719,7 +616,6 @@ function launchCampaignLevel(areaId, idx) {
   launchLevel(lvl);
 }
 
-// ── XP ────────────────────────────────
 function grantXp(amount) {
   const before = CAM().levelFromXp(progress.xp);
   progress.xp += amount;
@@ -740,7 +636,6 @@ function renderXpStrip() {
   if (nm) nm.textContent = p.into + '/' + p.need;
 }
 
-// ── Daily reward ──────────────────────
 function renderDaily() {
   const C = CAM(); if (!C) return;
   const card = document.getElementById('daily-card');
@@ -767,15 +662,6 @@ function renderDaily() {
   };
 }
 
-// ══════════════════════════════════════
-//  HOME
-// ══════════════════════════════════════
-// The Themes, Settings and Shop panes sit behind tabs that most visits
-// never open, and between them were nearly half the cost of every return
-// to the menu (and, at startup, the first toLocaleString() of the shop's
-// prices, which alone initialises the browser's locale data: ~14 ms). So a
-// pane is built when its tab is shown (selectHomeTab) and refreshed with
-// the home screen only while it is the one in view.
 const HOME_PANES = { themes: buildThemesGrid, settings: buildSettingsPanel, shop: renderShop };
 
 function renderHome() {
@@ -830,10 +716,6 @@ function renderCustoms() {
   });
 }
 
-// nav tabs
-// One place that owns which home tab is showing: the .active class, the
-// matching pane, and the aria-current the tab exposes to assistive tech.
-// Three call sites used to hand-toggle all of this; they call this now.
 function selectHomeTab(tab) {
   document.querySelectorAll('.hnav').forEach(x => {
     const on = x.dataset.tab === tab;
@@ -844,12 +726,11 @@ function selectHomeTab(tab) {
   document.querySelectorAll('.tab-pane').forEach(x => {
     x.classList.toggle('active', x.id === 'tab-' + tab);
   });
-  if (HOME_PANES[tab]) HOME_PANES[tab]();     // built on show; see renderHome
+  if (HOME_PANES[tab]) HOME_PANES[tab]();
 }
 
 document.querySelectorAll('.hnav').forEach(t => t.addEventListener('click', () => selectHomeTab(t.dataset.tab)));
 
-// ── Shop render ─────────────────────────────
 let shopSubTab = 'avatars';
 const SHOP_SUBTABS = [
   { id:'avatars', label:'Avatars' },
@@ -932,7 +813,6 @@ function renderShopTrails() {
   grid.innerHTML = '';
   const shop = store.loadShop();
 
-  // "None" option to unequip
   const noneCard = document.createElement('div');
   const noneOn = !shop.equippedTrail;
   noneCard.className = 'avatar-card' + (noneOn ? ' equipped' : '');
@@ -997,7 +877,6 @@ function renderShopBoxes() {
   });
 }
 
-// Pick a random avatar/trail from a box's price band, weighted toward cheaper items
 function pickFromBox(box) {
   const pool = [
     ...SHOP_AVATARS.map(a => ({ type:'avatar', id:a.id, name:a.name, emoji:a.emoji, price:a.price })),
@@ -1018,10 +897,8 @@ function openMysteryBox(box) {
   const item = pickFromBox(box);
   if (!item) { showToast('Box is empty!', true); return; }
 
-  // Pay for the box
   profile.coins -= box.price; saveProfile(); updateProfileBar();
 
-  // Grant the item (or refund 30% if duplicate)
   const shop = store.loadShop();
   let duplicate = false;
   if (item.type === 'avatar') {
@@ -1033,7 +910,6 @@ function openMysteryBox(box) {
   if (duplicate) { refund = Math.floor(item.price * 0.3); profile.coins += refund; saveProfile(); }
   store.saveShop(shop);
 
-  // ── Animation: shaking box for ~1s, then reveal ──
   const ov = document.createElement('div');
   ov.id = 'mystery-overlay';
   ov.innerHTML = `
@@ -1060,7 +936,6 @@ function openMysteryBox(box) {
   }, 1000);
 }
 
-// ── Custom avatar upload ──────────────────
 (function setupCustomAvatar() {
   const uploadArea = document.getElementById('custom-av-upload-area');
   const fileInput  = document.getElementById('custom-av-file');
@@ -1070,7 +945,6 @@ function openMysteryBox(box) {
 
   let pendingDataUrl = null;
 
-  // Show existing custom if any
   const existing = store.loadCustomAv();
   if (existing) {
     preview.innerHTML = '';
@@ -1116,7 +990,6 @@ function openMysteryBox(box) {
   });
 })();
 
-// ── High scores render ────────────────────
 function renderHighScores() {
   const list = document.getElementById('hs-list');
   if (!list) return;
@@ -1158,9 +1031,6 @@ function ensureImportBtn() {
   }
 }
 
-// ══════════════════════════════════════
-//  SETTINGS PANEL
-// ══════════════════════════════════════
 const KEY_CODE_LABELS = [
   'KeyA','KeyB','KeyC','KeyD','KeyE','KeyF','KeyG','KeyH','KeyI','KeyJ','KeyK','KeyL','KeyM',
   'KeyN','KeyO','KeyP','KeyQ','KeyR','KeyS','KeyT','KeyU','KeyV','KeyW','KeyX','KeyY','KeyZ',
@@ -1184,7 +1054,6 @@ function keyCodeLabel(code) {
   return code;
 }
 
-// Which settings sub-menu is currently shown
 let settingsSubTab = 'controls';
 const SETTINGS_SUBTABS = [
   { id:'controls', label:'Controls' },
@@ -1193,7 +1062,6 @@ const SETTINGS_SUBTABS = [
   { id:'gameplay', label:'Gameplay' },
 ];
 
-// ── Shared builders (operate on a target container) ──
 function _settingsSectionHead(text) {
   const d = document.createElement('div');
   d.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);font-family:var(--font-data);text-transform:uppercase;margin:4px 0 6px;';
@@ -1226,7 +1094,6 @@ function _settingsSliderRow(panel, label, min, max, step, value, unit, onChange,
   panel.appendChild(row);
 }
 
-// ── Sub-menu: Controls ──
 function buildSettingsControls(panel) {
   const s = currentSettings;
   panel.appendChild(_settingsSectionHead('Lane Keys'));
@@ -1255,17 +1122,8 @@ function buildSettingsControls(panel) {
   });
 }
 
-// Largest size the window may take — capped to the host page / screen so you
-// can never make it bigger than the popup viewport. Vertical max comes from the
-// main page height.
-// Chrome renders an extension popup at most 800x600 and simply clips
-// anything past that — which is the whole reason vertical sizing never
-// appeared to work: the height setting moved a number that the browser
-// then ignored. So the height is pinned at the popup ceiling and only
-// the width is adjustable. When the game is served as an ordinary page
-// instead, there is no such ceiling and it fills what it is given.
-const POPUP_MAX_W = 800;   // Chrome's popup width ceiling
-const POPUP_MAX_H = 760;   // the tallest the window goes
+const POPUP_MAX_W = 800;
+const POPUP_MAX_H = 760;
 
 function isExtensionPopup() {
   return location.protocol === 'chrome-extension:'
@@ -1275,25 +1133,18 @@ function isExtensionPopup() {
 
 function getMaxDims() {
   if (isExtensionPopup()) return { maxW: POPUP_MAX_W, maxH: POPUP_MAX_H };
-  // Served as a page: take the viewport, still capped so the lanes
-  // don't stretch to something unplayable on a desktop monitor.
   return {
     maxW: Math.max(340, Math.min(1100, window.innerWidth  || POPUP_MAX_W)),
     maxH: Math.max(420, Math.min(POPUP_MAX_H, window.innerHeight || POPUP_MAX_H)),
   };
 }
 
-// The width the window is actually given: what the player chose, plus
-// whatever the advanced panel is currently borrowing (declared at the
-// top of the file, because showScreen reads it during boot).
 function appliedWidth() {
   return Math.min(getMaxDims().maxW, currentSettings.width + advExpansion);
 }
 
-// Pending (un-applied) size while editing the Display sub-menu
 let _pendingSize = null;
 
-// ── Sub-menu: Display (window size + UI scale) ──
 function buildSettingsDisplay(panel) {
   const s = currentSettings;
   const { maxW, maxH } = getMaxDims();
@@ -1333,8 +1184,6 @@ function buildSettingsDisplay(panel) {
 
   panel.appendChild(_settingsSectionHead('Window Size'));
 
-  // A size row = label + number text-input + slider, all kept in sync.
-  // Changes only stage into _pendingSize; nothing resizes until Apply.
   function sizeRow(label, min, max, key, slId, inId) {
     const clamp = v => Math.max(min, Math.min(max, isNaN(v) ? min : v));
     const row = document.createElement('div');
@@ -1394,7 +1243,6 @@ function buildSettingsDisplay(panel) {
   panel.appendChild(hint);
 }
 
-// ── Sub-menu: Audio (volume + instrument) ──
 function buildSettingsAudio(panel) {
   const s = currentSettings;
   panel.appendChild(_settingsSectionHead('Volume'));
@@ -1470,7 +1318,6 @@ function buildSettingsAudio(panel) {
   panel.appendChild(instrRow);
 }
 
-// ── Sub-menu: Gameplay ──
 function buildSettingsGameplay(panel) {
   const s = currentSettings;
 
@@ -1510,7 +1357,6 @@ function buildSettingsPanel() {
   if (!panel) return;
   panel.innerHTML = '';
 
-  // ── Sub-tab selector row (sits just under the main nav) ──
   const subNav = document.createElement('div');
   subNav.style.cssText = 'display:flex;gap:4px;margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px;';
   SETTINGS_SUBTABS.forEach(st => {
@@ -1529,7 +1375,6 @@ function buildSettingsPanel() {
   });
   panel.appendChild(subNav);
 
-  // ── Active sub-menu content ──
   const content = document.createElement('div');
   panel.appendChild(content);
   if      (settingsSubTab === 'controls') buildSettingsControls(content);
@@ -1537,7 +1382,6 @@ function buildSettingsPanel() {
   else if (settingsSubTab === 'audio')    buildSettingsAudio(content);
   else if (settingsSubTab === 'gameplay') buildSettingsGameplay(content);
 
-  // ── Reset button (always visible) ──
   const resetBtn = document.createElement('button');
   resetBtn.style.cssText = 'width:100%;margin-top:14px;padding:9px;border-radius:9px;border:1px solid var(--border2);background:none;color:var(--muted);font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;transition:border-color .15s,color .15s;';
   resetBtn.textContent = '↺ Reset to defaults';
@@ -1555,10 +1399,6 @@ function buildSettingsPanel() {
   panel.appendChild(resetBtn);
 }
 
-// ── Settings ──────────────────────────────────────
-// 'modern' is the updated look; 'classic' is the original, kept as a
-// real choice rather than a fallback. The graphics layer is additive,
-// so 'classic' is simply the class being absent.
 const GFX_STYLES = [
   ['modern',  'Modern',  'Lit edges, depth on the board, glow on the strike line'],
   ['classic', 'Classic', 'The original flat look, exactly as it was'],
@@ -1567,8 +1407,8 @@ const GFX_STYLES = [
 const DEFAULT_SETTINGS = {
   keys: ['KeyA', 'KeyS', 'KeyD', 'KeyF'],
   gfx: 'modern',
-  songVoices: true,   // play each song in the instruments it was written for
-  hitWindow: 'normal', // strict | normal | forgiving
+  songVoices: true,
+  hitWindow: 'normal',
   width: 420,
   height: 640,
   lives: 3,
@@ -1596,13 +1436,11 @@ function loadAndApplySettings() {
     if (saved.musicVol  != null) currentSettings.musicVol  = saved.musicVol;
   }
   applySettingsToDOM();
-  // Apply saved instrument + volumes to audio engine
   if (window.RD_saveInstrument)  window.RD_saveInstrument(currentSettings.instrument || 'synth');
   if (window.RD_setVolume)       window.RD_setVolume(currentSettings.masterVol);
   if (window.RD_setMusicVolume)  window.RD_setMusicVolume(currentSettings.musicVol);
 }
 
-// Live-sync the Display size controls to a given size (used by manual drag-resize)
 function updateSizeControls(w, h) {
   if (_pendingSize) { _pendingSize.width = w; _pendingSize.height = h; }
   const ws = document.getElementById('size-w-slider'), wi = document.getElementById('size-w-input');
@@ -1611,14 +1449,10 @@ function updateSizeControls(w, h) {
   if (hs) hs.value = h;  if (hi) hi.value = h;
 }
 
-// Watch for manual corner-drag resizes (CSS resize:both on <html>) and persist
-// them to the same width/height settings, keeping the sliders in sync.
 let _resizeSaveTimer = null;
 function observeManualResize() {
   if (!window.ResizeObserver) return;
   const ro = new ResizeObserver(() => {
-    // Subtract whatever the advanced panel borrowed, or opening it once
-    // would be remembered as the player's chosen width forever.
     const w = Math.round(document.documentElement.offsetWidth) - advExpansion;
     const h = Math.round(document.documentElement.offsetHeight);
     let changed = false;
@@ -1631,29 +1465,20 @@ function observeManualResize() {
   });
   ro.observe(document.documentElement);
 
-  // If the host page itself changes size, re-apply the caps.
   window.addEventListener('resize', () => applySettingsToDOM());
 }
 
 function applySettingsToDOM() {
-  // Cap the window so it can never exceed the host page / popup viewport.
   const { maxW, maxH } = getMaxDims();
   currentSettings.width  = Math.max(340, Math.min(currentSettings.width, maxW));
-  // Height is adjustable the same way width is, capped at whatever the
-  // host can actually show — in a Chrome popup that ceiling is 600px, on
-  // a page it is the viewport — so a chosen size can never get clipped.
   currentSettings.height = Math.max(420, Math.min(currentSettings.height, maxH));
   const root = document.documentElement;
   root.style.maxWidth  = maxW + 'px';
   root.style.maxHeight = maxH + 'px';
   root.style.width  = appliedWidth() + 'px';
   root.style.height = currentSettings.height + 'px';
-  // Graphics style. Additive: the class going on is the whole change,
-  // so taking it off restores the original look exactly.
   document.body.classList.toggle('gfx-modern', currentSettings.gfx !== 'classic');
-  // UI scale — zoom the whole interface without changing the window box
   document.body.style.zoom = currentSettings.uiScale || 1;
-  // Update lane key labels in game
   const keyLabels = ['A','S','D','F'];
   currentSettings.keys.forEach((code, i) => {
     const label = code.startsWith('Key') ? code.slice(3) : code;
@@ -1661,15 +1486,12 @@ function applySettingsToDOM() {
     if (el) el.textContent = label;
     keyLabels[i] = label;
   });
-  // Update overlay key display
   const ovKeys = document.querySelectorAll('.ov-key');
   currentSettings.keys.forEach((code, i) => {
     const label = code.startsWith('Key') ? code.slice(3) : code;
     if (ovKeys[i]) ovKeys[i].textContent = label;
   });
-  // Update column headers in creator grid
   const crHeaders = document.querySelectorAll('#cr-grid > div:not(.cr-row-num)');
-  // Will be rebuilt by buildGrid() so no need here
 }
 
 function buildKeyMap() {
@@ -1678,27 +1500,19 @@ function buildKeyMap() {
   return map;
 }
 
-// ── Input ─────────────────────────────────────────
-// Keys: in-game → tapLane; outside game → play the lane's current note
-
 document.addEventListener('keydown', e => {
   if (e.repeat) return;
 
-  // Never steal keystrokes from a text field — so a level name can
-  // contain a, s, d, f, and the number inputs still type.
   const tag = e.target && e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
 
   const KEY_MAP = buildKeyMap();
 
-  // In the creator: the play keys type notes at a row cursor, and the
-  // arrow / copy / paste / delete keys drive multi-select.
   if (!running && typeof creatorActive === 'function' && creatorActive()
       && typeof handleCreatorKey === 'function' && handleCreatorKey(e, KEY_MAP)) {
     return;
   }
 
-  // Chaos mode: any letter key A–Z (except reserved Q/R) is a potential target.
   if (running && chaosMode && /^Key[A-Z]$/.test(e.code) && e.code !== 'KeyQ' && e.code !== 'KeyR') {
     e.preventDefault();
     tapChaos(e.code);
@@ -1709,15 +1523,11 @@ document.addEventListener('keydown', e => {
     e.preventDefault();
     const lane = KEY_MAP[e.code];
     if (running) {
-      // In-game: normal tap mechanic
       tapLane(lane);
     } else {
-      // Outside game: play the lane note (home / creator)
       if (window.RD_playNote) {
         const freq = crLaneFreqs[lane] || [261.63,329.63,392.00,523.25][lane];
         window.RD_playNote(lane, false, freq);
-        // Brief visual flash on lane buttons in game screen (if visible) is skipped
-        // since we're not on the game screen; no side effect needed
       }
     }
     return;
@@ -1732,7 +1542,6 @@ btnEls.forEach((el, i) => {
   el.addEventListener('touchstart', ev => { ev.preventDefault(); tapLane(i); });
 });
 
-// Avatar click → open shop tab
 const pbarAvatar = document.getElementById('pbar-avatar');
 if (pbarAvatar) {
   pbarAvatar.addEventListener('click', () => selectHomeTab('shop'));
@@ -1740,16 +1549,12 @@ if (pbarAvatar) {
 
 document.getElementById('g-menu-btn').addEventListener('click', quitToMenu);
 
-// ── Boot ──────────────────────────────────────────
 loadAndApplySettings();
 observeManualResize();
-// A saved campaign theme that is not (or no longer) earned falls back to
-// the default rather than being worn unearned.
 applyTheme(isThemeLocked(themeById(store.loadTheme())) ? 'graphite' : store.loadTheme());
 const ct = store.loadCustomTheme();
 if (ct && store.loadTheme() === 'custom') applyCustomTheme(ct);
 
-// Username setup
 const unameInput   = document.getElementById('uname-input');
 const unameConfirm = document.getElementById('uname-confirm');
 if (unameConfirm) {

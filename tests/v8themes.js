@@ -1,10 +1,3 @@
-// Campaign themes — one per area, earned by clearing every song in it.
-//
-// The unlock is derived from campaign progress (areaCleared), not stored,
-// so the things worth proving are the rule itself, the places it has to
-// hold (the picker, a saved choice on boot) and the moment it fires (the
-// clear that finishes an area). Plus what makes a theme worth earning:
-// each has its own texture, and none is unreadable.
 const { chromium } = require('playwright');
 const path = require('path');
 const { launchOpts, v8Dir } = require('./browser');
@@ -14,7 +7,6 @@ const notes = [];
 let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, console.log('  FAIL: ' + m)); };
 
-// A progress blob with `full` areas completely cleared, plus any extra keys.
 const progressWith = (full, extra) => {
   const cleared = {};
   for (let a = 1; a <= full; a++) for (let i = 0; i < 15; i++) cleared['a' + a + 'l' + i] = true;
@@ -36,8 +28,6 @@ const progressWith = (full, extra) => {
     }, [progress, theme]);
     await page.goto(APP, { waitUntil: 'load' });
     await page.waitForTimeout(1300);
-    // Open the Themes tab the way a player does: panes are built when
-    // their tab is shown, not before.
     await page.evaluate(() => { showScreen('home'); renderHome(); document.querySelector('.hnav[data-tab="themes"]').click(); });
     return { ctx, page };
   };
@@ -96,7 +86,6 @@ const progressWith = (full, extra) => {
     ok(r.lockText[0] === '🔒 Clear Farmstead' && r.lockText[9] === '🔒 Clear Retro-Future',
       'each says which area unlocks it: ' + r.lockText.slice(0, 2).join(' / ') + ' … ' + r.lockText[9]);
 
-    // Tapping a locked card does nothing but explain.
     const t = await page.evaluate(() => {
       const before = store.loadTheme();
       document.querySelector('.theme-card[data-theme="harvest"]').click();
@@ -115,7 +104,6 @@ const progressWith = (full, extra) => {
       ['area 1 at 14 of 15 songs', progressWith(0, Array.from({ length: 14 }, (_, i) => 'a1l' + i)), []],
       ['area 1 complete',           progressWith(1), ['harvest']],
       ['areas 1-3 complete',        progressWith(3), ['harvest', 'lapis', 'marble']],
-      // Area 2 done without area 1: unreachable in play, but the rule is per area.
       ['area 2 alone',              progressWith(0, Array.from({ length: 15 }, (_, i) => 'a2l' + i)), ['lapis']],
       ['all ten complete',          progressWith(10), ['harvest', 'lapis', 'marble', 'imperium', 'obsidian', 'jade', 'oakmoss', 'braid', 'concrete', 'chrome']],
     ];
@@ -141,8 +129,6 @@ const progressWith = (full, extra) => {
     ok(r.stored === 'lapis' && /theme-lapis/.test(r.cls), 'tapping an earned theme applies it');
     ok(r.selected === 'lapis', 'and marks it selected');
     ok(/gfx-modern/.test(r.cls), 'the graphics style class survives the change');
-    // That it is applied again on the next boot is covered below, with the
-    // saved choice seeded before load, which does not depend on timing.
     ok(r.bg.toLowerCase() === '#13100b', 'and it really is the new palette (' + r.bg + ')');
     await ctx.close();
   }
@@ -162,7 +148,6 @@ const progressWith = (full, extra) => {
 
   console.log('== the clear that finishes an area announces its theme ==');
   {
-    // Fourteen of fifteen Farmstead songs cleared; play the last one.
     const prog = progressWith(0, Array.from({ length: 14 }, (_, i) => 'a1l' + i));
     const { ctx, page } = await open(prog);
     const r = await page.evaluate(() => {
@@ -175,12 +160,12 @@ const progressWith = (full, extra) => {
       };
       const out = {};
       out.before = isThemeLocked(themeById('harvest'));
-      out.midClear = play(3, true);               // an already-cleared mid-area song
-      out.failed = play(14, false);               // failing the last one earns nothing
+      out.midClear = play(3, true);
+      out.failed = play(14, false);
       out.stillLocked = isThemeLocked(themeById('harvest'));
-      out.final = play(14, true);                 // the clear that finishes the area
+      out.final = play(14, true);
       out.nowLocked = isThemeLocked(themeById('harvest'));
-      out.again = play(14, true);                 // clearing it a second time
+      out.again = play(14, true);
       out.other = (() => { launchCampaignLevel(2, 0); document.getElementById('g-overlay').classList.remove('show');
         startGame(); notesHit = notesTotal; score = 1; endGame(true);
         const el = document.getElementById('ov-theme'); return el.style.display === 'block'; })();

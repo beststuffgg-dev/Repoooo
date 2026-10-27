@@ -1,10 +1,3 @@
-// The updated graphics, and the promise that the old ones still work.
-//
-// "Keeping the old style available" is only worth anything if the old
-// style is actually untouched, so the guarantee here is structural: the
-// whole graphics layer is scoped under one body class, so with the
-// class off there is nothing left to render differently. That is
-// checked by reading the stylesheet, not by trusting the intent.
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -18,52 +11,48 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
 
 console.log('== the graphics layer is strictly additive ==');
 {
-  const at = HTML.indexOf('UPDATED GRAPHICS');
-  ok(at > 0, 'the graphics block is in the stylesheet');
-  // Slice from the comment's own opening, not from the text inside it:
-  // starting mid-comment leaves the stripper an unbalanced `*/` and it
-  // hands the banner back as if it were a selector.
-  const start = HTML.lastIndexOf('/*', at);
-  // The block is explicitly closed by a sentinel, so additive CSS added
-  // after it (the Generate/Endless styles) is not swept in.
-  const end = HTML.indexOf('END UPDATED GRAPHICS', at);
-  ok(end > start, 'the graphics block is closed by its sentinel');
-  const block = HTML.slice(start, end);
-
-  // Strip comments, then read every selector the block declares.
-  const bare = block.replace(/\/\*[\s\S]*?\*\//g, ' ');
-  const selectors = [];
-  let depth = 0, buf = '';
-  for (let i = 0; i < bare.length; i++) {
-    const ch = bare[i];
-    if (ch === '{') {
-      if (depth === 0) { const t = buf.trim(); if (t) selectors.push(t); buf = ''; }
-      depth++;
-    } else if (ch === '}') { depth--; buf = ''; }
-    else if (depth === 0) buf += ch;
-  }
-  // Split comma-separated groups; keyframes and at-rules are their own thing.
+  const sheet = [...HTML.matchAll(/<style[^>]*>([\s\S]*?)<\/style>/g)].map(m => m[1]).join('\n');
   const rules = [];
-  selectors.forEach(sel => {
-    if (/^@/.test(sel)) { rules.push(sel); return; }
-    sel.split(',').forEach(s => { const t = s.trim(); if (t) rules.push(t); });
-  });
-  notes.push(rules.length + ' selectors in the graphics block');
+  let depth = 0, buf = '', head = '', bodyStart = 0;
+  for (let i = 0; i < sheet.length; i++) {
+    const ch = sheet[i];
+    if (ch === '"' || ch === "'") {
+      const from = i;
+      i++;
+      while (i < sheet.length && sheet[i] !== ch) { if (sheet[i] === '\\') i++; i++; }
+      if (depth === 0) buf += sheet.slice(from, i + 1);
+      continue;
+    }
+    if (ch === '{') {
+      if (depth === 0) { head = buf.trim(); bodyStart = i + 1; }
+      depth++;
+      buf = '';
+    } else if (ch === '}') {
+      depth--;
+      if (depth === 0) rules.push({ head, body: sheet.slice(bodyStart, i) });
+      buf = '';
+    } else if (depth === 0) buf += ch;
+  }
 
-  const unscoped = rules.filter(r => !/^@/.test(r) && !/^body\.gfx-modern\b/.test(r));
+  const modern = rules.filter(r => !/^@/.test(r.head) && /gfx-modern/.test(r.head));
+  const parts = modern.flatMap(r => r.head.split(',').map(s => s.trim()).filter(Boolean));
+  notes.push(parts.length + ' selectors in the graphics layer');
+  ok(parts.length > 20, 'the graphics layer is in the stylesheet (' + parts.length + ' selectors)');
+
+  const unscoped = parts.filter(p => !/^body\.gfx-modern\b/.test(p));
   ok(unscoped.length === 0, unscoped.length
     ? 'these are not scoped to body.gfx-modern: ' + unscoped.slice(0, 4).join(' | ')
-    : 'every one of the ' + rules.length + ' selectors is scoped under body.gfx-modern');
+    : 'every one of the ' + parts.length + ' selectors is scoped under body.gfx-modern');
 
-  const atRules = rules.filter(r => /^@/.test(r));
-  ok(atRules.every(r => /^@keyframes\s+[\w-]*-m\b/.test(r)), atRules.length
-    ? 'at-rules are uniquely named so they cannot shadow the originals (' + atRules.join(', ') + ')'
-    : 'no at-rules in the block');
+  const mentions = (sheet.match(/gfx-modern/g) || []).length;
+  const scopedMentions = (parts.join(' ').match(/gfx-modern/g) || []).length;
+  ok(mentions === scopedMentions, 'no other rule, value or at-rule references gfx-modern (' + (mentions - scopedMentions) + ' do)');
 
-  // Nothing outside the block may mention the class, or "class off ==
-  // original" stops being true.
-  const outside = HTML.slice(0, start) + HTML.slice(end);
-  ok(!/gfx-modern/.test(outside), 'no rule outside the block references gfx-modern');
+  const keyframes = new Set(rules.filter(r => /^@keyframes/.test(r.head)).map(r => r.head.replace(/^@keyframes\s+/, '')));
+  const used = [...new Set(modern.flatMap(r => [...r.body.matchAll(/animation(?:-name)?\s*:\s*([\w-]+)/g)].map(m => m[1])))];
+  ok(used.every(n => /-m$/.test(n) && keyframes.has(n)), used.length
+    ? 'animations in the layer are uniquely named so they cannot shadow the originals (' + used.join(', ') + ')'
+    : 'no animations in the layer');
 }
 
 console.log('== the old style is offered as a real choice ==');
@@ -76,8 +65,6 @@ console.log('== the old style is offered as a real choice ==');
   ok(ids.includes('classic') && ids.includes('modern'), 'both classic and modern are offered');
   ok(/gfx:\s*'modern'/.test(game), 'modern is the default');
   ok(/classList\.toggle\('gfx-modern'/.test(game), 'the setting drives the class');
-  // applyTheme replaces body.className wholesale — the class has to be
-  // carried across or picking a theme turns the graphics off.
   ok(/keep = \[[^\]]*'gfx-modern'/.test(game), 'the class survives a theme change');
 }
 
@@ -109,7 +96,6 @@ console.log('== the old style is offered as a real choice ==');
       out.offAfterClassic = !document.body.classList.contains('gfx-modern');
       currentSettings.gfx = 'modern'; applySettingsToDOM();
       out.backOn = document.body.classList.contains('gfx-modern');
-      // Every theme, both ways round.
       out.survives = [];
       THEMES.forEach(t => {
         applyTheme(t.id);
@@ -174,8 +160,6 @@ console.log('== the old style is offered as a real choice ==');
       const differs = Buffer.compare(shots.classic[name], shots.modern[name]) !== 0;
       ok(differs, name + ': modern renders differently from classic');
     }
-    // And re-rendering the same style twice is stable, so the check
-    // above is measuring the style and not rendering noise.
     const { ctx, page } = await boot(JSON.stringify({ gfx: 'classic' }));
     await page.evaluate(() => { showScreen('home'); renderHome(); });
     await page.waitForTimeout(350);
@@ -192,9 +176,6 @@ console.log('== the old style is offered as a real choice ==');
       launchCampaignLevel(1, 0);
       document.getElementById('g-overlay').classList.remove('show');
       startGame();
-      // Wait for a tile to actually exist rather than guessing at a
-      // delay — at 700ms none had spawned yet, and measuring nothing
-      // reads exactly like measuring something unstyled.
       const t0 = Date.now();
       while (!document.querySelector('.tile') && Date.now() - t0 < 6000) {
         await new Promise(r => setTimeout(r, 100));

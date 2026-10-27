@@ -1,5 +1,3 @@
-// Phase 4 — Creator: the advanced panel's sound preview, and the
-// panel growing the window instead of covering the grid.
 const { boot } = require('./harness');
 const HOOK = `
 ;window.__t = {
@@ -44,7 +42,6 @@ probe('the preview plays the chart, not a test note', () => {
   if (!rows.length) throw new Error('the preview found nothing to play');
   const played = rows.flat();
   if (!played.length) throw new Error('the preview rows carry no notes');
-  // The freqs must come from the chart's own cells.
   if (!played.some(n => Math.abs(n.freq - 261.63) < 0.01)) throw new Error('the chart pitches are not what plays');
   if (!played.some(n => n.dtap)) throw new Error('double-taps are not carried into the preview');
 });
@@ -83,7 +80,6 @@ probe('the preview names the instrument it is about to use', () => {
   if (!sub || !sub.textContent.trim()) throw new Error('the button does not name the instrument');
 });
 
-// ── the panel grows the window rather than covering the grid ──
 probe('opening the panel grows the window', () => {
   T().retractPanel();
   const before = H();
@@ -123,7 +119,6 @@ probe('with no room left it overlays instead of trapping the panel', () => {
 });
 
 probe('a sliver of window takes the overlay path too', () => {
-  // A 10px panel is worse than an overlay.
   T().retractPanel();
   root.style.height = (T().WINDOW_CAP.h - 10) + 'px';
   const exp = T().expandForPanel(T().ADV_PANEL_PX, 'h');

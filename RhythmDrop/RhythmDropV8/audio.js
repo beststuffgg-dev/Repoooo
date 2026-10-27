@@ -1,56 +1,19 @@
-// ═══════════════════════════════════════════
-//  RhythmDrop V8 — audio.js
-//
-//  Twelve instruments, synthesized from oscillators and envelopes.
-//  No samples and no network fetches, which is what lets the whole
-//  game ship as a single file that requests nothing.
-//
-//  Seven of the twelve exist because the campaign needs them: each
-//  area is composed for its own voice, and a chart that asks for a
-//  lyre and gets a fallback stops sounding like the place it is set.
-//
-//  Per-note sustain/pedal (0 = off, 0.5–3.0 s), per-note instrument
-//  override, full chromatic note table A1–C8.
-// ═══════════════════════════════════════════
-
-// ── AudioContext (lazy) ───────────────────
 let _ctx = null;
 function ctx() {
   if (!_ctx) _ctx = new (window.AudioContext || window.webkitAudioContext)();
-  // Browsers start the context suspended until a gesture, so this nudge
-  // is load-bearing — but resume() also throws outright on a context
-  // that cannot be resumed (an offline render, a closed context), and an
-  // uncaught throw here takes the note with it. Waking the audio is
-  // never worth losing the sound.
   if (_ctx.state === 'suspended' && typeof _ctx.resume === 'function') {
-    try { const r = _ctx.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) { /* not resumable */ }
+    try { const r = _ctx.resume(); if (r && r.catch) r.catch(() => {}); } catch (e) {  }
   }
   return _ctx;
 }
 
-// ── Volume levels (0–1), persisted ────────
 let _masterVol = parseFloat(localStorage.getItem('rd_master_vol'));
 if (isNaN(_masterVol)) _masterVol = 1;
 let _musicVol = parseFloat(localStorage.getItem('rd_music_vol'));
 if (isNaN(_musicVol)) _musicVol = 1;
 
-// ── Master gain, through a limiter ────────
-//  Four lanes can fire in the same frame and a campaign chord stacks
-//  three notes on one beat, so the naive sum clips constantly. The
-//  limiter holds the sum without ducking the individual hits.
 let _masterGain = null, _limiter = null, _ceiling = null;
 
-// A compressor is not a brick wall: it has a 3ms attack, so the leading
-// transient of a chord is already through before it reacts. Seven
-// simultaneous double-taps measured a peak of 1.32 — a third of the way
-// past full scale, which is audible crunch on the loudest moment of a
-// song. This curve is the ceiling: identity through the middle, a soft
-// knee near the top, and mathematically incapable of exceeding 1.0,
-// because a WaveShaper clamps anything past its ends to its endpoints.
-// CEIL is 0.97, not 1.0, on purpose: 2x oversampling reconstructs
-// through a filter that rings slightly past the sample it was given, so
-// a curve topping out at exactly 1.0 still measured 1.002. A quarter of
-// a decibel of headroom absorbs the ring and costs nothing audible.
 const CEIL = 0.97;
 function _ceilingCurve(n) {
   const c = new Float32Array(n);
@@ -68,8 +31,6 @@ function masterGain() {
     _masterGain = c.createGain();
     _masterGain.gain.value = _masterVol;
     let tail = _masterGain;
-    // Four lanes can fire in one frame and a campaign chord stacks
-    // three notes on one beat, so the naive sum clips constantly.
     if (typeof c.createDynamicsCompressor === 'function') {
       _limiter = c.createDynamicsCompressor();
       _limiter.threshold.value = -8;
@@ -83,8 +44,6 @@ function masterGain() {
     if (typeof c.createWaveShaper === 'function') {
       _ceiling = c.createWaveShaper();
       _ceiling.curve = _ceilingCurve(1024);
-      // 2x: soft clipping generates harmonics, and oversampling keeps
-      // the ones above Nyquist from folding back down as grit.
       _ceiling.oversample = '2x';
       tail.connect(_ceiling);
       tail = _ceiling;
@@ -94,7 +53,6 @@ function masterGain() {
   return _masterGain;
 }
 
-// ── Music (background) gain — feeds master ──
 let _bgGain = null;
 function bgGain() {
   if (!_bgGain) {
@@ -118,9 +76,6 @@ window.RD_setMusicVolume = v => {
 };
 window.RD_getMusicVolume = () => _musicVol;
 
-// ══════════════════════════════════════════
-//  FULL CHROMATIC FREQUENCY TABLE
-// ══════════════════════════════════════════
 const NOTE_TABLE = (function () {
   const LETTERS = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
   const table = {};
@@ -160,7 +115,6 @@ window.RD_nameToFreq = function (name) {
   return NOTE_TABLE[name] || null;
 };
 
-// ── Lane default frequencies (C4 maj pentatonic) ──
 const DEF_FREQS = [
   NOTE_TABLE['C4'],
   NOTE_TABLE['E4'],
@@ -171,12 +125,6 @@ let laneFreqs = [...DEF_FREQS];
 window.RD_setLaneFreqs   = f  => { laneFreqs = f; };
 window.RD_resetLaneFreqs = () => { laneFreqs = [...DEF_FREQS]; };
 
-// ══════════════════════════════════════════
-//  INSTRUMENT THEME
-// ══════════════════════════════════════════
-// The roster the baked campaign charts are resolved against. Removing
-// one here without re-baking leaves levels asking for a voice that no
-// longer exists — v8levels.js asserts the two stay in step.
 let _instrument = 'synth';
 window.RD_INSTRUMENTS = [
   { id:'synth',    label:'Synth',    icon:'🎛️' },
@@ -195,7 +143,6 @@ window.RD_INSTRUMENTS = [
 window.RD_setInstrument = id => { _instrument = id; };
 window.RD_getInstrument = () => _instrument;
 
-// ── Load saved instrument ──
 (function () {
   const saved = localStorage.getItem('rd_instrument');
   if (saved) _instrument = saved;
@@ -206,11 +153,6 @@ window.RD_saveInstrument = id => {
   localStorage.setItem('rd_instrument', id);
 };
 
-// ══════════════════════════════════════════
-//  SYNTHESIS — one function per instrument
-// ══════════════════════════════════════════
-
-// Shared helper: connect chain o→filt→g→master, start/stop
 function _chain(osc, filt, g, dur) {
   if (filt) { osc.connect(filt); filt.connect(g); }
   else        osc.connect(g);
@@ -219,8 +161,6 @@ function _chain(osc, filt, g, dur) {
   osc.stop(ctx().currentTime + dur + 0.05);
 }
 
-// ─── SYNTH ────────────────────────────────
-// Warm two-detuned-saw + lowpass sweep (original)
 function _synthNote(freq, vol, dur, dest) {
   const c = ctx(), t = c.currentTime;
   const o1 = c.createOscillator(), o2 = c.createOscillator();
@@ -242,19 +182,15 @@ function _synthNote(freq, vol, dur, dest) {
   o1.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
 }
 
-// ─── PIANO ────────────────────────────────
-// Sampled-style: triangle fundamental + several harmonic partials
-// Attack pluck spike, then exponential decay
 function _pianoNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
 
-  // Fundamentals with slight detuning (piano string chorus effect)
   const partials = [
     { mult:1.0,    amp:1.00, type:'triangle' },
     { mult:2.0,    amp:0.35, type:'triangle' },
     { mult:3.0,    amp:0.18, type:'sine'     },
     { mult:4.0,    amp:0.09, type:'sine'     },
-    { mult:0.9995, amp:0.45, type:'triangle' }, // unison detune for width
+    { mult:0.9995, amp:0.45, type:'triangle' },
   ];
 
   partials.forEach(p => {
@@ -263,10 +199,9 @@ function _pianoNote(freq, vol, dur) {
     osc.type = p.type;
     osc.frequency.value = freq * p.mult;
 
-    // Piano envelope: sharp attack, steep initial decay, long tail
     const pk = vol * p.amp;
     g.gain.setValueAtTime(0.001, t);
-    g.gain.exponentialRampToValueAtTime(pk, t + 0.005);    // fast attack
+    g.gain.exponentialRampToValueAtTime(pk, t + 0.005);
     g.gain.exponentialRampToValueAtTime(pk * 0.55, t + 0.05);
     g.gain.exponentialRampToValueAtTime(pk * 0.18, t + dur * 0.4);
     g.gain.exponentialRampToValueAtTime(0.001, t + dur);
@@ -275,7 +210,6 @@ function _pianoNote(freq, vol, dur) {
     osc.start(t); osc.stop(t + dur + 0.05);
   });
 
-  // Bright click transient (hammer strike)
   const click = c.createOscillator();
   const cg    = c.createGain();
   click.type  = 'sawtooth';
@@ -286,13 +220,9 @@ function _pianoNote(freq, vol, dur) {
   click.start(t); click.stop(t + 0.025);
 }
 
-// ─── GUITAR ───────────────────────────────
-// Karplus–Strong inspired: short noise burst through lowpass → decaying loop
-// Approximated here with fast-decaying saw + filtered harmonics
 function _guitarNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
 
-  // Body resonance: three partials mimicking string harmonics
   const partials = [
     { mult:1.0, amp:1.00, decay:dur },
     { mult:2.0, amp:0.50, decay:dur * 0.65 },
@@ -307,22 +237,20 @@ function _guitarNote(freq, vol, dur) {
     osc.type = 'sawtooth';
     osc.frequency.value = freq * p.mult;
 
-    // Guitar body low-pass (warm)
     filt.type = 'lowpass';
     filt.frequency.value = Math.min(freq * p.mult * 4, 5000);
     filt.Q.value = 0.6;
 
     const pk = vol * p.amp;
     g.gain.setValueAtTime(0.001, t);
-    g.gain.exponentialRampToValueAtTime(pk, t + 0.004);       // pluck attack
-    g.gain.exponentialRampToValueAtTime(pk * 0.6, t + 0.04); // settle
+    g.gain.exponentialRampToValueAtTime(pk, t + 0.004);
+    g.gain.exponentialRampToValueAtTime(pk * 0.6, t + 0.04);
     g.gain.exponentialRampToValueAtTime(0.001, t + p.decay);
 
     osc.connect(filt); filt.connect(g); g.connect(masterGain());
     osc.start(t); osc.stop(t + p.decay + 0.05);
   });
 
-  // Pick noise burst
   const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.04), c.sampleRate);
   const bd  = buf.getChannelData(0);
   for (let i = 0; i < bd.length; i++) bd[i] = (Math.random() * 2 - 1) * (1 - i / bd.length);
@@ -336,15 +264,13 @@ function _guitarNote(freq, vol, dur) {
   src.start(t); src.stop(t + 0.05);
 }
 
-// ─── MARIMBA ──────────────────────────────
-// Mallet hit: fast sine attack with overtones, quick initial decay, then long sustain
 function _marimbaNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
 
   const partials = [
     { mult:1.0,  amp:1.00 },
-    { mult:3.95, amp:0.35 }, // marimba 2nd partial ~4×
-    { mult:9.87, amp:0.10 }, // 3rd partial ~10×
+    { mult:3.95, amp:0.35 },
+    { mult:9.87, amp:0.10 },
   ];
 
   partials.forEach(p => {
@@ -354,7 +280,6 @@ function _marimbaNote(freq, vol, dur) {
     osc.frequency.value = freq * p.mult;
 
     const pk = vol * p.amp;
-    // Marimba: very fast attack, fast body decay, gentle long tail
     g.gain.setValueAtTime(0.001, t);
     g.gain.exponentialRampToValueAtTime(pk, t + 0.002);
     g.gain.exponentialRampToValueAtTime(pk * 0.3, t + 0.05);
@@ -364,7 +289,6 @@ function _marimbaNote(freq, vol, dur) {
     osc.start(t); osc.stop(t + dur + 0.05);
   });
 
-  // Mallet transient (noise burst)
   const buf = c.createBuffer(1, Math.floor(c.sampleRate * 0.012), c.sampleRate);
   const bd  = buf.getChannelData(0);
   for (let i = 0; i < bd.length; i++) bd[i] = Math.random() * 2 - 1;
@@ -376,13 +300,10 @@ function _marimbaNote(freq, vol, dur) {
   src.start(t); src.stop(t + 0.015);
 }
 
-// ─── BELL ─────────────────────────────────
-// FM-style bell: carrier + modulator giving inharmonic ring
 function _bellNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
 
-  // FM synthesis: carrier modulated by a slightly inharmonic modulator
-  const modRatio  = 3.5;    // creates bell-like inharmonic spectrum
+  const modRatio  = 3.5;
   const modDepth  = freq * 4;
 
   const mod  = c.createOscillator();
@@ -398,14 +319,13 @@ function _bellNote(freq, vol, dur) {
   const carG = c.createGain();
   car.type  = 'sine';
   car.frequency.value = freq;
-  modG.connect(car.frequency); // FM connection
+  modG.connect(car.frequency);
   carG.gain.setValueAtTime(0.001, t);
   carG.gain.exponentialRampToValueAtTime(vol, t + 0.003);
   carG.gain.exponentialRampToValueAtTime(vol * 0.5, t + 0.04);
   carG.gain.exponentialRampToValueAtTime(0.001, t + dur);
   car.connect(carG); carG.connect(masterGain());
 
-  // Shimmer overtone (pure octave)
   const sh  = c.createOscillator();
   const shG = c.createGain();
   sh.type = 'sine'; sh.frequency.value = freq * 2.001;
@@ -418,25 +338,20 @@ function _bellNote(freq, vol, dur) {
   sh.start(t);   sh.stop(t + dur * 0.5 + 0.05);
 }
 
-// ─── FLUTE ────────────────────────────────
-// Near-pure sine with breath noise and a slow attack. The
-// noise is what stops it sounding like a test tone.
 function _fluteNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
 
   const o = c.createOscillator(), g = c.createGain();
   o.type = 'sine'; o.frequency.value = freq;
-  // slight pitch scoop into the note, like a real embouchure
   o.frequency.setValueAtTime(freq * 0.988, t);
   o.frequency.exponentialRampToValueAtTime(freq, t + 0.06);
   g.gain.setValueAtTime(0.001, t);
-  g.gain.exponentialRampToValueAtTime(vol, t + 0.07);       // slow attack
+  g.gain.exponentialRampToValueAtTime(vol, t + 0.07);
   g.gain.setValueAtTime(vol * 0.85, t + dur * 0.5);
   g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   o.connect(g); g.connect(masterGain());
   o.start(t); o.stop(t + dur + 0.05);
 
-  // second harmonic, quiet
   const o2 = c.createOscillator(), g2 = c.createGain();
   o2.type = 'sine'; o2.frequency.value = freq * 2;
   g2.gain.setValueAtTime(0.001, t);
@@ -445,7 +360,6 @@ function _fluteNote(freq, vol, dur) {
   o2.connect(g2); g2.connect(masterGain());
   o2.start(t); o2.stop(t + dur + 0.05);
 
-  // breath
   const len = Math.max(1, Math.floor(c.sampleRate * Math.min(dur, 0.4)));
   const buf = c.createBuffer(1, len, c.sampleRate);
   const bd = buf.getChannelData(0);
@@ -460,8 +374,6 @@ function _fluteNote(freq, vol, dur) {
   src.start(t); src.stop(t + Math.min(dur, 0.4));
 }
 
-// ─── LYRE ─────────────────────────────────
-// Gut string: bright pluck, fast decay, odd harmonics.
 function _lyreNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
   [{ m:1, a:1 }, { m:2, a:0.42 }, { m:3, a:0.26 }, { m:5, a:0.10 }].forEach(p => {
@@ -478,9 +390,6 @@ function _lyreNote(freq, vol, dur) {
   });
 }
 
-// ─── BRASS ────────────────────────────────
-// Sawtooth through a filter that opens as the note speaks —
-// that rising brightness is the whole character of a horn.
 function _brassNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
   const o1 = c.createOscillator(), o2 = c.createOscillator();
@@ -490,7 +399,7 @@ function _brassNote(freq, vol, dur) {
   o2.frequency.value = freq * 1.003;
   f.type = 'lowpass'; f.Q.value = 2.4;
   f.frequency.setValueAtTime(freq * 1.2, t);
-  f.frequency.exponentialRampToValueAtTime(freq * 6, t + 0.10);   // it blooms
+  f.frequency.exponentialRampToValueAtTime(freq * 6, t + 0.10);
   f.frequency.exponentialRampToValueAtTime(freq * 2.4, t + dur);
   g.gain.setValueAtTime(0.001, t);
   g.gain.exponentialRampToValueAtTime(vol, t + 0.045);
@@ -501,10 +410,6 @@ function _brassNote(freq, vol, dur) {
   o1.stop(t + dur + 0.05); o2.stop(t + dur + 0.05);
 }
 
-// ─── ORGAN ────────────────────────────────
-// Drawbar stack: fundamental plus octaves and a fifth, all
-// sustained flat with almost no envelope. That flatness is
-// what makes it read as an organ rather than a pad.
 function _organNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
   [{ m:0.5, a:0.30 }, { m:1, a:1 }, { m:1.5, a:0.45 },
@@ -521,8 +426,6 @@ function _organNote(freq, vol, dur) {
   });
 }
 
-// ─── STRINGS ──────────────────────────────
-// Ensemble: several detuned saws, slow swell, gentle vibrato.
 function _stringsNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
   const f = c.createBiquadFilter(), g = c.createGain();
@@ -551,20 +454,16 @@ function _stringsNote(freq, vol, dur) {
   vib.start(t); vib.stop(t + dur + 0.05);
 }
 
-// ─── CHIPTUNE ─────────────────────────────
-// Square wave with a duty sweep and a fast arpeggio blip, the
-// way an NES stacked notes it could not play simultaneously.
 function _chipNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
   const o = c.createOscillator(), g = c.createGain();
   o.type = 'square'; o.frequency.setValueAtTime(freq, t);
   g.gain.setValueAtTime(vol * 0.5, t);
   g.gain.setValueAtTime(vol * 0.5, t + dur * 0.7);
-  g.gain.exponentialRampToValueAtTime(0.001, t + dur);   // stepped, not smooth
+  g.gain.exponentialRampToValueAtTime(0.001, t + dur);
   o.connect(g); g.connect(masterGain());
   o.start(t); o.stop(t + dur + 0.02);
 
-  // arpeggio blip on the fifth
   const o2 = c.createOscillator(), g2 = c.createGain();
   o2.type = 'square'; o2.frequency.setValueAtTime(freq * 1.5, t);
   g2.gain.setValueAtTime(vol * 0.22, t);
@@ -573,8 +472,6 @@ function _chipNote(freq, vol, dur) {
   o2.start(t); o2.stop(t + 0.06);
 }
 
-// ─── KALIMBA ──────────────────────────────
-// Thumb piano: pure-ish tine with a wooden thunk under it.
 function _kalimbaNote(freq, vol, dur) {
   const c = ctx(), t = c.currentTime;
   [{ m:1, a:1 }, { m:2.76, a:0.18 }, { m:5.4, a:0.06 }].forEach(p => {
@@ -596,20 +493,6 @@ function _kalimbaNote(freq, vol, dur) {
   th.start(t); th.stop(t + 0.07);
 }
 
-// ══════════════════════════════════════════
-//  UNIFIED PLAY FUNCTION
-//  dur = base decay; sustainSec = extra pedal time (0 = off)
-// ══════════════════════════════════════════
-// instOverride lets a single note use a different voice from the
-// level default, which is what makes multi-instrument songs work.
-
-// ══════════════════════════════════════════
-//  UNIFIED PLAY FUNCTION
-//  dur = base decay; sustainSec = extra pedal time (0 = off)
-// ══════════════════════════════════════════
-// instOverride lets a single note name its own voice. Campaign charts
-// use it: an area's lead and its accompaniment are different
-// instruments inside the same song.
 function _voice(id) {
   switch (id) {
     case 'piano':    return _pianoNote;
@@ -629,18 +512,14 @@ function _voice(id) {
 
 function _playWithInstrument(freq, isDtap, sustainSec, instOverride) {
   const baseDur  = isDtap ? 0.62 : 0.42;
-  // sustainSec extends the note's decay time (pedal effect)
   const dur      = sustainSec > 0 ? Math.max(baseDur, sustainSec) : baseDur;
   const play     = _voice(instOverride || _instrument);
 
   play(freq, isDtap ? 0.52 : 0.60, dur);
 
-  // Double-tap: a fifth on top, in the same voice.
   if (isDtap) play(freq * 1.5, 0.28, Math.min(dur * 0.7, 0.55));
 }
 
-// ── Public game API ───────────────────────
-// sustainSec: per-note pedal length (0 = off, 0.5–3.0)
 window.RD_playNote = function (lane, isDtap, freqOverride, sustainSec, inst) {
   const freq = freqOverride || laneFreqs[lane] || DEF_FREQS[lane] || 261.63;
   _playWithInstrument(freq, isDtap, sustainSec || 0, inst);
@@ -650,7 +529,6 @@ window.RD_playNoteFreq = function (freq, isDtap, sustainSec, inst) {
   _playWithInstrument(freq, isDtap, sustainSec || 0, inst);
 };
 
-// ── Lane button glow flash ────────────────
 window.RD_flashLane = function (laneEl) {
   laneEl.style.transition = 'none';
   laneEl.style.background = 'var(--lane-flash)';
@@ -660,9 +538,6 @@ window.RD_flashLane = function (laneEl) {
   }, 80);
 };
 
-// ═══════════════════════════════════════════
-//  BACKGROUND SOUNDTRACK
-// ═══════════════════════════════════════════
 let bgMode   = 'none';
 let bgTimer  = null;
 let bgBeatMs = 500;
@@ -730,7 +605,7 @@ let bassPattern = [...BASS_PAT_DEFAULT];
 
 function bassStep(s) {
   const f = bassPattern[s % bassPattern.length];
-  if (f > 0) _synthNote(f, 0.28, 0.38, bgGain()); // bass always uses synth pluck
+  if (f > 0) _synthNote(f, 0.28, 0.38, bgGain());
 }
 
 function bgTick() {

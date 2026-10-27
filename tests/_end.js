@@ -4,7 +4,6 @@ const OUT='/tmp/claude-0/-home-user-Repoooo/050eb574-5d03-5241-8e85-e1721be8a6f1
 (async()=>{
 const b=await chromium.launch(launchOpts());
 const errs=[];
-// Endless tab — profile with everything cleared
 {
   const ctx=await b.newContext({viewport:{width:440,height:720},deviceScaleFactor:2});
   const p=await ctx.newPage(); p.on('pageerror',e=>errs.push('endless: '+e.message));
@@ -29,7 +28,6 @@ const errs=[];
   await p.locator('html').screenshot({path:OUT+'v8-endless-tab.png'});
   await ctx.close();
 }
-// narrow/tall: adv panel overlays; wide/short and square: still usable
 for(const [w,h,tag] of [[360,780,'narrow-tall'],[900,420,'wide-short'],[600,600,'square']]){
   const ctx=await b.newContext({viewport:{width:w,height:h},deviceScaleFactor:1});
   const p=await ctx.newPage(); p.on('pageerror',e=>errs.push(tag+': '+e.message));

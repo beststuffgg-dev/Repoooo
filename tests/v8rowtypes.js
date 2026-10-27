@@ -1,10 +1,3 @@
-// One row, one kind of note — a tap and a ×2 slab never share a row.
-//
-// The rule lives in rowtypes.js and is applied in two places: the baker
-// (the 150 campaign songs) and generateLevel() in play.js (Generate,
-// Endless, the creator's fill). This checks the rule itself, then both
-// places, and that the composer underneath really does mix rows —
-// otherwise "zero mixed rows" would pass without proving anything.
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -36,7 +29,6 @@ console.log('== the rule ==');
   const { uniformRowTypes, isUniform } = load('rowtypes.js').RD_RowTypes;
   const row = (...t) => [0, 1, 2, 3].map(i => t[i] ? cell(t[i]) : null);
 
-  // Majority wins, whichever side it is.
   let g = [row(T, T, D), row(D, D, T), row(D), row(T)];
   uniformRowTypes(g);
   ok(g[0].filter(Boolean).every(c => c.type === T), 'two taps and a double become taps');
@@ -44,7 +36,6 @@ console.log('== the rule ==');
   ok(g[2][0].type === D && g[3][0].type === T, 'a row that was already uniform is left alone');
   ok(isUniform(g), 'the whole grid is uniform afterwards');
 
-  // Only the type changes: lane, pitch, sustain and voice are untouched.
   const before = [row(T, D)]; before[0][0].freq = 261.63; before[0][1].sustain = 1.5; before[0][1].inst = 'lyre';
   const snap = JSON.stringify(before.map(r => r.map(c => c && { ...c, type: 0 })));
   uniformRowTypes(before);
@@ -52,10 +43,6 @@ console.log('== the rule ==');
     'lanes, pitches, sustains and voices are untouched — only the type moves');
   ok(before[0][2] === null && before[0][3] === null, 'empty lanes stay empty');
 
-  // Ties are steered toward the song's own share of doubles, so the rule
-  // does not quietly turn a double-heavy style into a single-heavy one.
-  // Rows are interleaved the way a real song's are: doubles, a tie,
-  // singles, a tie, over and over. Half of all notes start out doubles.
   const song = [];
   for (let i = 0; i < 6; i++) song.push(row(D, D, D), row(T, D), row(T, T, T), row(T, D));
   const sharesOf = grid => { let n = 0, d = 0; grid.forEach(r => r.forEach(c => { if (c) { n++; if (c.type === D) d++; } })); return d / n; };
@@ -69,7 +56,6 @@ console.log('== the rule ==');
   const tieTypes = tieIdx.map(i => song[i].filter(Boolean)[0].type);
   ok(tieTypes.includes(T) && tieTypes.includes(D), 'tied rows split both ways rather than all going one way');
 
-  // Deterministic and idempotent: the same grid always comes out the same.
   const mk = () => [row(T, D), row(D, T), row(T, T, D), row(D, D, T), row(T, D)];
   const a = mk(), b = mk();
   uniformRowTypes(a); uniformRowTypes(b);
@@ -77,7 +63,6 @@ console.log('== the rule ==');
   const again = JSON.stringify(a); uniformRowTypes(a);
   ok(JSON.stringify(a) === again, 'running it twice changes nothing');
 
-  // Degenerate grids.
   ok(uniformRowTypes([]).length === 0, 'an empty grid is fine');
   ok(isUniform(uniformRowTypes([row(), row(T, T), row()])), 'rows with no notes are skipped');
 }
@@ -123,10 +108,8 @@ console.log('== the baked campaign ==');
         const [lo, hi] = band.split('-').map(Number);
         let m = 0;
         for (let i = 0; i < 40; i++) {
-          // The composer on its own, to show the problem is real…
           const rawLvl = G.buildCodeLevel(G.rollEndlessCode(lo, hi));
           out.raw += mixed(rawLvl.grid); out.rawRows += rawLvl.grid.length;
-          // …and the game's own entry point, which is what players get.
           const lvl = generateLevel(band);
           const mm = mixed(lvl.grid);
           m += mm; out.gen += mm; out.genRows += lvl.grid.length; out.charts++;
@@ -149,7 +132,6 @@ console.log('== the baked campaign ==');
     const r = await page.evaluate(async () => {
       const mixed = grid => grid.filter(row => new Set(row.filter(Boolean).map(c => c.type)).size > 1).length;
       const out = {};
-      // The creator's "Generate into grid".
       openCreator(null);
       document.getElementById('adv-toggle').click();
       await new Promise(r => setTimeout(r, 260));
@@ -169,10 +151,8 @@ console.log('== the baked campaign ==');
         if (kinds.size > 1) m++;
       }
       out.creatorFilled = filled; out.creatorMixed = m;
-      // Generate & play.
       document.getElementById('gen-play').click();
       out.playMixed = mixed(gameLevel.grid);
-      // Endless: the next song.
       const lvl = generateLevel('4-7'); lvl.endless = true; lvl._band = '4-7'; lastGenerated = lvl;
       launchLevel(lvl);
       document.getElementById('g-overlay').classList.remove('show'); startGame();

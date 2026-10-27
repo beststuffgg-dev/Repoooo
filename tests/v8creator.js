@@ -1,5 +1,3 @@
-// The generation menu inside the creator, Endless as its own tab, and
-// the panel widening across aspect ratios.
 const { chromium } = require('playwright');
 const path = require('path');
 const { launchOpts, v8Dir } = require('./browser');
@@ -37,7 +35,6 @@ const allCleared = () => {
   {
     const { ctx, page, errors } = await boot(b, 1000, 700);
     const r = await page.evaluate(async () => {
-      // It is NOT in the custom tab any more.
       const custom = document.getElementById('tab-custom');
       const genInCustom = !!custom.querySelector('#gen-btn, #gen-diff, .gen-row');
       openCreator(null);
@@ -45,7 +42,6 @@ const allCleared = () => {
       await new Promise(r => setTimeout(r, 260));
       const modes = [...document.querySelectorAll('.adv-mode')].map(m => m.dataset.mode);
       const settingsShownFirst = document.getElementById('adv-settings').classList.contains('show');
-      // toggle to Generate
       document.querySelector('.adv-mode[data-mode="generate"]').click();
       await new Promise(r => setTimeout(r, 120));
       const genShown = document.getElementById('adv-generate').classList.contains('show');
@@ -75,7 +71,6 @@ const allCleared = () => {
       document.getElementById('gen-into-grid').click();
       await new Promise(r => setTimeout(r, 200));
       const after = document.querySelectorAll('.cr-cell.is-tap, .cr-cell.is-dtap').length;
-      // the notes are editable cells with pitches
       const named = document.querySelectorAll('.cr-cell-note').length;
       return { before, after, named, rows: crGrid.length };
     });
@@ -88,7 +83,6 @@ const allCleared = () => {
 
   console.log('== Endless is its own tab, gated on clearing the campaign ==');
   {
-    // Fresh profile: locked.
     const fresh = await boot(b, 460, 760);
     const r0 = await fresh.page.evaluate(() => {
       const chips = [...document.querySelectorAll('.area-chip')];
@@ -102,7 +96,6 @@ const allCleared = () => {
     ok(!r0.bottomCard, 'the old bottom Endless card is gone');
     await fresh.ctx.close();
 
-    // Everything cleared: unlocked, and shows the three bands.
     const done = await boot(b, 460, 760, allCleared());
     const r1 = await done.page.evaluate(() => {
       const e = [...document.querySelectorAll('.area-chip')].find(c => c.className.includes('endless-chip'));
@@ -115,12 +108,9 @@ const allCleared = () => {
     ok(!r1.wasLocked, 'clearing every area unlocks it');
     ok(r1.sel, 'selecting it marks the tab');
     ok(r1.bands === 3, 'the Endless pane shows three difficulty bands');
-    // A band actually launches a run.
     const r2 = await done.page.evaluate(async () => {
       document.querySelectorAll('.endless-band')[1].click();
       await new Promise(r => setTimeout(r, 300));
-      // gameLevel is a script-scoped binding, reachable as a bare
-      // identifier here but not as window.gameLevel.
       return { onGame: document.getElementById('game').classList.contains('active'),
         endless: !!(typeof gameLevel !== 'undefined' && gameLevel && gameLevel.endless) };
     });

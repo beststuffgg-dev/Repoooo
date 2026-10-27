@@ -1,4 +1,3 @@
-// Avatars: the shop stock, the colourway tints, and the custom upload.
 const { boot } = require('./harness');
 const HOOK = `
 ;window.__t = {
@@ -33,12 +32,8 @@ probe('avatar ids are unique', () => {
 });
 
 probe('campaign-earned avatars are not also on sale', () => {
-  // They carry a price field (it is what a duplicate pull converts
-  // against), so the honest check is whether the shop offers them —
-  // not whether the number exists.
   const pending = T().PENDING_AVATARS || [];
   T().renderShop();
-  // The cards carry no id attribute, so match on the name they render.
   const offered = new Set([...D.querySelectorAll('#shop-avatar-grid .avatar-card .avatar-name')]
     .map(n => n.textContent.trim()).filter(Boolean));
   const leaked = pending.filter(a => offered.has(a.name));
@@ -56,8 +51,6 @@ probe('there are colourways, and one of them is the original artwork', () => {
 });
 
 probe('every tint colourway carries a full three-tone palette', () => {
-  // The artwork is hand-drawn in three tones; a tint that only
-  // supplied one would flatten it.
   const tints = T().COLOURWAYS.filter(c => !c.original);
   const bad = tints.filter(c => !c.p || !c.s || !c.t);
   if (bad.length) throw new Error('incomplete palettes: ' + bad.map(b => b.id).join(', '));
@@ -81,8 +74,6 @@ probe('an unknown colourway falls back rather than throwing', () => {
 });
 
 probe('the original-artwork colourway still tints sprites that need it', () => {
-  // Nine of the avatars are hand-written and carry no fill of their
-  // own; "as drawn" would render them invisible.
   const src = require('fs').readFileSync(require('path').join(require('./browser').appDir(), 'game.js'), 'utf8');
   if (!/cw\.original \? COLOURWAYS\[1\] : cw/.test(src))
     throw new Error('the untinted-sprite fallback is gone');

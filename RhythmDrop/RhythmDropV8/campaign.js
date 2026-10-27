@@ -1,20 +1,3 @@
-// ═══════════════════════════════════════════
-//  RhythmDrop V8 — campaign.js
-//
-//  The campaign and everything that measures progress through it:
-//  which levels exist, which are unlocked, what a run is worth in XP
-//  and coins, what your record on each level is, and the daily.
-//
-//  The 150 songs are NOT composed here. They were composed once by the
-//  deterministic generator and baked to levels.js — see
-//  RhythmDrop/tools/bake-levels.js. This file reads that data and hands the
-//  rest of the game playable level objects. The practical difference:
-//  a song is a file you can read and diff, not a seed that silently
-//  rewrites itself the day someone touches the composer.
-//
-//  Exposes: window.RD_Campaign
-// ═══════════════════════════════════════════
-
 window.RD_Campaign = (function () {
   'use strict';
 
@@ -22,15 +5,8 @@ window.RD_Campaign = (function () {
   const AREAS = DATA.areas;
   const LEVELS_PER_AREA = AREAS.length ? DATA.levels.length / AREAS.length : 0;
 
-  // Pitches are baked as MIDI. Rounded to two places to land on exactly
-  // the values the note table uses, so a baked note and a hand-placed
-  // one of the same name are the same number.
   const midiToFreq = m => parseFloat((440 * Math.pow(2, (m - 69) / 12)).toFixed(2));
 
-  // ── Level expansion ───────────────────────
-  // Building all 150 grids at boot would be 40,913 notes of work for a
-  // list that only shows names and tempos, so grids are built on
-  // demand and kept.
   const _cache = {};
 
   function recordFor(areaId, idx) {
@@ -42,7 +18,6 @@ window.RD_Campaign = (function () {
     if (_cache[rec.id]) return _cache[rec.id];
 
     const grid = Array.from({ length: rec.r }, () => [null, null, null, null]);
-    // Flat runs of six: row, lane, type, midi, sustain*10, instrument.
     for (let i = 0; i < rec.nt.length; i += 6) {
       const row = rec.nt[i], lane = rec.nt[i + 1];
       if (!grid[row]) continue;
@@ -69,7 +44,6 @@ window.RD_Campaign = (function () {
     return lvl;
   }
 
-  // Metadata without paying for the grid — what the browser list needs.
   function metaFor(areaId, idx) {
     const rec = recordFor(areaId, idx);
     if (!rec) return null;
@@ -92,7 +66,6 @@ window.RD_Campaign = (function () {
   const areaById = id => AREAS.find(a => a.id === id) || null;
   const levelAt  = (areaId, idx) => expand(recordFor(areaId, idx));
 
-  // ── Note counting ─────────────────────────
   function countNotes(lvl) {
     if (!lvl) return 0;
     if (lvl.grid) {
@@ -103,17 +76,12 @@ window.RD_Campaign = (function () {
     return (lvl.notes || []).length;
   }
 
-  // Share of the grid that is filled, 0..1.
   function fillOf(lvl) {
     const rows = (lvl && lvl.grid) ? lvl.grid.length : 0;
     if (!rows) return 0;
     return countNotes(lvl) / (rows * (lvl.grid[0].length || 4));
   }
 
-  // ── XP ────────────────────────────────────
-  // Past this share of the grid, extra notes pay a fraction. A wall of
-  // notes is not a harder chart, it is a longer one with the key held
-  // down, and filling every box used to be the cheapest XP in the game.
   const DENSITY_CAP  = 0.85;
   const SURPLUS_RATE = 0.15;
 
@@ -127,31 +95,23 @@ window.RD_Campaign = (function () {
 
   function xpFor(lvl, opts) {
     opts = opts || {};
-    // XP tracks how fast the notes actually came at you, so a run at
-    // double speed is worth double straight out of the formula rather
-    // than as a bonus bolted onto it.
     const speed = ((lvl.bpm || 120) * (opts.speedMult || 1)) / 120;
     const diff  = lvl.campaign
       ? 1 + ((lvl.areaId || 1) - 1) * 0.15
       : 1 + ((lvl.difficulty || 1) - 1) * 0.2;
 
     let xp = payableNotes(lvl) * speed * diff;
-    // A chart you wrote yourself shouldn't be an XP faucet.
     if (!lvl.campaign) xp *= 0.5;
 
     if (opts.completed) {
-      xp *= 1.25;                       // finishing beats dying partway
+      xp *= 1.25;
     } else {
       const p = opts.progress === undefined ? 1 : opts.progress;
       xp *= Math.max(0, Math.min(1, p));
     }
-    // Rounded once, at the end: rounding every step lets the errors compound
-    // and a run worth exactly twice another stops looking like it.
     return Math.max(1, Math.round(xp));
   }
 
-  // Cumulative XP to REACH level n. Steep enough that level 2 arrives
-  // in the first session and level 50 is a real distance away.
   function xpForLevel(n) {
     if (n <= 1) return 0;
     let total = 0;
@@ -173,15 +133,7 @@ window.RD_Campaign = (function () {
     return { level, into: xp - base, need: span, pct: Math.min(1, (xp - base) / span) };
   }
 
-  // ── Coins ─────────────────────────────────
-  // Every level pays the same. Coins used to be derived from score, and
-  // score compounds with the combo multiplier, so a clear paid anywhere
-  // from a hundred to six figures depending mostly on how long the
-  // chart was. Flat, coins count levels cleared.
   const COINS_PER_CLEAR = 150;
-  // The one exception is a chart too short to be a song — without a
-  // floor a four-note stub would be the fastest coin source in the
-  // game. A stub guard, not a difficulty curve.
   const COINS_MIN_NOTES = 40;
 
   function coinsFor(lvl, opts) {
@@ -195,9 +147,6 @@ window.RD_Campaign = (function () {
     return Math.max(0, Math.round(c));
   }
 
-  // ── Unlocking ─────────────────────────────
-  // A level opens when the one before it is cleared; an area opens when
-  // the previous area is finished. Nothing is gated behind coins.
   const levelKey = (areaId, idx) => 'a' + areaId + 'l' + idx;
 
   function isLevelCleared(progress, areaId, idx) {
@@ -225,9 +174,6 @@ window.RD_Campaign = (function () {
     return n;
   }
 
-  // ── Daily reward ──────────────────────────
-  // Seven days on a cycle, and a missed day starts it over. The point
-  // is coming back tomorrow, not coming back eventually.
   const DAILY_REWARDS = [100, 150, 200, 300, 400, 500, 1000];
   const dayNumber = t => Math.floor((t === undefined ? Date.now() : t) / 86400000);
 
@@ -236,7 +182,6 @@ window.RD_Campaign = (function () {
     const today = dayNumber(now);
     const last  = typeof daily.day === 'number' ? daily.day : null;
     if (last === today) return { claimable: false, streak: daily.streak || 1, reward: 0, day: today };
-    // Consecutive day continues the run; anything else restarts it.
     const streak = (last === today - 1) ? Math.min(7, (daily.streak || 0) + 1) : 1;
     return { claimable: true, streak, reward: DAILY_REWARDS[streak - 1], day: today };
   }

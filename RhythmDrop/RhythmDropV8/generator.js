@@ -1,41 +1,6 @@
-// ═══════════════════════════════════════════
-//  RhythmDrop V8 — generator.js
-//
-//  This is V7's deterministic composer, bundled into V8 as a runtime
-//  module so the campaign can be regenerated and endless runs can roll
-//  a fresh song every time — the live generation V7 had that V8's
-//  baked campaign gave up. It is a byte-for-byte copy of
-//  RhythmDrop/v7/RhythmDropV7/campaign.js with one change: it exposes
-//  window.RD_Generator instead of window.RD_Campaign, because V8
-//  already has an RD_Campaign of its own (the progression engine that
-//  reads the baked data). The two do not collide.
-//
-//  It touches no DOM and reads window.RD_INSTRUMENTS to resolve each
-//  area's voice, so it loads after audio.js.
-//
-//  DO NOT hand-edit — re-copy from v7 if the composer changes.
-// ═══════════════════════════════════════════
-
-// ═══════════════════════════════════════════
-//  RhythmDrop campaign.js — UPD7 Beta 1
-//
-//  150 hand-authored charts is not realistic, so every campaign
-//  level is generated from a seed. Same seed, same chart, on
-//  every device — which is also what makes shareable level
-//  codes nearly free to add later.
-//
-//  Exposes: RD_Campaign
-// ═══════════════════════════════════════════
-
 (function () {
   'use strict';
 
-  // ══════════════════════════════════════
-  //  Deterministic RNG
-  //  Math.random() is useless here — two players with the same
-  //  seed must get byte-identical charts. mulberry32 is small,
-  //  fast, and has good enough distribution for note placement.
-  // ══════════════════════════════════════
   function mulberry32(seed) {
     let a = seed >>> 0;
     return function () {
@@ -47,13 +12,6 @@
     };
   }
 
-  // ══════════════════════════════════════
-  //  Areas
-  //  Travelling forward through time: the game should look and
-  //  sound different by the time you reach the end.
-  //  Themes and instruments land in Beta 2; the ids are declared
-  //  now so progression can already reference them.
-  // ══════════════════════════════════════
   const AREAS = [
     { id:1,  key:'farmstead', name:'Farmstead',    blurb:'Fields and folk songs',
       theme:'area-farmstead', instrument:'guitar',  material:'wood',   bpm:[84, 104] },
@@ -79,15 +37,11 @@
 
   const LEVELS_PER_AREA = 15;
 
-  // Surface weave per area. Two areas can share a material and
-  // still not look like the same object.
   const AREA_TEXTURE = {
     1:'weave', 2:'carve', 3:'vein',  4:'hammer', 5:'carve',
     6:'jade',  7:'oak',   8:'hammer',9:'brush',  10:'scan',
   };
 
-  // Per-level jitter, derived from the seed so it is stable for
-  // a given level rather than changing every time you open it.
   function textureFor(areaId, seed) {
     const rnd = mulberry32((seed | 0) ^ 0x5EED);
     return {
@@ -98,8 +52,6 @@
     };
   }
 
-  // Beta 2 adds these instruments; until then they fall back to
-  // something that already exists rather than failing silently.
   const INSTRUMENT_FALLBACK = {
     flute:'bell', lyre:'guitar', brass:'synth',
     organ:'piano', chiptune:'synth',
@@ -110,72 +62,44 @@
     return have ? id : (INSTRUMENT_FALLBACK[id] || 'synth');
   }
 
-  // ══════════════════════════════════════
-  //  Chart generation
-  //
-  //  The risk with 150 generated levels isn't difficulty, it's
-  //  sameness. So rather than sprinkling notes at random, the
-  //  generator assembles bars from a vocabulary of patterns and
-  //  widens that vocabulary as the campaign progresses.
-  // ══════════════════════════════════════
-
-  // Each pattern fills one 4-beat bar. lane values are relative
-  // and get rotated per bar so the same pattern doesn't always
-  // sit under the same finger.
-  // Each pattern fills one 4-beat bar. Lanes are relative and get
-  // rotated per bar, so the same figure doesn't always sit under
-  // the same finger.
-  //
-  // `fam` groups them so a bar can be chosen by *kind* — a run, a
-  // roll, a rest — rather than at random. That is what stops
-  // level 40 feeling like level 12 with more notes: the generator
-  // varies the vocabulary it draws from, not just the density.
   const PATTERNS = [
-    // ── pulses: the spine ──
     { name:'pulse',    fam:'pulse', minDiff:0, beats:[[0,0],[2,0]] },
     { name:'downbeat', fam:'pulse', minDiff:0, beats:[[0,0]] },
     { name:'halves',   fam:'pulse', minDiff:0, beats:[[0,0],[2,2]] },
     { name:'four',     fam:'pulse', minDiff:1, beats:[[0,0],[1,0],[2,0],[3,0]] },
 
-    // ── walks: stepwise movement ──
     { name:'walk',     fam:'walk',  minDiff:0, beats:[[0,0],[1,1],[2,2],[3,3]] },
     { name:'walkdown', fam:'walk',  minDiff:1, beats:[[0,3],[1,2],[2,1],[3,0]] },
     { name:'stair',    fam:'walk',  minDiff:3, beats:[[0,0],[1,1],[2,2],[3,3],[3,0]] },
     { name:'amble',    fam:'walk',  minDiff:1, beats:[[0,1],[1,2],[3,3]] },
 
-    // ── alternations: left-right figures ──
     { name:'alt2',     fam:'alt',   minDiff:1, beats:[[0,0],[1,3],[2,0],[3,3]] },
     { name:'alt4',     fam:'alt',   minDiff:3, beats:[[0,0],[1,3],[2,1],[3,2]] },
     { name:'bounce',   fam:'alt',   minDiff:2, beats:[[0,0],[1,3],[2,1],[3,2]] },
     { name:'zigzag',   fam:'alt',   minDiff:4, beats:[[0,0],[1,2],[2,1],[3,3]] },
     { name:'pendulum', fam:'alt',   minDiff:5, beats:[[0,1],[1,3],[2,0],[3,2]] },
 
-    // ── runs: consecutive movement, the technical bars ──
     { name:'run',      fam:'run',   minDiff:1, beats:[[0,0],[1,1],[2,2],[3,1]] },
     { name:'runup',    fam:'run',   minDiff:4, beats:[[0,0],[1,1],[1,2],[2,3],[3,2]] },
     { name:'burst',    fam:'run',   minDiff:5, beats:[[0,0],[1,1],[1,2],[2,3],[3,0],[3,2]] },
     { name:'weave',    fam:'run',   minDiff:6, beats:[[0,1],[1,0],[1,3],[2,2],[3,1],[3,2]] },
     { name:'cascade',  fam:'run',   minDiff:7, beats:[[0,0],[0,1],[1,2],[1,3],[2,2],[2,1],[3,0]] },
 
-    // ── rolls: same lane repeated, a drum figure ──
     { name:'gallop',   fam:'roll',  minDiff:3, beats:[[0,0],[1,0],[2,2],[3,2]] },
     { name:'triple',   fam:'roll',  minDiff:5, beats:[[0,0],[1,0],[2,0],[3,3]] },
     { name:'stutter',  fam:'roll',  minDiff:6, beats:[[0,1],[0,2],[1,1],[2,3],[3,3]] },
 
-    // ── chords: simultaneous lanes ──
     { name:'pair',     fam:'chord', minDiff:0, beats:[[0,0],[0,2]] },
     { name:'chord',    fam:'chord', minDiff:2, beats:[[0,0],[0,2],[2,1],[2,3]] },
     { name:'cross',    fam:'chord', minDiff:4, beats:[[0,0],[0,3],[1,1],[2,2],[3,0],[3,3]] },
     { name:'stack',    fam:'chord', minDiff:6, beats:[[0,0],[0,1],[0,2],[2,3],[3,1]] },
     { name:'bookend',  fam:'chord', minDiff:5, beats:[[0,0],[0,3],[3,0],[3,3]] },
 
-    // ── syncopation: the off-beat feel ──
     { name:'offbeat',  fam:'synco', minDiff:1, beats:[[1,1],[3,3]] },
     { name:'push',     fam:'synco', minDiff:3, beats:[[0,0],[1,2],[3,1]] },
     { name:'backbeat', fam:'synco', minDiff:2, beats:[[1,0],[3,2]] },
     { name:'limp',     fam:'synco', minDiff:6, beats:[[0,0],[1,1],[3,2],[3,0]] },
 
-    // ── sparse: breathing room, not an absence of ideas ──
     { name:'hold',     fam:'sparse', minDiff:0, beats:[[0,0]] },
     { name:'echo',     fam:'sparse', minDiff:1, beats:[[0,0],[3,0]] },
     { name:'question', fam:'sparse', minDiff:2, beats:[[0,1],[2,2]] },
@@ -183,17 +107,6 @@
 
   const FAMILIES = ['pulse','walk','alt','run','roll','chord','synco','sparse'];
 
-  // ══════════════════════════════════════
-  //  NOTE MIX
-  //
-  //  Rolling each note type independently gave clumpy results —
-  //  six doubles in a row, then none for twenty beats. Instead
-  //  each chart gets a quota and the generator steers toward it,
-  //  so every level has a deliberate blend of singles, doubles
-  //  and held notes rather than a random one.
-  //
-  //  Styles let one seed produce genuinely different charts.
-  // ══════════════════════════════════════
   const MIX_STYLES = {
     B: { name:'Balanced',  dtap:1.00, sus:1.00, density:1.00 },
     D: { name:'Dense',     dtap:1.15, sus:0.60, density:1.35 },
@@ -201,10 +114,6 @@
     H: { name:'Held',      dtap:0.70, sus:2.20, density:0.85 },
     T: { name:'Technical', dtap:1.70, sus:0.45, density:1.15 },
     F: { name:'Flowing',   dtap:0.55, sus:1.60, density:1.05 },
-    // ── Classical forms ──
-    // These carry a meter and a pattern bias, not just a note
-    // blend, so they change the shape of the bar rather than
-    // only how many doubles land in it.
     W: { name:'Waltz',     dtap:0.55, sus:1.40, density:0.85, meter:3,
          favour:['pulse','walk','pair'] },
     M: { name:'March',     dtap:0.95, sus:0.45, density:1.15, meter:2,
@@ -217,16 +126,9 @@
          favour:['walk','stair','pair'] },
     G: { name:'Gigue',     dtap:1.20, sus:0.50, density:1.25, meter:3,
          favour:['gallop','run','bounce'] },
-    // The Double: the harder cut of a song. It rides in the style
-    // slot so it travels in a share code like everything else —
-    // 74ZEBTO is the double of 74BEBTO.
     Z: { name:'Double',    dtap:1.45, sus:0.55, density:1.55, meter:4,
          favour:['burst','cross','weave','gallop'], double:true },
 
-    // ── Genres ──
-    // These bias whole *families* rather than named patterns, so
-    // they change what kind of bar shows up instead of picking
-    // from a short list of figures.
     A: { name:'Anthem',    dtap:0.85, sus:1.30, density:1.00, meter:4,
          fams:{ chord:4, pulse:3, walk:2 } },
     E: { name:'Ballad',    dtap:0.40, sus:2.10, density:0.70, meter:4,
@@ -250,10 +152,6 @@
   };
   const MIX_KEYS = Object.keys(MIX_STYLES);
 
-  // Target share of each note type at a given difficulty.
-  // A one-off style built from a base plus explicit double and
-  // held-note shares, so the editor's sliders drive the same
-  // quota system the campaign uses rather than a parallel one.
   function styleWithMix(base, dblShare, susShare) {
     const b = MIX_STYLES[base] || MIX_STYLES.B;
     const key = '_gen';
@@ -267,10 +165,6 @@
 
   function mixTargets(d, style) {
     const st = MIX_STYLES[style] || MIX_STYLES.B;
-    // Doubles climb with difficulty but never dominate — past
-    // about 40% the chart stops reading as rhythm and starts
-    // reading as a stutter test.
-    // An explicit share from the editor wins over the curve.
     if (st.dtapAbs !== undefined || st.susAbs !== undefined) {
       return {
         dtap: st.dtapAbs !== undefined ? st.dtapAbs : Math.min(0.40, (0.06 + d * 0.035) * st.dtap),
@@ -278,14 +172,10 @@
       };
     }
     const dtap = Math.min(0.40, (0.06 + d * 0.035) * st.dtap);
-    // Held notes appear from difficulty 2 and stay a garnish.
     const sus  = d < 2 ? 0 : Math.min(0.30, (0.03 + d * 0.018) * st.sus);
     return { dtap, sus };
   }
 
-  // Generates ONE section of bars. Song form is assembled from
-  // several of these — see generateChart below.
-  // difficulty: 1..9. musicId picks the era. style picks the blend.
   function generateSection(seed, difficulty, bars, musicId, style, opts) {
     opts = opts || {};
     const rnd = mulberry32(seed);
@@ -296,8 +186,6 @@
 
     const eligible = PATTERNS.filter(p => p.minDiff <= d - 1);
 
-    // Weight each family: the style's leaning plus a floor, so
-    // nothing is ever impossible.
     const famWeight = {};
     FAMILIES.forEach(f => { famWeight[f] = 1; });
     Object.keys(st.fams || {}).forEach(f => { famWeight[f] = (famWeight[f] || 1) + st.fams[f]; });
@@ -305,8 +193,6 @@
     let lastFam = null;
 
     function pickFamily() {
-      // Never the same family twice running — that repetition was
-      // the main source of sameness across 150 levels.
       const opts = FAMILIES.filter(f =>
         f !== lastFam && eligible.some(p => p.fam === f));
       const use = opts.length ? opts : FAMILIES.filter(f => eligible.some(p => p.fam === f));
@@ -329,27 +215,16 @@
       return weighted[Math.floor(rnd() * weighted.length)];
     }
 
-    // Meter: waltzes and minuets want three beats to the bar, so
-    // the fourth beat of the pattern is dropped rather than the
-    // bar being stretched.
     const meter = st.meter || 4;
 
     const intensity = opts.intensity === undefined ? 1 : opts.intensity;
 
-    // ── Melodic walker with phrase shape ──
-    // Music moves in phrases, not an unbroken stream. Every four
-    // bars the line arcs up and comes back, and the last bar of
-    // a phrase resolves toward the tonic. That single change is
-    // most of what makes these charts sound composed.
     let deg = opts.startDeg || 0;
     const top = mus.scale.length - 1;
 
     const OCT_STEP = octStep(mus);
     const degMidi  = i => degMidiOf(mus, i);
 
-    // The degree the last nextPitch() call actually sounded, octave
-    // shift included, so a chord harmonises the note beside it rather
-    // than the one the walker happened to be standing on.
     let lastDeg = 0;
 
     function stepTo(target) {
@@ -359,13 +234,10 @@
 
     function nextPitch(posInPhrase, cadence) {
       if (cadence) {
-        // Resolve: walk down toward the tonic.
         stepTo(0);
       } else if (rnd() < mus.leap) {
         deg += (rnd() < 0.5 ? -1 : 1) * (2 + Math.floor(rnd() * 3));
       } else {
-        // Bias upward in the first half of a phrase, down in the
-        // second, so the line has an arc.
         const up = posInPhrase < 0.5;
         deg += (rnd() < (up ? 0.62 : 0.38)) ? 1 : -1;
       }
@@ -379,12 +251,10 @@
       return midiToFreq(midi + 12);
     }
 
-    // ── Quota steering ──
     let placed = 0, dtaps = 0, susts = 0;
     function wantDtap() {
       if (tgt.dtap <= 0) return false;
       const share = placed ? dtaps / placed : 0;
-      // Push toward the target rather than rolling a flat chance.
       const p = tgt.dtap + (tgt.dtap - share) * 0.9;
       return rnd() < Math.max(0.02, Math.min(0.6, p));
     }
@@ -393,16 +263,10 @@
       const share = placed ? susts / placed : 0;
       const p = tgt.sus + (tgt.sus - share) * 0.9;
       if (rnd() >= Math.max(0, Math.min(0.5, p))) return 0;
-      // Longer holds at higher difficulty; 3s stays rare.
       const table = d < 4 ? [0.5, 1] : d < 7 ? [0.5, 1, 1.5, 2] : [1, 1.5, 2, 2.5, 3];
       return table[Math.floor(rnd() * table.length)];
     }
 
-    // Bars per phrase. Four is the default and stays the common
-    // case, but a song that breathes in threes or sixes puts its
-    // rests and cadences somewhere else entirely — structural
-    // variety for free, and seed-derived so it is identical
-    // everywhere.
     const PHRASE = opts.phrase || 4;
     const grid = [];
     let restedLastBar = false;
@@ -412,36 +276,13 @@
       const isLastBar   = bar === bars - 1;
       const cadenceBar  = isLastBar || (bar % PHRASE === PHRASE - 1);
 
-      // Rests land at phrase ends, where music actually breathes,
-      // instead of at random points mid-line.
-      //
-      // Never two bars running, though. A rest bar is completely
-      // empty, so back-to-back rests read as the game having stopped
-      // rather than the music breathing — measured at up to 13 beats
-      // of unbroken silence, 5.6 seconds mid-song, and a median
-      // longest gap of 6 beats across the campaign. One bar of air is
-      // phrasing; two is a bug report.
       const restChance = (cadenceBar ? 0.22 : 0.05) * (2 - st.density) / intensity;
       const rest = !isLastBar && bar > 0 && !restedLastBar && rnd() < restChance;
       restedLastBar = rest;
 
-      // A bar is as many beats as the meter says. This used to push
-      // four rows whatever the style, and merely decline to place
-      // notes past the meter — so a 3/4 waltz was really 4/4 with a
-      // silent fourth beat, and a 2/4 march was 4/4 half empty.
-      // Measured across the 150 campaign charts: styles with meter 3
-      // put 0% of their notes on beat 4, and the march put 0% on
-      // beats 3 AND 4, i.e. half of every bar was structurally
-      // silent. 39 of 150 levels were affected.
       const rows = Array.from({ length: meter }, () => [null, null, null, null]);
 
-      // The scale degree sounding on each beat of this bar, so the
-      // chord step can harmonise against the melody rather than
-      // guessing.
       const beatDeg  = [];
-      // How far up the stack of thirds each beat has already been
-      // voiced, so a third note on a beat becomes the fifth and not
-      // another third.
       const beatStack = [];
 
       if (!rest) {
@@ -449,14 +290,7 @@
         const pat = pickPattern(lastFam);
         const rotate = Math.floor(rnd() * 4);
 
-        // Density trims beats out or fills extra ones in, so
-        // Dense is genuinely denser and Sparse genuinely sparser
-        // rather than only differing in how often bars rest.
         let beats = pat.beats.slice();
-        // Patterns are written in four. Trim to the meter first, so
-        // the density pass below adds and removes beats within the
-        // bar that actually exists — trimming afterwards threw away
-        // part of the density a dense style had just asked for.
         if (meter < 4) beats = beats.filter(([b]) => b < meter);
         if (st.density < 1 && beats.length > 2) {
           const drop = Math.round(beats.length * (1 - st.density) * 0.6);
@@ -480,13 +314,6 @@
           const isDtap  = wantDtap();
           const sustain = wantSustain();
 
-          // A second note on a beat that is already sounding is not
-          // another step of the melody — it is harmony. Half the
-          // patterns here place two or three notes on one beat, and
-          // walking the melody for each of them is what made
-          // simultaneous hits land on whatever interval the walker
-          // happened to reach. Stack them in thirds above the note
-          // already there and those same patterns play as chords.
           let freq;
           if (beatDeg[b] === undefined) {
             freq = nextPitch(posInPhrase, cadence);
@@ -503,23 +330,12 @@
           if (sustain > 0) susts++;
         });
 
-        // ── Chords ───────────────────────────────────
-        // A real triad rather than one stray interval: take a beat
-        // that already carries melody, treat its degree as the chord
-        // root, and fill free lanes with the degrees stacked in
-        // thirds above it. Stacking scale degrees is what builds a
-        // triad, and it is also why the chord can never contain a
-        // second — which is what made simultaneous hits sour before.
         if (rnd() < mus.chord) {
-          // Beats that have a note to harmonise and room beside it.
-          // Restricted to the meter, or a waltz picks up a stray
-          // note on beat four and stops being in three.
           const cands = [];
           for (let b = 0; b < meter; b++) {
             if (beatDeg[b] === undefined) continue;
             const free = [0, 1, 2, 3].filter(l => !rows[b][l]);
             if (!free.length) continue;
-            // Downbeats carry harmony; mid-bar chords sound incidental.
             const weight = b === 0 ? 3 : (b === meter - 1 ? 2 : 1);
             for (let w = 0; w < weight; w++) cands.push({ b, free });
           }
@@ -528,24 +344,17 @@
             const { b, free } = cands[Math.floor(rnd() * cands.length)];
             const root = beatDeg[b];
 
-            // Third, then fifth, then the seventh once the charts are
-            // busy enough to carry it. Difficulty decides how much of
-            // the stack actually gets voiced.
             const stack = [2, 4];
             if (d >= 7 && rnd() < 0.35) stack.push(6);
             const want = d < 3 ? 1
                        : d < 6 ? (rnd() < 0.45 ? 2 : 1)
                        : Math.min(stack.length, rnd() < 0.6 ? stack.length : 2);
 
-            // Cadence chords ring: a held triad is what resolution
-            // sounds like. Mid-phrase ones stay short.
             const hold = (cadenceBar && d >= 3) ? 1.5 : 0;
 
             const lanes = free.slice();
             for (let t = 0; t < want && lanes.length; t++) {
               const L = lanes.splice(Math.floor(rnd() * lanes.length), 1)[0];
-              // Continue the beat's own stack rather than restarting
-              // it, so this never doubles a tone already sounding.
               beatStack[b] = (beatStack[b] || 0) + 2;
               rows[b][L] = {
                 type: 'tap',
@@ -561,10 +370,6 @@
       grid.push(...rows);
     }
 
-    // Only the closing section resolves to the tonic. Ending a
-    // verse there would make every section sound like the end.
-    // Scan lanes backwards too — a chord can leave a later note
-    // in the same row, and resolving the wrong one leaves it hanging.
     if (!opts.resolve) return grid;
 
     for (let r = grid.length - 1; r >= 0; r--) {
@@ -580,71 +385,53 @@
     return grid;
   }
 
-  // ══════════════════════════════════════
-  //  MUSICAL PROFILES
-  //
-  //  Each area generates notes an instrument of that era could
-  //  plausibly have played. That means three things per area:
-  //  the scale it draws from, how the melody moves through it
-  //  (folk steps vs fanfare leaps), and which rhythm patterns
-  //  it favours.
-  //
-  //  scale = semitone offsets from the root.
-  // ══════════════════════════════════════
   const MUSIC = {
-    1: { // Farmstead — folk. Major pentatonic, stepwise, plain rhythm.
-      root:57, scale:[0,2,4,7,9,12,14,16],       // A major pentatonic
+    1: {
+      root:57, scale:[0,2,4,7,9,12,14,16],
       leap:0.18, chord:0.10, octave:0.10,
       favour:['pulse','walk','pair','offbeat'],
     },
-    2: { // Egypt — double harmonic. The augmented second is the
-        // sound people read as ancient near-east.
-      root:50, scale:[0,1,4,5,7,8,11,12],        // D double harmonic
+    2: {
+      root:50, scale:[0,1,4,5,7,8,11,12],
       leap:0.30, chord:0.06, octave:0.14,
       favour:['pulse','pair','offbeat','run'],
     },
-    3: { // Greece — Dorian, the mode named for them. Flowing,
-        // mostly stepwise, lyre-like.
-      root:50, scale:[0,2,3,5,7,9,10,12],        // D dorian
+    3: {
+      root:50, scale:[0,2,3,5,7,9,10,12],
       leap:0.22, chord:0.14, octave:0.10,
       favour:['walk','run','stair','pair'],
     },
-    4: { // Rome — brass fanfare. Bugle-style: leaps through the
-        // harmonic series, almost no stepwise motion.
-      root:48, scale:[0,4,7,12,16,19,24],        // C major triad stack
+    4: {
+      root:48, scale:[0,4,7,12,16,19,24],
       leap:0.72, chord:0.26, octave:0.20,
       favour:['pulse','gallop','chord','pair'],
     },
-    5: { // Aztec — minor pentatonic, syncopated, percussive.
-      root:45, scale:[0,3,5,7,10,12,15,17],      // A minor pentatonic
+    5: {
+      root:45, scale:[0,3,5,7,10,12,15,17],
       leap:0.34, chord:0.18, octave:0.12,
       favour:['offbeat','bounce','gallop','cross'],
     },
-    6: { // Maya — anhemitonic, bell-like. No semitones at all,
-        // which is what makes struck metal read as ceremonial.
+    6: {
       root:52, scale:[0,2,4,7,9,12,14,16],
       leap:0.40, chord:0.22, octave:0.24,
       favour:['pair','chord','pulse','stair'],
     },
-    7: { // Old England — Mixolydian. The flat seventh is the
-        // whole sound of English modal folk and church organ.
-      root:43, scale:[0,2,4,5,7,9,10,12],        // G mixolydian
+    7: {
+      root:43, scale:[0,2,4,5,7,9,10,12],
       leap:0.24, chord:0.30, octave:0.10,
       favour:['walk','chord','pulse','stair'],
     },
-    8: { // Napoleonic — military march. Triadic bugle calls on a
-        // rigid duple pulse.
+    8: {
       root:46, scale:[0,4,7,12,16,19],
       leap:0.66, chord:0.20, octave:0.16,
       favour:['gallop','pulse','pair','run'],
     },
-    9: { // Modern — minor pentatonic with the blue note.
-      root:48, scale:[0,3,5,6,7,10,12,15],       // C blues
+    9: {
+      root:48, scale:[0,3,5,6,7,10,12,15],
       leap:0.36, chord:0.16, octave:0.14,
       favour:['run','bounce','cross','burst'],
     },
-    10:{ // Retro-Future — chiptune. Fast arpeggios, wide leaps,
-        // chromatic passing tones.
+    10:{
       root:48, scale:[0,3,5,7,10,12,15,17,19,24],
       leap:0.58, chord:0.24, octave:0.30,
       favour:['burst','weave','run','gallop'],
@@ -653,15 +440,6 @@
 
   const midiToFreq = m => parseFloat((440 * Math.pow(2, (m - 69) / 12)).toFixed(2));
 
-  // ── Harmony helpers ──────────────────────
-  // Chords are built by stacking scale degrees in thirds — degree i,
-  // i+2, i+4 — which is what a triad is, and why a chord built this
-  // way can never contain a second.
-
-  // How many degrees a scale takes to climb an octave. The tables run
-  // past their own octave, so this is where they start repeating; a
-  // stacked third that runs off the end wraps here instead of being
-  // clamped, which used to collapse high chords into unisons.
   const OCT_STEP = {};
   function octStep(mus) {
     const key = mus.root + ':' + mus.scale.join(',');
@@ -673,17 +451,12 @@
     return (OCT_STEP[key] = n);
   }
 
-  // The MIDI note a scale degree sounds, counting past the end of the
-  // table into the octaves above.
   function degMidiOf(mus, i) {
     const step = octStep(mus);
     const oct  = Math.floor(i / step);
     return mus.root + mus.scale[i - oct * step] + oct * 12;
   }
 
-  // The degree a frequency is sitting on. Lets a note added after the
-  // fact harmonise what it lands beside instead of picking a pitch out
-  // of the air.
   function degOfFreq(mus, freq) {
     const midi = Math.round(69 + 12 * Math.log2(freq / 440)) - 12;
     let best = 0, bestD = Infinity;
@@ -694,7 +467,6 @@
     return best;
   }
 
-  // Lane default pitches for an area: the first four scale degrees.
   function scaleFreqs(areaId) {
     const m = MUSIC[areaId] || MUSIC[1];
     return [0, 1, 2, 3].map(i => midiToFreq(m.root + m.scale[i % m.scale.length] + 12));
@@ -704,57 +476,27 @@
 
   function areaById(id) { return AREAS.find(a => a.id === id); }
 
-  // A campaign seed is areaId*1000 + levelIdx, so a code can be
-  // recognised as one of the 150 and placed within its area.
-  // Anything else is a shared or endless code.
   function campaignIndexFor(areaId, seed) {
     const i = seed - areaId * 1000;
     return (i >= 0 && i < LEVELS_PER_AREA) ? i : null;
   }
 
-  // Tempo. The campaign ramps across an area and steps up at the
-  // boundary, which is the whole point of the per-area bpm band —
-  // deriving it from the difficulty digit instead made all 15
-  // levels of an area the same speed, and the jitter pushed the
-  // late areas past their own ceiling.
   function tempoFor(area, seed, difficulty, levelIdx) {
     const lo = area.bpm[0], hi = area.bpm[1];
     let pos;
     if (levelIdx !== null && levelIdx !== undefined) {
       pos = LEVELS_PER_AREA > 1 ? levelIdx / (LEVELS_PER_AREA - 1) : 0;
     } else {
-      // Shared and endless codes have no place in an area, so the
-      // difficulty digit sets the pace and the seed spreads it a
-      // little either side.
       pos = (difficulty - 1) / 8 + (mulberry32(seed ^ 0x9E37)() - 0.5) * 0.12;
     }
     return Math.round(lo + (hi - lo) * Math.max(0, Math.min(1, pos)));
   }
 
-  // Difficulty across the whole campaign, 1..9.
   function difficultyFor(areaId, levelIdx) {
     const progress = ((areaId - 1) * LEVELS_PER_AREA + levelIdx) / (AREAS.length * LEVELS_PER_AREA);
     return Math.max(1, Math.min(9, Math.round(1 + progress * 8)));
   }
 
-  // ══════════════════════════════════════
-  //  SONG FORM
-  //
-  //  A chart used to be one undifferentiated stream of bars.
-  //  Real songs have a chorus you recognise when it comes back,
-  //  and quieter parts between that make its return land.
-  //
-  //     short   intro  verse  CHORUS  verse  CHORUS  outro
-  //     long    intro  verse  CHORUS  verse  CHORUS  bridge  CHORUS  outro
-  //
-  //  The chorus is generated ONCE and repeated verbatim — that
-  //  literal repetition is what makes it a chorus rather than
-  //  just another verse.
-  // ══════════════════════════════════════
-
-  // Sections can each carry their own voice. A chorus arriving on
-  // brass after a flute verse does the same job as an arrangement
-  // change in a real song.
   const SECTION_VOICES = {
     1:  { lead:'guitar',   chorus:'strings',  soft:'kalimba'  },
     2:  { lead:'flute',    chorus:'lyre',     soft:'flute'    },
@@ -782,31 +524,14 @@
     return rows;
   }
 
-  // ══════════════════════════════════════
-  //  SECTION VARIATION
-  //
-  //  A chorus that returns byte-identical is what made long songs
-  //  read as a loop — a third of every chart was literal copy. Real
-  //  songs bring the chorus back recognisably the same and then
-  //  change one bar in four: an extra fill, a dropped hit, a note
-  //  left ringing.
-  //
-  //  Only a minority of bars are touched, so the section is still
-  //  obviously itself, and the row count never changes — the plan
-  //  and the chart have to agree on length.
-  //
-  //  Seeded from the song, so every device ornaments identically.
-  // ══════════════════════════════════════
   function varyRows(rows, seed, musicId, d, meter) {
     const rnd = mulberry32(seed >>> 0);
     const mus = MUSIC[musicId] || MUSIC[1];
-    // Bars are `meter` rows now, so walking them four at a time would
-    // ornament across bar lines in a waltz.
     const m    = meter || 4;
     const bars = Math.floor(rows.length / m);
 
     for (let b = 0; b < bars; b++) {
-      if (rnd() > 0.28) continue;          // most bars return untouched
+      if (rnd() > 0.28) continue;
       const base = b * m;
 
       const cells = [];
@@ -817,9 +542,6 @@
 
       const roll = rnd();
       if (roll < 0.30) {
-        // An extra note alongside one that is already there — so it
-        // has to harmonise that note, not sound a degree picked out
-        // of the air. A third or a fifth above whatever is in the row.
         const [r] = cells[Math.floor(rnd() * cells.length)];
         const free = [0, 1, 2, 3].filter(l => !rows[r][l]);
         if (free.length) {
@@ -835,19 +557,16 @@
           };
         }
       } else if (roll < 0.55) {
-        // Drop a hit — the ear reads the gap as a breath.
         if (cells.length > 1) {
           const [r, l] = cells[Math.floor(rnd() * cells.length)];
           rows[r][l] = null;
         }
       } else if (roll < 0.80) {
-        // Harden one hit into a double.
         if (d >= 2) {
           const [r, l] = cells[Math.floor(rnd() * cells.length)];
           rows[r][l].type = 'dtap';
         }
       } else {
-        // Let the last note of the bar ring, or cut one that did.
         const [r, l] = cells[cells.length - 1];
         rows[r][l].sustain = rows[r][l].sustain ? 0 : (d < 5 ? 1 : 1.5);
       }
@@ -855,19 +574,6 @@
     return rows;
   }
 
-  // The plan divides the bar budget up rather than multiplying it.
-  // Getting this wrong made every song roughly twice its target
-  // length, because the unit was bars/7 while the multipliers
-  // summed to 13.
-  // Several song shapes rather than one. Which a song uses is
-  // chosen from its seed, so it is still identical everywhere —
-  // varied, not random at play time.
-  // ══════════════════════════════════════
-  //  SECTION ROLES
-  //  A shape can name any section; this table says how to build
-  //  one. `repeat` marks sections that come back verbatim — that
-  //  literal return is what makes a chorus a chorus.
-  // ══════════════════════════════════════
   const SECTION_ROLES = {
     Intro:      { intensity:0.70, voice:'soft',   deg:0 },
     Verse:      { intensity:1.00, voice:'lead',   deg:1 },
@@ -891,15 +597,7 @@
     Outro:      { intensity:0.60, voice:'soft',   deg:0 },
   };
 
-  // ══════════════════════════════════════
-  //  SONG STRUCTURES
-  //  34 named forms. `min` is the bar budget a form needs before
-  //  it is worth using — a 10-section suite in 12 bars is just
-  //  noise. Which form a song uses comes from its seed, so it is
-  //  varied but identical on every device.
-  // ══════════════════════════════════════
   const SHAPES = [
-    // ── popular forms ──
     { name:'Pop',        min:0,
       parts:[['Intro',1],['Verse',2],['Chorus',2],['Verse',2],['Chorus',2],['Outro',1]] },
     { name:'Pop (full)', min:40,
@@ -920,7 +618,6 @@
     { name:'Strophic',   min:16,
       parts:[['Verse',3],['Verse',3],['Verse',3],['Coda',1]] },
 
-    // ── club and electronic ──
     { name:'House',      min:36,
       parts:[['Intro',2],['Build',2],['Drop',3],['Break',2],['Build',2],['Drop',3],['Outro',2]] },
     { name:'Trance',     min:44,
@@ -935,7 +632,6 @@
     { name:'Techno',     min:32,
       parts:[['Intro',2],['Verse',3],['Build',1],['Drop',3],['Break',2],['Drop',3],['Outro',2]] },
 
-    // ── classical forms ──
     { name:'Sonata',     min:48,
       parts:[['Exposition',3],['Exposition',3],['Development',3],['Recap',3],['Coda',2]] },
     { name:'Rondo',      min:30,
@@ -960,7 +656,6 @@
       parts:[['Intro',2],['Exposition',3],['Verse',2],['Development',3],
              ['Recap',3],['Coda',2]] },
 
-    // ── baroque ──
     { name:'Fugue',      min:40,
       parts:[['Exposition',2],['Exposition',2],['Development',3],['Exposition',2],
              ['Development',2],['Recap',2],['Coda',1]] },
@@ -976,7 +671,6 @@
     { name:'Chorale',    min:20,
       parts:[['Verse',2],['Refrain',2],['Verse',2],['Refrain',2],['Coda',1]] },
 
-    // ── jazz ──
     { name:'Jazz Head',  min:34,
       parts:[['Head',2],['Solo',3],['Solo',3],['Head',2],['Coda',1]] },
     { name:'Blues',      min:24,
@@ -1002,12 +696,6 @@
   function sectionPlan(bars, seed, name) {
     const shape = shapeFor(bars, seed === undefined ? 0 : seed, name);
 
-    // A repeating section comes back VERBATIM, so every occurrence
-    // has to be the same length. A few shapes ask for a longer
-    // final chorus (Power Ballad wants 2,2,3); honouring that would
-    // mean the cached chorus no longer fills the bars the plan
-    // allotted it, and the song silently runs long. First occurrence
-    // wins.
     const firstMult = {};
     const parts = shape.parts.map(([n2, mult]) => {
       if (!(SECTION_ROLES[n2] || {}).repeat) return [n2, mult];
@@ -1019,11 +707,6 @@
     const unit  = Math.max(2, Math.floor(bars / units));
     const plan  = parts.map(([n2, mult]) => [n2, unit * mult]);
 
-    // Rounding down leaves a shortfall, which on a ten-section
-    // form cost enough bars to drop a song under its target
-    // length. Hand the remainder to the longest sections — but a
-    // repeating section can only grow in step with its own
-    // repeats, so it is topped up as a group or not at all.
     const groups = [];
     const groupOf = {};
     plan.forEach(([n2], idx) => {
@@ -1048,8 +731,6 @@
     return plan;
   }
 
-  // Beat offsets of each section, for anything that wants to
-  // display structure.
   function sectionMapFor(bars, seed, shapeName, meter) {
     let at = 0;
     const m = meter || 4;
@@ -1059,7 +740,6 @@
     });
   }
 
-  // Actual bars a plan produces, so callers can check their maths.
   function planBars(bars, seed) {
     return sectionPlan(bars, seed).reduce((n, p) => n + p[1], 0);
   }
@@ -1069,30 +749,16 @@
     const d = Math.max(1, Math.min(9, difficulty));
     const plan = sectionPlan(bars, seed, shapeName);
 
-    // Sections marked `repeat` are generated once and returned to
-    // with fresh ornaments. Each repeating NAME gets its own cache,
-    // so a rondo with a refrain and a fugue with a subject both work.
     const cache = {};
 
-    // How many bars a phrase runs for. Four is the common case and
-    // stays the default; threes and sixes move every cadence and
-    // rest in the song, which is a bigger structural difference than
-    // any amount of note-level shuffling. Drawn from the seed, so a
-    // given song phrases the same way on every device.
     const phrase = [4, 4, 4, 4, 3, 6][
       Math.floor(mulberry32(((seed | 0) ^ 0x9F2A5E) >>> 0)() * 6)] || 4;
 
-    // The song's meter. Every section runs in it — a role may swap the
-    // style but never the meter, or a waltz stops being in three
-    // halfway through — so bar arithmetic anywhere below uses this.
     const songMeter = (MIX_STYLES[style] || MIX_STYLES.B).meter || 4;
 
     function sectionFor(name, len, index, isLast) {
       const role = SECTION_ROLES[name] || SECTION_ROLES.Verse;
 
-      // In a shape with no chorus at all, the contrasting section
-      // takes the chorus voice — otherwise an AABA song plays
-      // start to finish on one instrument.
       const hasChorusish = plan.some(p => (SECTION_ROLES[p[0]] || {}).repeat);
       let voiceKey = role.voice;
       if (!hasChorusish && (name === 'Bridge' || name === 'Trio' || name === 'Development')) {
@@ -1100,26 +766,13 @@
       }
       const voice = V[voiceKey] || V.lead;
 
-      // Deep copy so a later transposition can't mutate the original.
-      // The length check is a guard, not a feature: sectionPlan keeps
-      // every occurrence of a repeating section the same size, and if
-      // that ever stops being true we regenerate rather than hand back
-      // a section that doesn't fill its bars.
       if (role.repeat && cache[name] && cache[name].length === len * songMeter) {
         const back = cache[name].map(r => r.map(c => (c ? Object.assign({}, c) : null)));
-        // Same chorus, different fills. `index` makes each return
-        // ornament differently from the last.
         return tagVoice(
           varyRows(back, seed ^ hashName(name) ^ (0x5B * (index + 1)), musicId, d, songMeter),
           voice);
       }
 
-      // A section can override the song's style — a Solo runs as
-      // an etude, a Break as a drone — which is most of what makes
-      // a jazz head sound different from the solo after it.
-      // A role can swap the style — a Solo runs as an etude, a
-      // Break as a drone — but it must not change the METER, or a
-      // waltz stops being in three halfway through.
       let useStyle = role.style || style;
       if (role.style) {
         const roleSt = MIX_STYLES[role.style] || MIX_STYLES.B;
@@ -1154,8 +807,6 @@
       seenSoFar[name] = (seenSoFar[name] || 0) + 1;
       const rows = sectionFor(name, len, i, isLast);
 
-      // The final return of a repeating section lifts a whole tone,
-      // so the last chorus isn't simply the first one again.
       const role = SECTION_ROLES[name] || {};
       if (role.repeat && repeats[name] > 2 && seenSoFar[name] === repeats[name]) {
         rows.forEach(r => r.forEach(c => { if (c && c.freq) c.freq = c.freq * 1.122462; }));
@@ -1165,19 +816,12 @@
     return grid;
   }
 
-  // Small stable hash so each section name seeds differently.
   function hashName(n) {
     let h = 0;
     for (let i = 0; i < n.length; i++) h = ((h << 5) - h + n.charCodeAt(i)) | 0;
     return h & 0xFFFF;
   }
 
-  // ══════════════════════════════════════
-  //  SONG TITLES
-  //  Two banks per area, combined deterministically from the
-  //  seed. Every level is a named piece rather than "Egypt 7",
-  //  and the same seed always yields the same title.
-  // ══════════════════════════════════════
   const TITLE_WORDS = {
     1:  { a:['Harvest','Barley','Meadow','Cider','Furrow','Hearth','Millstone','Thresher',
              'Orchard','Haywain','Plough','Sheaf','Pasture','Brookside','Dawn'],
@@ -1217,19 +861,10 @@
     return w.a[Math.floor(rnd() * w.a.length)] + ' ' + w.b[Math.floor(rnd() * w.b.length)];
   }
 
-  // ══════════════════════════════════════
-  //  SONG LENGTH
-  //  A chart is a song, so it should last like one: 1m30 early,
-  //  up to 3m by the end of the campaign.
-  //  bars = seconds x bpm / 60 / 4
-  // ══════════════════════════════════════
   const SONG_MIN_SEC = 90;
   const SONG_MAX_SEC = 180;
 
   function barsForSeconds(seconds, bpm, meter) {
-    // A bar is `meter` beats, so a 3/4 song needs more bars than a 4/4
-    // one to last the same time. Dividing by a fixed 4 made every
-    // waltz and march a quarter to a half shorter than its target.
     return Math.max(8, Math.round((seconds * bpm) / 60 / (meter || 4)));
   }
 
@@ -1242,13 +877,9 @@
     return Math.round((lvl.grid.length * 60) / lvl.bpm);
   }
 
-  // Campaign identity in one place, so the level, its share code
-  // and its list row can't disagree about which song they mean.
   function campaignStyle(areaId, levelIdx, isDouble) {
-    // Rotate the mix style so consecutive levels in an area feel
-    // different even at the same difficulty.
     return isDouble
-      ? 'Z'                                        // the Double style
+      ? 'Z'
       : MIX_KEYS[(areaId * 5 + levelIdx * 3) % MIX_KEYS.length];
   }
 
@@ -1265,9 +896,6 @@
     };
   }
 
-  // Title, tempo and length without generating a note. The campaign
-  // browser draws 150 rows, and building every chart to read a name
-  // off it cost a quarter of a second of main thread per render.
   function campaignLevelMeta(areaId, levelIdx, opts) {
     opts = opts || {};
     const area = areaById(areaId);
@@ -1276,27 +904,16 @@
     return Object.assign(meta, campaignFields(areaId, levelIdx, opts.double, area));
   }
 
-  // opts.double builds the harder cut of the same song: same
-  // title and tempo, denser chart, difficulty pushed up. It is a
-  // separate clear from the standard version, not a replacement.
   function buildCampaignLevel(areaId, levelIdx, opts) {
     opts = opts || {};
     const area = areaById(areaId);
     if (!area) return null;
 
-    // Build it THROUGH its own share code. Anything else lets the
-    // campaign chart and the shared chart drift apart, which is
-    // exactly the bug this replaces.
     const lvl = buildCodeLevel(codeForCampaign(areaId, levelIdx, opts.double));
     return Object.assign(lvl, campaignFields(areaId, levelIdx, opts.double, area));
   }
 
 
-  // ══════════════════════════════════════
-  //  XP
-  //  Scales with the work the chart actually asked for: how many
-  //  notes, how fast they came, and how hard the chart was.
-  // ══════════════════════════════════════
   function countNotes(lvl) {
     if (lvl.grid) {
       let n = 0;
@@ -1306,8 +923,6 @@
     return lvl.notes ? lvl.notes.length : 0;
   }
 
-  // The share code for a campaign level, so any song in the
-  // campaign can be handed to someone who hasn't unlocked it.
   function codeForCampaign(areaId, levelIdx, isDouble) {
     return encodeLevelCode(
       difficultyFor(areaId, levelIdx), areaId,
@@ -1315,13 +930,9 @@
       campaignStyle(areaId, levelIdx, isDouble));
   }
 
-  // Share of the grid that can be filled before XP stops paying per
-  // note, and what the notes past that point are worth.
   const DENSITY_CAP  = 0.85;
   const SURPLUS_RATE = 0.15;
 
-  // How full a chart's grid is, 0..1. Note-list levels have no grid to
-  // measure, so they are never treated as over-dense.
   function fillOf(lvl) {
     const rows = (lvl && lvl.grid) ? lvl.grid.length : 0;
     if (!rows) return 0;
@@ -1329,7 +940,6 @@
     return countNotes(lvl) / (rows * lanes);
   }
 
-  // The note count XP is actually paid on, after the density penalty.
   function payableNotes(lvl, notes) {
     if (notes === undefined) notes = countNotes(lvl);
     const rows = (lvl && lvl.grid) ? lvl.grid.length : 0;
@@ -1338,30 +948,14 @@
     return notes > cap ? cap + (notes - cap) * SURPLUS_RATE : notes;
   }
 
-  // ── Coins ────────────────────────────────
-  // Every level pays the same. Coins used to be score/1000, and score
-  // compounds with the combo multiplier, so across the 150 campaign
-  // charts a clear paid anywhere from 116 to 181,002 — a 1560x spread
-  // in which the reward for finishing a level had almost nothing to
-  // do with finishing it and almost everything to do with how long it
-  // was. Flat, coins become a count of levels cleared.
   const COINS_PER_CLEAR = 150;
-  // The one exception is a chart too short to be a song. Without a
-  // floor, a four-note custom level would be the fastest coin source
-  // in the game by an order of magnitude. This is a stub guard, not a
-  // difficulty curve: the shortest campaign chart has 51 notes, so
-  // every real level — authored or generated — pays the full rate.
   const COINS_MIN_NOTES = 40;
 
   function coinsFor(lvl, opts) {
     opts = opts || {};
     const notes = countNotes(lvl);
     let c = COINS_PER_CLEAR * Math.min(1, notes / COINS_MIN_NOTES);
-    // The Double is the same chart at twice the speed, so it pays
-    // twice — the same reasoning as the XP formula.
     c *= opts.speedMult || 1;
-    // A failed run pays for the share of the chart it got through,
-    // or quitting on the first note would pay the same as clearing.
     if (!opts.completed) {
       const p = opts.progress === undefined ? 1 : opts.progress;
       c *= Math.max(0, Math.min(1, p));
@@ -1372,38 +966,18 @@
   function xpFor(lvl, opts) {
     opts = opts || {};
     const notes = countNotes(lvl);
-    // XP scales with how fast the notes actually came at you, so a run
-    // played at double speed is worth double — that falls straight out
-    // of the formula rather than being a bonus bolted onto it. The
-    // Double passes speedMult 2.
     const speed = ((lvl.bpm || 120) * (opts.speedMult || 1)) / 120;
     const diff  = lvl.campaign
       ? 1 + ((lvl.areaId || 1) - 1) * 0.15
       : 1 + ((lvl.difficulty || 1) - 1) * 0.2;
 
-    // A wall of notes is not a harder chart, it is a longer one with
-    // the key held down — filling every box was the cheapest XP per
-    // second in the game. Past DENSITY_CAP of the grid the surplus
-    // notes pay a fraction, so a musical chart always beats a solid
-    // block of the same length.
     const paid = payableNotes(lvl, notes);
 
-    // Rounded once, at the end. Rounding at every step let the errors
-    // compound, so a run worth exactly twice another could come out
-    // two XP off and stop looking like a doubling.
     let xp = paid * speed * diff;
 
-    // Custom levels earn half: a self-authored 500-note chart
-    // shouldn't be an XP faucet. Procedural levels are generated
-    // from a seed, so they can't be gamed and pay full.
     if (!lvl.campaign && !lvl.procedural) xp *= 0.5;
 
-    // A failed run pays for the part of the chart it actually got
-    // through. Paying the full note count regardless meant quitting
-    // out of an area-10 song on the first note earned 80% of
-    // clearing it, which made dying the fastest way to level.
     if (opts.completed) {
-      // Finishing beats dying partway.
       xp *= 1.25;
     } else {
       const p = opts.progress === undefined ? 1 : opts.progress;
@@ -1412,17 +986,11 @@
     return Math.max(1, Math.round(xp));
   }
 
-  // Cumulative XP needed to REACH level n. Deliberately steep
-  // enough that level 2 arrives in the first session.
   function xpForLevel(n) {
     if (n <= 1) return 0;
     return Math.round(100 * Math.pow(n - 1, 1.5));
   }
 
-  // Invert the curve rather than walking it. This runs on every
-  // XP strip repaint, and at level 100 the loop was doing a hundred
-  // Math.pow calls to answer a question the exponent already knows.
-  // The curve is rounded, so step off the estimate to land exactly.
   function levelFromXp(totalXp) {
     if (!(totalXp > 0)) return 1;
     let n = Math.floor(Math.pow(totalXp / 100, 2 / 3)) + 1;
@@ -1444,41 +1012,7 @@
     };
   }
 
-  // ══════════════════════════════════════
-  //  SHARE CODES
-  //
-  //    7 4 A2F9C
-  //    ^ ^ ^
-  //    | | └── seed, base36
-  //    | └──── area 1-9, A for area 10, X for endless
-  //    └────── difficulty 1-9
-  //
-  //  Difficulty first so it is readable at a glance. The area
-  //  character is what carries the era's music and theme, so
-  //  two people playing the same code get the same chart AND
-  //  the same instrument, scale and palette.
-  //
-  //  X means endless: the theme is derived from the seed, so
-  //  it is random but still identical for everyone.
-  // ══════════════════════════════════════
   const AREA_CHARS = '123456789A';
-
-  //    7 4 B 1KZ8M2Q
-  //    ^ ^ ^ ^
-  //    | | | └── seed, base36, up to 8 chars (~2.8 trillion)
-  //    | | └──── style: B D S H T F  (blend of singles/doubles/holds)
-  //    | └────── area 1-9, A for area 10, X for endless
-  //    └──────── difficulty 1-9
-  //
-  //  The style character is what stops one seed from meaning one
-  //  chart: the same pattern can arrive Dense, Held or Technical.
-  //
-  //  The style alphabet is now FROZEN. Adding a letter to it
-  //  changes how existing codes parse, because a code with that
-  //  letter in slot 3 previously read it as part of the seed.
-  //  Any future style needs a new code version, not a new letter.
-  //  Six-character codes from Beta 2 still work and default to
-  //  Balanced, so nothing anyone already shared has broken.
 
   function areaToChar(areaId) {
     return areaId === null || areaId === undefined ? 'X' : AREA_CHARS[areaId - 1] || '1';
@@ -1510,9 +1044,6 @@
     const areaCh = t[1];
     if (areaCh !== 'X' && AREA_CHARS.indexOf(areaCh) < 0) throw new Error('bad area');
 
-    // Third character is a style only if it is one of the style
-    // letters AND there is a seed after it. Otherwise this is a
-    // Beta 2 code and the rest is all seed.
     let style = 'B', seedStr;
     if (MIX_STYLES[t[2]] && t.length > 3) { style = t[2]; seedStr = t.slice(3); }
     else                                  { seedStr = t.slice(2); }
@@ -1531,30 +1062,18 @@
     };
   }
 
-  // Everything about a coded level EXCEPT the notes: tempo, length,
-  // title, instrument. Generating a chart is the expensive part, and
-  // a level list only needs this much. Both the list and the full
-  // build read it, so a row can never disagree with the song it
-  // launches.
   function codePlan(code) {
     const d    = decodeLevelCode(code);
     const area = areaById(d.areaId);
     const st   = MIX_STYLES[d.style];
     const isDouble = !!st.double;
-    // The double sits two rungs above the difficulty digit, so a
-    // 7 double plays like a 9.
     const diff = isDouble ? Math.min(9, d.difficulty + 2) : d.difficulty;
 
     const levelIdx = d.endless ? null : campaignIndexFor(d.areaId, d.seed);
     const bpm  = tempoFor(area, d.seed, d.difficulty, levelIdx);
-    // Procedural songs run 1m30 to 3m by difficulty. Bars are as long
-    // as the meter, so the meter has to be in the sum or a waltz comes
-    // out short of its target.
     const meter = st.meter || 4;
     const bars = barsForSeconds(songSeconds((d.difficulty - 1) / 8), bpm, meter);
     const chartSeed = isDouble ? (d.seed ^ 0xD0B) : d.seed;
-    // The section plan is cheap, so the exact length is known
-    // without placing a single note.
     const rows = planBars(bars, chartSeed) * meter;
 
     return {
@@ -1590,10 +1109,7 @@
     return p;
   }
 
-  // A fresh endless run: random difficulty band and seed.
   function rollEndlessCode(minDiff, maxDiff) {
-    // 8 base36 chars of seed space, so endless doesn't start
-    // repeating charts after a few hundred runs.
     const seed = Math.floor(Math.random() * 2147483647);
     const lo = minDiff || 1, hi = maxDiff || 9;
     const d  = lo + Math.floor(Math.random() * (hi - lo + 1));

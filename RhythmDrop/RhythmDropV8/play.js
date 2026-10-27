@@ -1,26 +1,5 @@
-// ═══════════════════════════════════════════
-//  RhythmDrop V8 — play.js
-//
-//  The gameplay engine: the note queue, tile spawning, the animation
-//  loop, input and scoring, lives and streaks, the Double, and the
-//  results/quit paths. Also the live-generation glue (Generate,
-//  Endless, keep-as-custom) that launches a run.
-//
-//  Split out of game.js — a plain (non-module) script sharing the same
-//  global scope. It reads shell state (currentSettings, profile) and
-//  calls shell helpers (showScreen, addCoins, recordBest, grantXp, …)
-//  at runtime; this file is declaration-only, so its load position is
-//  not load-order sensitive as long as game.js (boot) loads last.
-// ═══════════════════════════════════════════
-
-// ══════════════════════════════════════
-//  GAME ENGINE
-// ══════════════════════════════════════
 const TILE_H     = 38;
 const HIT_BOTTOM = 52;
-// The timing tolerance is chosen in Settings: a stricter window scores
-// the same notes on a tighter beat. Kept in one place so the judging
-// and any on-screen band can never disagree.
 const HIT_WINDOWS = { strict: 0.7, normal: 1.0, forgiving: 1.45 };
 function hitTol() {
   const mult = HIT_WINDOWS[currentSettings.hitWindow] || 1.0;
@@ -33,30 +12,21 @@ let gameLevel   = null;
 let gameQueue   = [];
 let activeTiles = [];
 let score = 0, combo = 0, lives = 3, maxLives = 3;
-// Notes struck this run, against the chart's total. A run that ends
-// early is paid out on this ratio, so dying on the first note earns
-// first-note money rather than the whole level's.
 let notesHit = 0, notesTotal = 0;
-let lifeScoreMult = 1; // difficulty scaling from chosen starting lives
-let streak = 0; // consecutive hits for streak bonus
+let lifeScoreMult = 1;
+let streak = 0;
 let running = false, lastT = 0, raf = null;
 let beatAccum = 0, beatIdx = 0;
 let baseBeatMs = 500, currentBeatMs = 500;
 let speedMult = 1, gameTimeMs = 0;
-// The Double: a cleared level replayed at twice the speed. It is a
-// harder run at something you have already finished, so it pays double
-// straight out of the XP and coin formulas (both key off actual speed)
-// rather than as a bolted-on bonus. runSpeedBase is 2 during a Double
-// and 1 otherwise; the in-run ramp multiplies on top of it.
 let doubleMode = false;
 let runSpeedBase = 1;
 let fbTimers  = [0,0,0,0];
 let lastTapT  = {0:0,1:0,2:0,3:0};
 let chaosMode = false;
-// Q and R are reserved for quit/restart hotkeys, so they're excluded.
 const CHAOS_LETTERS = 'ABCDEFGHIJKLMNOPSTUVWXYZ'.split('');
-let equippedTrailColor = null; // color of equipped note trail, resolved at game start
-const STREAK_TRAIL_AT = 100;   // streak at which the trail effect kicks in
+let equippedTrailColor = null;
+const STREAK_TRAIL_AT = 100;
 
 const laneEls = [0,1,2,3].map(i => document.getElementById('lane'+i));
 const btnEls  = [0,1,2,3].map(i => document.getElementById('btn'+i));
@@ -72,17 +42,10 @@ const ovBtn   = document.getElementById('ov-btn');
 const lvlName = document.getElementById('g-lvlname');
 const spdBadge= document.getElementById('speed-badge');
 
-// Use clientHeight (layout px) not getBoundingClientRect (which is scaled by the
-// UI-scale `zoom`), so tile-fall math stays consistent at any UI scale.
 function laneH() { return laneEls[0].clientHeight || 380; }
 function hitY()  { return laneH() - HIT_BOTTOM; }
 
 function buildQueue(lvl) {
-  // Each campaign note names the voice it was composed for — an area's
-  // lead and its accompaniment are different instruments inside one
-  // song. Dropping `inst` here is what made every era sound the same:
-  // the twelve voices were synthesised, baked into all 150 charts, and
-  // then never reached the audio engine.
   const fallbackFreqs = lvl.laneFreqs || [261.63,329.63,392.00,523.25];
   const songInst = lvl.instrument || null;
   if (lvl.grid) {
@@ -105,12 +68,8 @@ function buildQueue(lvl) {
   }));
 }
 
-// Which voice a note should sound in. The song names one; the player
-// can override that in Settings if they would rather hear their own
-// instrument everywhere. Off by default, because a chart written for a
-// lyre stops sounding like the place it is set when it isn't one.
 function voiceFor(note) {
-  if (currentSettings.songVoices === false) return null;   // player's choice wins
+  if (currentSettings.songVoices === false) return null;
   return (note && note.inst) || null;
 }
 
@@ -128,8 +87,6 @@ function spawnTile(note) {
   }
   el.style.height = h + 'px'; el.style.transform = 'translateY(' + -h + 'px)';
 
-  // Chaos mode: assign a random key from the whole keyboard (A–Z).
-  // Double presses keep the same key (it's stored once per tile).
   let chaosCode = null;
   if (chaosMode) {
     const letter = CHAOS_LETTERS[Math.floor(Math.random() * CHAOS_LETTERS.length)];
@@ -146,8 +103,6 @@ function spawnTile(note) {
 
 function launchLevel(lvl, asDouble) {
   gameLevel = lvl;
-  // Only a Double launch keeps doubleMode set; every other launch path
-  // clears it so a normal run is never accidentally sped up.
   doubleMode = !!asDouble;
   lvlName.textContent = lvl.name + (asDouble ? '  ·  DOUBLE' : '');
   baseBeatMs = Math.round(60000 / lvl.bpm);
@@ -156,7 +111,6 @@ function launchLevel(lvl, asDouble) {
   ovBtn.textContent = 'Play';
   ovBtn.onclick = () => { overlay.classList.remove('show'); startGame(); };
 
-  // Chaos mode toggle
   chaosMode = false;
   const chaosBtn = document.getElementById('ov-chaos-toggle');
   if (chaosBtn) {
@@ -175,20 +129,8 @@ function launchLevel(lvl, asDouble) {
 
 function launchCustom(lvl) { launchLevel(lvl); }
 
-// ══════════════════════════════════════
-//  LIVE GENERATION
-//
-//  V8 ships a baked campaign, but V7's composer is bundled as
-//  RD_Generator so a fresh chart can still be rolled on the spot — for
-//  the Generate button and for endless runs. A generated level is a
-//  normal level object (grid, bpm, laneFreqs, per-note voices), so the
-//  rest of the game treats it like any other.
-// ══════════════════════════════════════
 const GEN = () => window.RD_Generator;
 
-// Turns a composer level into something launchLevel and the Custom tab
-// are happy with: a name, and a flag so it is never mistaken for a
-// campaign level (which would try to mark an area cleared).
 function _prepGenerated(lvl, label) {
   lvl.campaign = false;
   lvl.generated = true;
@@ -204,8 +146,6 @@ function generateLevel(band) {
   const [lo, hi] = (band || '3-6').split('-').map(Number);
   const code = G.rollEndlessCode(lo, hi);
   const lvl = _prepGenerated(G.buildCodeLevel(code), G.songTitle ? G.songTitle(code) : 'Generated');
-  // Every generated chart — Generate, Endless, the creator's fill — comes
-  // through here, so this is the one place a row is made a single type.
   window.RD_RowTypes.uniformRowTypes(lvl.grid);
   lvl.shareCode = code;
   return lvl;
@@ -218,7 +158,6 @@ function playGenerated(band) {
   launchLevel(lvl);
 }
 
-// After a generated run the player can keep the chart as a custom level.
 function saveGenerated(lvl) {
   if (!lvl) return;
   const arr = store.load();
@@ -240,7 +179,6 @@ function saveGenerated(lvl) {
 function startGame() {
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   maxLives = currentSettings.lives || 3;
-  // Score scaling by chosen lives: +20% per heart under 3, -10% per heart over 3
   lifeScoreMult = maxLives < 3 ? 1 + 0.20 * (3 - maxLives)
                 : maxLives > 3 ? 1 - 0.10 * (maxLives - 3)
                 : 1;
@@ -256,7 +194,6 @@ function startGame() {
   spdBadge.textContent = '1.0×'; spdBadge.classList.remove('show');
   updateLives();
 
-  // Resolve the equipped note-trail color for this run
   const _shop = store.loadShop();
   const _tr = _shop.equippedTrail ? trailById(_shop.equippedTrail) : null;
   equippedTrailColor = _tr ? _tr.color : null;
@@ -277,8 +214,6 @@ function loop(now) {
   const dt = Math.min(now - lastT, 80); lastT = now;
   gameTimeMs += dt;
 
-  // Speed ramp: +10% per 60 s, on top of whatever the run started at
-  // (2x for a Double).
   const newMult = runSpeedBase + Math.floor(gameTimeMs / 60000) * SPEED_INC * 60;
   if (newMult !== speedMult) {
     speedMult     = newMult;
@@ -319,8 +254,6 @@ function loop(now) {
   raf = requestAnimationFrame(loop);
 }
 
-// ── Tap mechanic ──────────────────────────────────
-// Normal mode: a press maps to a lane, matches tiles in that lane.
 function tapLane(keyIdx) {
   if (!running) return;
   let best = null, bestDist = Infinity;
@@ -333,8 +266,6 @@ function tapLane(keyIdx) {
   processTap(best, bestDist, keyIdx);
 }
 
-// Chaos mode: a press matches the tile whose assigned key == pressed key.
-// Double-press tiles keep the same key, so the same code matches both presses.
 function tapChaos(code) {
   if (!running) return;
   let best = null, bestDist = Infinity;
@@ -344,12 +275,10 @@ function tapChaos(code) {
     const d = Math.abs((t.y + (t.h || TILE_H) / 2) - hl);
     if (d < bestDist) { bestDist = d; best = t; }
   }
-  // No tile anywhere on the board uses this key → ignore the press (no penalty).
   if (!best && !activeTiles.some(t => !t.done && t.chaosCode === code)) return;
   processTap(best, bestDist, best ? best.lane : null);
 }
 
-// Shared hit/miss processing. glowLane may be null (chaos miss with no target lane).
 function processTap(best, bestDist, glowLane) {
   const now = performance.now();
   const gl = (glowLane != null) ? glowLane : (best ? best.lane : 0);
@@ -398,24 +327,18 @@ function hit(lane, dist) {
   if      (pct < 0.2) { pts = 300; label = 'PERFECT'; color = 'var(--perfect)'; }
   else if (pct < 0.6) { pts = 150; label = 'GREAT';   color = 'var(--good)'; }
   else                { pts = 60;  label = 'GOOD';    color = 'var(--tap)'; }
-  // Combo multiplier: 8% per combo hit
   pts = Math.round(pts * (1 + (combo - 1) * 0.08));
-  // Streak bonus: 5% per consecutive streak
   if (streak > 1) pts = Math.round(pts * (1 + (streak - 1) * 0.05));
-  // Lives-based difficulty scaling
   pts = Math.round(pts * lifeScoreMult);
   score += pts; scoreEl.textContent = score;
   comboEl.textContent = '×' + combo;
   comboEl.style.color = combo >= 10 ? 'var(--dtap)' : combo >= 5 ? 'var(--perfect)' : 'var(--tap)';
   showFb(lane, label, color);
 
-  // Minimalist tap effect on every successful hit
   spawnTapPulse(lane);
-  // Note trail effect once the streak hits the threshold
   if (equippedTrailColor && streak >= STREAK_TRAIL_AT) spawnStreakTrail(lane);
 }
 
-// Minimalist hit feedback: a thin ring that expands and fades at the hit bar
 function spawnTapPulse(lane) {
   const laneEl = laneEls[lane];
   if (!laneEl) return;
@@ -426,7 +349,6 @@ function spawnTapPulse(lane) {
   setTimeout(() => ring.remove(), 360);
 }
 
-// Small fire-trail burst at the hit bar of a lane, in the equipped trail color
 function spawnStreakTrail(lane) {
   const laneEl = laneEls[lane];
   if (!laneEl) return;
@@ -469,11 +391,8 @@ function endGame(won) {
   if (window.RD_stopBg) window.RD_stopBg();
   if (window.RD_resetLaneFreqs) window.RD_resetLaneFreqs();
 
-  // ── What the run was worth ──
   const levelName = gameLevel ? gameLevel.name : 'Unknown';
   const isCampaign = !!(gameLevel && gameLevel.campaign);
-  // A failed run pays for the share of the chart it actually struck,
-  // or quitting on the first note would pay the same as clearing.
   const runProgress = notesTotal > 0 ? Math.min(1, notesHit / notesTotal) : (won ? 1 : 0);
 
   let coinsEarned, xpGain = 0, xpRes = null, newTheme = null;
@@ -488,7 +407,6 @@ function endGame(won) {
       const wasDone = areaDone();
       progress.cleared[CAM().levelKey(gameLevel.areaId, gameLevel.levelIdx)] = true;
       saveProgress();
-      // The clear that finishes an area is the one that earns its theme.
       if (!wasDone && areaDone()) newTheme = THEMES.find(t => t.area === gameLevel.areaId) || null;
     }
     recordBest(gameLevel, score, coinsEarned);
@@ -548,7 +466,6 @@ function endGame(won) {
   ovBtn.onclick = () => {
     hideRewards();
     overlay.classList.remove('show');
-    // Endless keeps rolling a new chart; everything else replays this one.
     if (gen && gameLevel.endless) {
       const nxt = generateLevel(gameLevel._band || '4-7');
       if (nxt) { nxt.endless = true; nxt._band = gameLevel._band; lastGenerated = nxt; launchLevel(nxt); return; }
@@ -556,17 +473,11 @@ function endGame(won) {
     startGame();
   };
 
-  // After a generated run, offer to keep the chart as a custom level.
   syncGeneratedKeepBtn(gen && won);
-  // After clearing a campaign level, offer the Double — a 2x replay.
-  // Only off a real clear, and never chained out of a Double itself.
   syncDoubleBtn(isCampaign && won && !doubleMode);
   overlay.classList.add('show');
 }
 
-// The Double button — a 2x replay of the level just cleared. Built on
-// demand so the overlay markup did not have to change, and it launches
-// the same level with doubleMode set.
 function syncDoubleBtn(show) {
   let btn = document.getElementById('ov-double-btn');
   if (!show) { if (btn) btn.style.display = 'none'; return; }
@@ -582,13 +493,10 @@ function syncDoubleBtn(show) {
   btn.onclick = () => {
     const lvl = gameLevel;
     overlay.classList.remove('show');
-    launchLevel(lvl, true);   // relaunch this level as a Double
+    launchLevel(lvl, true);
   };
 }
 
-// A "Keep this level" button on the results overlay, shown only after a
-// generated run so the player can save a chart they liked. Built once,
-// on demand, so the overlay markup did not have to change.
 function syncGeneratedKeepBtn(show) {
   let btn = document.getElementById('ov-keep-btn');
   if (!show) { if (btn) btn.style.display = 'none'; return; }

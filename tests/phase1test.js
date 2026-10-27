@@ -1,5 +1,3 @@
-// Phase 1 — Settings: the tabbed panel, audio configuration, and
-// brightness as a root-level filter.
 const { boot } = require('./harness');
 const HOOK = `
 ;window.__t = {
@@ -34,7 +32,6 @@ probe('clicking a tab swaps the visible group', () => {
   const other = tabs.find(t => !t.classList.contains('active'));
   other.dispatchEvent(new window.Event('click', { bubbles: true }));
   if (T().settingsTab === before) throw new Error('the tab did not change');
-  // The groups are class-only, in tab order — there is no per-tab id.
   const shown = [...D.querySelectorAll('#tab-settings .set-group')]
     .filter(g => g.style.display !== 'none');
   notes.push('groups visible after a switch: ' + shown.length);
@@ -75,8 +72,6 @@ probe('the three hit windows are selectable and distinct', () => {
 });
 
 probe('note speed is NOT a setting', () => {
-  // Deliberate: changing it would make scores incomparable between
-  // players, so it is locked per level.
   const s = T().currentSettings;
   if ('speed' in s || 'noteSpeed' in s || 'fallSpeed' in s)
     throw new Error('a speed setting exists: ' + Object.keys(s).filter(k => /speed/i.test(k)).join(', '));
@@ -94,11 +89,7 @@ probe('volume rides the master gain', () => {
 probe('the output picker is offered only where setSinkId exists', () => {
   const can = window.RD_canPickOutput && window.RD_canPickOutput();
   notes.push('setSinkId available in this environment: ' + !!can);
-  // Feature-detected: where it is missing the control must simply not
-  // be offered, rather than appearing and failing on click.
   T().settingsTab = 'audio'; T().buildSettingsPanel();
-  // The picker is a <select> of output devices; nothing else in the
-  // panel is one, so its presence is the signal.
   const picker = D.querySelector('#tab-settings select.set-select, #tab-settings select');
   const looksLikeOutput = picker && /output|device|speaker/i.test(picker.parentElement.textContent);
   if (!can && looksLikeOutput) throw new Error('an output picker was rendered without setSinkId support');

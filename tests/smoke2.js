@@ -1,12 +1,6 @@
 const {JSDOM}=require('jsdom');
-// ── Locate the extension ──
-// Looks next to this folder, then inside it, then falls back to
-// the APP_DIR environment variable. Works from a checkout, a
-// download folder, or CI without editing anything.
 const path = require('path');
 const fs = require('fs');
-// Resolving the build under test is browser.js's job — it is the one
-// file that knows the repo layout.
 const findApp = require('./browser').appDir;
 const DIR = findApp();
 
@@ -23,7 +17,6 @@ if(!window.document.fonts)window.document.fonts={ready:Promise.resolve()};
 window.console.error=(...a)=>errors.push('console.error: '+a.join(' '));
 window.console.warn=()=>{};
 
-// simulate a v5 user: old theme id + existing profile
 window.localStorage.setItem('rd_theme','neon');
 window.localStorage.setItem('rd_profile',JSON.stringify({username:'OldUser',coins:5000,bestScore:1234}));
 
@@ -114,13 +107,10 @@ probe('streak bonus compounds',()=>{
 probe('coins: every level pays the same, whatever the score',()=>{
   const t=T();
   const flat=window.RD_Campaign.COINS_PER_CLEAR;
-  // A campaign clear pays the flat rate...
   t.gameLevel=window.RD_Campaign.buildCampaignLevel(1,0);
   let before=t.profile.coins;
   t.score=25000; t.notesTotal=1; t.notesHit=1; t.endGame(true);
   const camp=t.profile.coins-before;
-  // ...and so does a custom chart, and so does a run worth ten times
-  // the score. Coins count levels finished, not points scored.
   t.gameLevel=Object.assign({},window.RD_Campaign.buildCampaignLevel(1,0),{campaign:false});
   before=t.profile.coins;
   t.score=250000; t.notesTotal=1; t.notesHit=1; t.endGame(true);

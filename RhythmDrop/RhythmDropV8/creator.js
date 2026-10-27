@@ -1,24 +1,3 @@
-// ═══════════════════════════════════════════
-//  RhythmDrop V8 — creator.js
-//
-//  The level creator and its note picker: the editing grid, the
-//  two-stage cell editor, the advanced panel (instrument, sustain,
-//  per-lane pitches, bass line) and the in-creator generation menu.
-//
-//  Split out of game.js — a plain (non-module) script sharing the same
-//  global scope as game.js/play.js. It calls the shell's helpers
-//  (showToast, store, showScreen, GEN(), …) at runtime, so load order
-//  only requires that every script is present before any handler fires;
-//  popup.html loads this before game.js, which keeps the boot code last.
-// ═══════════════════════════════════════════
-
-// ══════════════════════════════════════
-//  CREATOR
-// ══════════════════════════════════════
-
-// ── Note helpers ─────────────────────────
-// Use the chromatic table from audio.js (RD_NOTE_TABLE / RD_NOTE_NAMES)
-// Fallback if audio.js not yet loaded
 function getNoteNames() {
   return window.RD_NOTE_NAMES || ['C4','D4','E4','G4','A4','C5'];
 }
@@ -31,7 +10,6 @@ function nameToFreq(name) {
   return 261.63;
 }
 
-// ── Creator state ─────────────────────────
 let editIdx    = null;
 let crGrid     = [];
 let crTool     = 'tap';
@@ -41,18 +19,12 @@ let crLaneFreqs = [261.63,329.63,392.00,523.25];
 let crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
 let _bassPickerFreq = 65.41;
 
-// ── Keyboard entry + multi-select state ───
-// The play keys (A S D F) place notes at a row cursor, so a chart can be
-// typed as fast as it is played. Select mode gathers a set of cells you
-// can copy, cut, paste, nudge or delete as a block.
-let crCursor = 0;                 // row the play keys write to
-let crSel    = new Set();         // selected cells, keyed "row,lane"
-let crClip   = null;              // copied block: [{ dr, dc, cell }]
+let crCursor = 0;
+let crSel    = new Set();
+let crClip   = null;
 const selKey   = (r, c) => r + ',' + c;
 const parseKey = k => k.split(',').map(Number);
 
-// True while the creator screen is the one on show — the global key
-// handler in game.js asks this before treating a keystroke as an edit.
 function creatorActive() {
   const el = document.getElementById('creator');
   return !!(el && el.classList.contains('active'));
@@ -95,7 +67,6 @@ function openCreator(idx) {
   buildAdvPanel();
   document.getElementById('adv-panel').classList.remove('open');
 
-  // Export button for existing levels
   const existingExpBtn = document.getElementById('cr-export-btn');
   if (existingExpBtn) existingExpBtn.remove();
   if (editIdx !== null) {
@@ -126,15 +97,11 @@ function setTool(t) {
 }
 document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.dataset.tool)));
 
-// ── Keyboard note entry ───────────────────
-// Move the write cursor, growing the chart when it runs off the end.
 function moveCursor(d) {
   crCursor = Math.max(0, crCursor + d);
   while (crCursor >= crGrid.length) crGrid.push([null, null, null, null]);
   buildGrid();
 }
-// Toggle a note in a lane at the cursor row, using the active tap/dtap
-// tool. Typing a lane key again clears it.
 function typeNoteAtCursor(lane) {
   if (lane < 0 || lane > 3) return;
   while (crCursor >= crGrid.length) crGrid.push([null, null, null, null]);
@@ -148,7 +115,6 @@ function typeNoteAtCursor(lane) {
   if (editIdx !== null) autoSave();
 }
 
-// ── Multi-select: copy / cut / paste / move / delete ──
 function selBounds() {
   let minR = Infinity, minC = Infinity;
   crSel.forEach(k => { const [r, c] = parseKey(k); if (r < minR) minR = r; if (c < minC) minC = c; });
@@ -181,15 +147,13 @@ function selCut() {
 }
 function selPaste() {
   if (!crClip || !crClip.length) { showToast('Clipboard empty', true); return; }
-  // Anchor the block at the selection's top-left, or — with nothing
-  // selected — at the cursor row in lane 1.
   let anchorR, anchorC;
   if (crSel.size) { const b = selBounds(); anchorR = b.minR; anchorC = b.minC; }
   else { anchorR = crCursor; anchorC = 0; }
   const next = new Set();
   crClip.forEach(it => {
     const r = anchorR + it.dr, c = anchorC + it.dc;
-    if (c < 0 || c > 3) return;              // never wrap past the four lanes
+    if (c < 0 || c > 3) return;
     while (r >= crGrid.length) crGrid.push([null, null, null, null]);
     crGrid[r][c] = { ...it.cell };
     next.add(selKey(r, c));
@@ -199,8 +163,6 @@ function selPaste() {
   if (editIdx !== null) autoSave();
   showToast('Pasted ' + next.size);
 }
-// Nudge the whole selection by (dr, dc). Blocked if any cell would fall
-// outside the four lanes or above row 0; overwrites whatever it lands on.
 function selMove(dr, dc) {
   if (!crSel.size) return;
   const moves = [];
@@ -226,8 +188,6 @@ function selMove(dr, dc) {
   if (editIdx !== null) autoSave();
 }
 
-// The one entry point the global key handler calls while the creator is
-// on screen. Returns true when it consumed the key.
 function handleCreatorKey(e, keyMap) {
   const mod = e.ctrlKey || e.metaKey;
   if (mod && (e.code === 'KeyC' || e.code === 'KeyX' || e.code === 'KeyV')) {
@@ -242,8 +202,8 @@ function handleCreatorKey(e, keyMap) {
   if (ARROWS[e.code]) {
     const [dr, dc] = ARROWS[e.code];
     e.preventDefault();
-    if (crTool === 'select' && crSel.size) selMove(dr, dc);   // nudge the block
-    else if (dc === 0) moveCursor(dr);                        // else walk the cursor
+    if (crTool === 'select' && crSel.size) selMove(dr, dc);
+    else if (dc === 0) moveCursor(dr);
     return true;
   }
   if (e.code === 'Enter' || e.code === 'Space') { e.preventDefault(); moveCursor(1); return true; }
@@ -258,7 +218,6 @@ function handleCreatorKey(e, keyMap) {
   return false;
 }
 
-// ── Selection action bar ──────────────────
 (function wireSelBar() {
   const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
   bind('sel-copy',  selCopy);
@@ -272,15 +231,8 @@ function handleCreatorKey(e, keyMap) {
   bind('sel-right', () => selMove(0, 1));
 })();
 
-// ── Advanced panel: opens sideways, and takes its space from a wider
-//    window rather than from the grid ──
-//
-//  Asking for the space is the whole point: the chart you are editing
-//  must not move or shrink because you opened a settings panel. If the
-//  window has nowhere left to grow — already at the popup's width cap —
-//  the panel floats over the grid instead, which is at least usable.
-const ADV_PANEL_W = 360;   // wider, so the generation menu has room
-const ADV_PANEL_MIN = 170;   // a sliver of panel is worse than none
+const ADV_PANEL_W = 360;
+const ADV_PANEL_MIN = 170;
 
 function openAdvPanel() {
   const room = Math.max(0, getMaxDims().maxW - currentSettings.width);
@@ -290,7 +242,6 @@ function openAdvPanel() {
     document.body.classList.remove('adv-overlay');
     document.documentElement.style.setProperty('--adv-w', grow + 'px');
   } else {
-    // No room to widen: overlay, sized to leave the grid readable.
     advExpansion = 0;
     document.body.classList.add('adv-overlay');
     document.documentElement.style.setProperty('--adv-w',
@@ -309,7 +260,6 @@ document.getElementById('adv-toggle').addEventListener('click', () => {
   crAdvOpen = !crAdvOpen;
   if (crAdvOpen) openAdvPanel(); else closeAdvPanel();
   document.getElementById('adv-panel').classList.toggle('open', crAdvOpen);
-  // Open on the Settings pane each time, with Generate a tap away.
   document.querySelectorAll('.adv-mode').forEach(b => b.classList.toggle('sel', b.dataset.mode === 'settings'));
   const setPane = document.getElementById('adv-settings');
   const genPane = document.getElementById('adv-generate');
@@ -319,7 +269,6 @@ document.getElementById('adv-toggle').addEventListener('click', () => {
   buildGrid();
 });
 
-// ── Helpers ───────────────────────────────
 function cellType(cell) {
   if (!cell) return null;
   return typeof cell === 'string' ? cell : cell.type;
@@ -334,17 +283,11 @@ function cellSustain(cell) {
   return cell.sustain || 0;
 }
 
-// ── Grid builder ──────────────────────────
-// In advanced mode: filled cells show a note-name badge.
-// Clicking that badge opens the note picker (no separate button).
-// Clicking the type badge toggles tap ↔ dtap.
-// ✕ erases the cell.
 function buildGrid() {
   const adv = crAdvOpen;
   const g   = document.getElementById('cr-grid');
   g.innerHTML = '';
 
-  // Header row
   const blank = document.createElement('div'); g.appendChild(blank);
   const headerKeys = currentSettings.keys.map(code => code.startsWith('Key') ? code.slice(3) : keyCodeLabel(code));
   headerKeys.forEach(k => {
@@ -361,18 +304,11 @@ function buildGrid() {
     row.forEach((cell, ci) => {
       const type = cellType(cell);
 
-      // One chip per cell in every mode. Empty: the current tool fills
-      // it. Filled: the tool erases (erase tool) or the second tap opens
-      // the editor. That two-stage placement is why there are no inline
-      // dropdowns any more — note, type and sustain all live in the
-      // popup, so a cell stays a cell.
       const el = document.createElement('div');
       el.className = 'cr-cell' + (type ? ' is-' + type : '')
         + (ri === crCursor ? ' cur' : '')
         + (crSel.has(selKey(ri, ci)) ? ' cr-cell-sel' : '');
       if (type && crAdvOpen) {
-        // In advanced mode the chip carries the note name, so a chart's
-        // pitches are legible at a glance without opening anything.
         el.classList.add('cr-cell-named');
         const name = document.createElement('span');
         name.className = 'cr-cell-note';
@@ -387,8 +323,6 @@ function buildGrid() {
       }
       el.addEventListener('click', () => {
         crCursor = ri;
-        // Select mode: a click toggles the cell in the selection, empty
-        // or not, so a block can be marked out and then acted on.
         if (crTool === 'select') {
           const k = selKey(ri, ci);
           if (crSel.has(k)) crSel.delete(k); else crSel.add(k);
@@ -398,12 +332,10 @@ function buildGrid() {
         const cur = cellType(crGrid[ri][ci]);
         if (crTool === 'erase') { crGrid[ri][ci] = null; buildGrid(); return; }
         if (!cur) {
-          // First tap: place a note at the lane's default pitch.
           crGrid[ri][ci] = { type: crTool === 'dtap' ? 'dtap' : 'tap',
                              freq: crLaneFreqs[ci], sustain: crDefaultSustain };
           buildGrid();
         } else {
-          // Second tap on an existing note opens the editor.
           openCellEditor(el, ri, ci);
         }
       });
@@ -412,9 +344,6 @@ function buildGrid() {
   });
 }
 
-// The whole note editor in one popup: type, pitch and sustain. This is
-// what replaced the inline type badge, note dropdown and sustain
-// dropdown that used to crowd every filled cell in advanced mode.
 function openCellEditor(anchorEl, ri, ci) {
   document.querySelectorAll('.cr-cell-editor').forEach(e => e.remove());
   const cell = crGrid[ri][ci];
@@ -443,7 +372,6 @@ function openCellEditor(anchorEl, ri, ci) {
     head.textContent = 'Edit note';
     pop.appendChild(head);
 
-    // Type
     const typeRow = document.createElement('div');
     typeRow.className = 'cce-row';
     [['tap', 'TAP'], ['dtap', '×2']].forEach(([t, label]) => {
@@ -455,7 +383,6 @@ function openCellEditor(anchorEl, ri, ci) {
     });
     pop.appendChild(typeRow);
 
-    // Pitch — the existing note picker, opened from a button.
     const pitchBtn = document.createElement('button');
     pitchBtn.className = 'cce-pitch';
     pitchBtn.textContent = '♪ ' + freqToName(cellFreq(c, ci));
@@ -464,7 +391,6 @@ function openCellEditor(anchorEl, ri, ci) {
     });
     pop.appendChild(pitchBtn);
 
-    // Sustain — chips, not a dropdown.
     const susLabel = document.createElement('div');
     susLabel.className = 'cce-sublabel';
     susLabel.textContent = 'Sustain';
@@ -480,7 +406,6 @@ function openCellEditor(anchorEl, ri, ci) {
     });
     pop.appendChild(susRow);
 
-    // Erase / done
     const foot = document.createElement('div');
     foot.className = 'cce-row';
     const erase = document.createElement('button');
@@ -499,7 +424,6 @@ function openCellEditor(anchorEl, ri, ci) {
   document.body.appendChild(pop);
   positionPopup(pop, anchorEl);
 
-  // A tap anywhere else closes it, the same way the note picker does.
   setTimeout(() => {
     const close = ev => {
       if (pop.contains(ev.target)) return;
@@ -511,8 +435,6 @@ function openCellEditor(anchorEl, ri, ci) {
   }, 0);
 }
 
-// Places a popup next to its anchor, nudged back on-screen if it would
-// spill off an edge.
 function positionPopup(pop, anchorEl) {
   const a = anchorEl.getBoundingClientRect();
   pop.style.visibility = 'hidden';
@@ -529,9 +451,6 @@ function positionPopup(pop, anchorEl) {
   pop.style.visibility = 'visible';
 }
 
-// Loads a freshly generated chart into the creator grid, so the
-// generation menu composes something you can then edit and save —
-// which is what "generate, in the creator" should mean.
 let crGenBand = '3-6';
 function generateIntoGrid(band) {
   const lvl = generateLevel(band || crGenBand);
@@ -553,8 +472,6 @@ function generateIntoGrid(band) {
   showToast('Generated ' + crGrid.length + ' beats — edit or save');
 }
 
-// The advanced panel's Settings / Generate toggle, and the generation
-// menu inside it.
 (function wireAdvGenerate() {
   document.querySelectorAll('.adv-mode').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -610,7 +527,6 @@ document.getElementById('cr-save').addEventListener('click', () => {
   showScreen('home'); renderHome();
 });
 
-// ── Auto-save on note change ──────────────
 function autoSave() {
   if (editIdx === null) return;
   const name        = document.getElementById('cr-name').value.trim() || 'untitled';
@@ -630,8 +546,7 @@ function autoSave() {
   store.save(arr);
 }
 
-// ── Advanced panel ────────────────────────
-let crDefaultSustain = 0; // sustain applied to newly placed cells
+let crDefaultSustain = 0;
 
 function buildAdvPanel() {
   buildLaneNoteGrid();
@@ -641,7 +556,6 @@ function buildAdvPanel() {
   buildAdvSustainControl();
 }
 
-// Instrument picker inside advanced panel
 function buildAdvInstrumentRow() {
   const row = document.getElementById('adv-instrument-row');
   if (!row) return;
@@ -672,14 +586,12 @@ function buildAdvInstrumentRow() {
       currentSettings.instrument = inst.id;
       store.saveSettings(currentSettings);
       buildAdvInstrumentRow();
-      // Preview note
       if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0);
     });
     row.appendChild(btn);
   });
 }
 
-// Sustain default control in advanced panel
 function buildAdvSustainControl() {
   const slider = document.getElementById('adv-sustain-slider');
   const label  = document.getElementById('adv-sustain-label');
@@ -695,8 +607,6 @@ function buildAdvSustainControl() {
   };
 }
 
-// Lane default note pickers (in Advanced panel sidebar)
-// These also use the note-badge-click pattern, no preview
 function buildLaneNoteGrid() {
   const g = document.getElementById('lane-note-grid');
   g.innerHTML = '';
@@ -709,7 +619,6 @@ function buildLaneNoteGrid() {
     lbl.className = 'lnote-label';
     lbl.textContent = k;
 
-    // Note badge — click to open picker, no preview
     const freq     = crLaneFreqs[i];
     const noteName = freqToName(freq);
     const badge    = document.createElement('div');
@@ -733,8 +642,8 @@ function buildLaneNoteGrid() {
       e.stopPropagation();
       openNotePickerModal(badge, crLaneFreqs[i], (newFreq) => {
         crLaneFreqs[i] = newFreq;
-        buildLaneNoteGrid(); // refresh labels
-        buildGrid();          // update cells that inherit this freq
+        buildLaneNoteGrid();
+        buildGrid();
       });
     });
 
@@ -761,7 +670,6 @@ function buildBgRadio() {
   if (crBgMode === 'bass') buildBassNotePicker();
 }
 
-// Bass note picker — no preview on selection
 function buildBassNotePicker() {
   const wrap = document.getElementById('bass-note-sel-wrap');
   if (!wrap) return;

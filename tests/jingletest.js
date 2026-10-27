@@ -1,8 +1,3 @@
-// Every instrument gets a real phrase, not a test note.
-//
-// One note can't tell a kalimba from an organ. Each of the 12 has a
-// ~2-second arpeggio, chord or run shaped to its character, so the
-// shop audition is worth listening to.
 const { boot } = require('./harness');
 const { window, notes, probe, report } = boot();
 
@@ -26,7 +21,6 @@ probe('every instrument has a jingle of its own length', () => {
 });
 
 probe('a jingle is a phrase, not a single note', () => {
-  // A single note would come back at the floor length.
   const rows = INST.map(i => [i.id, window.RD_jingleLength(i.id)]);
   const short = rows.filter(([, ms]) => ms < 900);
   if (short.length) throw new Error('too short to be a phrase: ' + short.map(r => r[0] + ' ' + r[1] + 'ms').join(', '));
@@ -41,9 +35,6 @@ probe('the phrases are about two seconds, not ten', () => {
 });
 
 probe('instruments of different families get different phrases', () => {
-  // A run for the mallets, a pad for the winds, a hook for the synths:
-  // if every instrument shared one phrase the audition would only be
-  // testing the timbre, which is half of what it is for.
   const byLen = {};
   for (const i of INST) {
     const ms = window.RD_jingleLength(i.id);
@@ -65,7 +56,6 @@ probe('playing a jingle returns its own length', () => {
 });
 
 probe('starting a jingle cancels the one before it', () => {
-  // Two at once is noise, not a comparison.
   window.RD_playJingle('piano');
   window.RD_playJingle('organ');
   window.RD_stopJingle();
@@ -89,13 +79,12 @@ probe('every instrument can actually be selected and played', () => {
   for (const i of INST) {
     window.RD_setInstrument(i.id);
     if (window.RD_getInstrument() !== i.id) throw new Error(i.id + ' did not take');
-    window.RD_playNote(440, false, 0);   // must not throw
+    window.RD_playNote(440, false, 0);
   }
   notes.push('all ' + INST.length + ' instruments select and sound');
 });
 
 probe('the synth voices are code, not fetched samples', () => {
-  // This is why the whole game is one file with zero requests.
   const src = require('fs').readFileSync(require('path').join(require('./browser').appDir(), 'audio.js'), 'utf8');
   if (/fetch\(|XMLHttpRequest|decodeAudioData/.test(src))
     throw new Error('audio.js loads something over the network');

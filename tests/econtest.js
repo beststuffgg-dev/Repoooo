@@ -1,5 +1,3 @@
-// Coins: a count of levels cleared, not a function of chart length.
-// And nothing is spent on a single click.
 const { boot } = require('./harness');
 const HOOK = `
 ;window.__t = {
@@ -77,7 +75,6 @@ probe('progress outside 0..1 cannot mint coins', () => {
   if (C.coinsFor(lvl(100, 1), { completed: false, progress: -3 }) !== 0) throw new Error('negative progress paid out');
 });
 
-// ── the two-click purchase flow ──
 probe('nothing is armed to start with', () => {
   if (T().isArmed('avatar:x')) throw new Error('armed on boot');
 });

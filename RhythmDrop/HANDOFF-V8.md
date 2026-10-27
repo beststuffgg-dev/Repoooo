@@ -98,7 +98,7 @@ Why bake at all: a song that exists as a file can be read, diffed and reviewed. 
 
 ## 4a. Live generation
 
-V8 ships a baked campaign, but V7's deterministic composer is bundled as `RhythmDrop/RhythmDropV8/generator.js` — the same file as `RhythmDrop/v7/RhythmDropV7/campaign.js`, verbatim but for exposing `window.RD_Generator` instead of `window.RD_Campaign` (V8 already has an `RD_Campaign`, its progression engine; the two do not collide). It loads after `audio.js` because it reads `window.RD_INSTRUMENTS` to resolve each area's voice.
+V8 ships a baked campaign, but V7's deterministic composer is bundled as `RhythmDrop/RhythmDropV8/generator.js` — `RhythmDrop/v7/RhythmDropV7/campaign.js` with its comments stripped and exporting `window.RD_Generator` instead of `window.RD_Campaign` (V8 already has an `RD_Campaign`, its progression engine; the two do not collide). It loads after `audio.js` because it reads `window.RD_INSTRUMENTS` to resolve each area's voice.
 
 Two entry points use it:
 
@@ -109,7 +109,13 @@ A generated chart is a normal level object — grid, tempo, lane pitches, per-no
 
 Every generated chart — Generate, the creator's *Generate into grid*, each Endless song — enters the game through one function, `generateLevel()` in `play.js`, and that is where `RD_RowTypes.uniformRowTypes` runs. The raw composer mixes rows (3,578 of 44,714 in the test sample); through `generateLevel` none do.
 
-`generator.js` is a copy — **re-copy it from v7 if the composer changes**, don't hand-edit.
+`generator.js` is generated from V7's composer, not hand-edited. If the composer changes, refresh it from the repo root with:
+
+```
+node -e "const {stripJs}=require('./tests/strip');const fs=require('fs');fs.writeFileSync('RhythmDrop/RhythmDropV8/generator.js',stripJs(fs.readFileSync('RhythmDrop/v7/RhythmDropV7/campaign.js','utf8')).replace('window.RD_Campaign = {','window.RD_Generator = {'))"
+```
+
+That reproduces the committed file byte for byte, and `v8generate.js` fails if the two ever differ by anything other than comments and the export name.
 
 ---
 
@@ -140,6 +146,10 @@ Ten themes, one per area, earned by clearing every song in that area: **Harvest*
 
 **Contrast was measured, not assumed**, from computed styles in a real browser: body text is at least 11:1 on every surface, secondary text at least 5.4:1, and the note, accent and judgement colours at least 4.6:1. The first draft had six palettes under 4.5:1 for the colours used as small text; the dark themes needed their primary note colour lightened slightly and the two light themes darkened. `v8themes.js` holds the floor.
 
+## 5b. Area emblems
+
+Each of the ten areas has a hand-drawn 64×64 pixel emblem, ported from V7: a wheat bundle (Farmstead), a pyramid (Egypt), columns (Greece), a laurel wreath (Rome), a temple (Aztec), a mask (Maya), a ship (Old England), a tower (Napoleonic), crystals (Modern), a spaceship (Retro-Future). They are `<symbol id="emblem-<area key>">` entries in an inline sprite at the top of `popup.html` (38 KB, no network, no files to load), keyed by the same `key` the baked area data carries, so a new area only needs a symbol with its key. `renderCampaign` shows one on each area tab and in the heading above the song list through `emblemSvg(key)`. They keep their own colours, so each sits on a dark tile that stays readable under the light themes; a locked area's emblem is greyed. The Endless tab has no area and keeps its own mark. `v8ui.js` checks that every area has a drawn emblem that resolves, and that the tabs and heading show it.
+
 ---
 
 ## 6. Architecture
@@ -166,6 +176,8 @@ Ten themes, one per area, earned by clearing every song in that area: **Harvest*
 - **Not done, on evidence.** Storing `levels.js` as `JSON.parse('…')` looked 3× faster in Node (4.5 vs 14.3 ms) and was *8 ms slower* in Chromium, reproducibly in both orders, so it was reverted. Removing `scrollIntoView` from `renderCampaign` (which the profiler blamed for ~55 ms) changed nothing — that was the page's unavoidable first layout, attributed to whatever forced it. Measure in the browser the game ships in.
 - **The one remaining boot cost worth knowing about** is `levels.js`: ~36 ms to load and parse as a 515 KB object literal, the largest single item left. Cutting it means storing each song's notes as a string parsed on demand; the format touches the baker, `campaign.js` and several suites, so it was left.
 
+**The code carries no comments.** All of it was stripped — the game, the build tools and the tests — with a parser (`tests/strip.js`, built on acorn) rather than patterns, so `//` inside a string, a regex or an SVG data URI is never mistaken for one. Each file was checked before it was written: the JavaScript syntax tree, the browser's parsed CSS rules and the HTML's DOM (comment nodes aside) are identical before and after. What the comments used to explain now lives in this document. Two things the comments did that the code could not do on its own were kept another way: `levels.js` announces that it is generated through a `warning` field in its data, and the graphics-layer test finds the layer by its selectors rather than by marker comments. V7 and the `anbernic/` project were left as they were.
+
 ---
 
 ## 7. Testing
@@ -183,7 +195,7 @@ cd tests && npm install && node run-all.js
 | `v8audio.js` | Every instrument **rendered** through an OfflineAudioContext and measured — not just present. Peak, RMS, duration and brightness per voice, the double-tap fifth, sustain, the per-note override, the output ceiling and the volume controls |
 | `v8graphics.js` | That the graphics layer is strictly additive, that Classic and Modern really differ, and that the style survives every theme switch |
 | `v8settings.js` | Every setting driven the way a player drives it, with the effect measured elsewhere — the engine's reported volume, the window's real width, the key that actually fires a lane — and all of it surviving a reload |
-| `v8generate.js` | The bundled composer is V7's verbatim, generated charts are real and deterministic, and Generate / Keep / Endless behave without touching campaign progress |
+| `v8generate.js` | The bundled composer is V7's apart from comments and the export name, generated charts are real and deterministic, and Generate / Keep / Endless behave without touching campaign progress |
 | `v8rowtypes.js` | One kind of note per row: the rule itself (majority, tie steering, only the type moves, deterministic), zero mixed rows across the 150 baked songs and across 160 generated charts in every band, every generation path (creator fill, Generate & play, Endless), a check that the raw composer *does* mix rows so the zero means something, and that `generator.js` is untouched |
 | `v8themes.js` | The ten campaign themes: one per area in order, each with its own texture, the unlock following the whole area and only the area, locked cards inert, a saved unearned theme not worn on boot, the unlock announced by the clear that earns it and only once, and contrast floors in every theme |
 | `v8gameplay.js` | The hit window widens the tolerance in order and is applied to judging; the Double runs at half the beat, pays double, is offered only off a clear and never chains; tiles are drawn within a pixel of where they are judged, by transform, at two UI scales |

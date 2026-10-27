@@ -1,20 +1,8 @@
 #!/usr/bin/env node
-// Builds the single-file game: every <script src="..."> in popup.html
-// is replaced, in place, by the contents of that file. The result opens
-// from a double-click, a phone browser or any static host, and makes
-// zero network requests.
-//
-//   node RhythmDrop/tools/build-single.js         -> htmls/RhythmDrop.html  (V8)
-//   node RhythmDrop/tools/build-single.js RhythmDrop/v7/RhythmDropV7 RhythmDrop/v7/RhythmDrop.html
-//
-// Both arguments are resolved from the repo root. The .html builds are
-// generated, never hand-maintained: edit the source folder and re-run
-// this (or tools/package.sh, which does everything).
 'use strict';
 const fs = require('fs');
 const path = require('path');
 
-// tools/ lives under RhythmDrop/, so the repo root is two levels up.
 const ROOT = path.join(__dirname, '..', '..');
 const srcDir = path.resolve(ROOT, process.argv[2] || 'RhythmDrop/RhythmDropV8');
 const outFile = path.resolve(ROOT, process.argv[3] || 'htmls/RhythmDrop.html');
@@ -27,8 +15,6 @@ function build() {
   const html = fs.readFileSync(popup, 'utf8');
 
   const tags = html.match(SRC_TAG);
-  // A silent zero-match pass writes a file that looks fine and loads
-  // nothing. Fail loudly instead.
   if (!tags || !tags.length) throw new Error('no <script src> tags in ' + popup);
 
   const inlined = [];
@@ -36,15 +22,11 @@ function build() {
     const file = path.join(srcDir, src);
     if (!fs.existsSync(file)) throw new Error('script not found: ' + file);
     const code = fs.readFileSync(file, 'utf8');
-    // A literal </script> anywhere in the source would close the tag
-    // early and dump the rest of the file into the document as text.
     if (/<\/script/i.test(code)) throw new Error('"</script" appears inside ' + src);
     inlined.push(src + ' (' + code.length.toLocaleString() + ' chars)');
     return '<script data-from="' + src + '">\n' + code + '\n</script>';
   });
 
-  // Belt and braces: if any src tag survived the pass, the output would
-  // silently try to fetch a file that isn't next to it.
   SRC_TAG.lastIndex = 0;
   if (SRC_TAG.test(out)) throw new Error('a <script src> tag survived inlining');
 

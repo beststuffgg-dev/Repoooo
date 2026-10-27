@@ -1,12 +1,6 @@
 const {JSDOM}=require('jsdom');
-// ── Locate the extension ──
-// Looks next to this folder, then inside it, then falls back to
-// the APP_DIR environment variable. Works from a checkout, a
-// download folder, or CI without editing anything.
 const path = require('path');
 const fs = require('fs');
-// Resolving the build under test is browser.js's job — it is the one
-// file that knows the repo layout.
 const findApp = require('./browser').appDir;
 const DIR = findApp();
 
@@ -214,8 +208,6 @@ probe('each era uses its own scale',()=>{
   const pcs=a=>{const l=C.buildCampaignLevel(a,7);const s=new Set();
     l.grid.forEach(r=>r.forEach(c=>{if(c)s.add(((midi(c.freq)%12)+12)%12)}));return s;};
   const rome=pcs(4), egypt=pcs(2);
-  // Rome is a triad stack: far fewer distinct pitch classes than Egypt's
-  // double-harmonic scale.
   if(rome.size>=egypt.size)throw new Error('Rome ('+rome.size+') should use fewer pitch classes than Egypt ('+egypt.size+')');
   notes.push('pitch classes: Rome '+rome.size+', Egypt '+egypt.size);
 });
@@ -299,9 +291,6 @@ probe('long codes carry the style',()=>{
 });
 
 probe('codes still carry difficulty and area',()=>{
-  // The style alphabet grew, so slot 3 of a legacy code may now
-  // read as a style rather than seed. Difficulty and area are the
-  // stable parts and must never shift.
   const d=C.decodeLevelCode('74EBTO');
   if(d.difficulty!==7||d.areaId!==4)throw new Error('difficulty/area broke');
   const round=C.encodeLevelCode(7,4,668508,'B');
@@ -320,34 +309,23 @@ probe('textures vary by area and by level',()=>{
   notes.push(classes.size+' distinct textures across 10 areas; jitter e.g. '+l1.angle+'/'+l1.scale+' vs '+l2.angle+'/'+l2.scale);
 });
 
-// Beta 14 changed this on purpose. The Double is the same chart at twice
-// the speed, so it now pays on the XP formula's own speed factor —
-// double speed, double XP — instead of paying nothing. It still doubles
-// coins and still cannot clear a level: you have to have finished the
-// level to be offered it, so there is nothing to farm here that
-// replaying the level wouldn't give you more slowly.
 probe('the Double: doubles coins AND XP, still no clear credit',()=>{
   const t=T();
   t.progress.cleared={}; t.progress.xp=0; t.saveProgress();
   const lvl=C.buildCampaignLevel(1,0);
-  // normal clear first
   const coinsBeforeNormal=t.profile.coins;
   t.gameLevel=lvl; t.baseBeatMs=500; t.score=20000; t.endGame(true);
   const xpAfterNormal=t.progress.xp, coinsAfterNormal=t.profile.coins;
   if(!t.isCleared(1,0))throw new Error('normal clear failed');
   if(xpAfterNormal<=0)throw new Error('normal clear paid no xp');
-  // now the Double, on a level that is NOT yet cleared
   t.progress.cleared={}; t.saveProgress();
   t.overtime=true;
   const coinsBefore=t.profile.coins, xpBefore=t.progress.xp;
   t.gameLevel=lvl; t.score=20000; t.endGame(true);
   const gainedCoins=t.profile.coins-coinsBefore, gainedXp=t.progress.xp-xpBefore;
   t.overtime=false;
-  // The formula rounds twice, so 2x can land a single XP either side.
   if(Math.abs(gainedXp-xpAfterNormal*2)>1)
     throw new Error('Double paid '+gainedXp+' xp, expected ~'+(xpAfterNormal*2));
-  // Coins are flat per level now, so the Double's coin payout is the
-  // flat rate doubled — not a function of the score at all.
   const flat=C.COINS_PER_CLEAR;
   if(coinsAfterNormal-coinsBeforeNormal!==flat)
     throw new Error('normal clear should pay '+flat+', got '+(coinsAfterNormal-coinsBeforeNormal));
@@ -388,20 +366,11 @@ probe('voices survive the codec',()=>{
 });
 
 probe('classical meters are actually in three',()=>{
-  // This probe used to assert that a 3/4 style never put a note on
-  // row index 3 of every four. That was testing the bug: bars were
-  // always four rows long and the meter only suppressed the *note*,
-  // so a waltz was really 4/4 with a silent fourth beat and a march
-  // was 4/4 half empty — 39 of the 150 campaign levels had a
-  // structurally dead beat in every bar. Bars are now `meter` rows
-  // long, so the right thing to check is that the bar itself is in
-  // three, and that no position inside it is systematically silent.
   ['W','U','G'].forEach(k=>{
     const m=C.MIX_STYLES[k].meter;
     const l=C.buildCodeLevel(C.encodeLevelCode(6,3,55555,k));
     if(l.grid.length%m!==0)
       throw new Error(C.MIX_STYLES[k].name+' grid is '+l.grid.length+' rows, not whole bars of '+m);
-    // Every beat of the bar has to carry some of the music.
     const perBeat=new Array(m).fill(0);
     l.grid.forEach((r,i)=>{perBeat[i%m]+=r.filter(c=>c).length;});
     const dead=perBeat.findIndex(n=>n===0);
@@ -427,7 +396,6 @@ probe('all 12 instruments are registered and playable',()=>{
 probe('pending avatars stay hidden until art exists',()=>{
   const w2=window;
   const t0=T();
-  // Nothing may appear in any catalog without its sprite present.
   const missing=t0.ALL_AVATARS.filter(a=>!t0.hasArt(a.sym));
   if(missing.length)throw new Error(missing.length+' avatars have no artwork: '+missing.slice(0,3).map(a=>a.id).join(', '));
   notes.push(t0.SHOP_AVATARS.length+' buyable + '+t0.CAMPAIGN_AVATARS.length+' earned, all with artwork');
@@ -448,7 +416,6 @@ probe('shop themes: locked until bought or earned',()=>{
   if(!owned)throw new Error('default theme not owned');
   const locked=T().themeOwned('blueprint');
   if(locked)throw new Error('blueprint should be locked on a fresh save');
-  // clearing area 3 should grant blueprint
   const t=T();
   for(let a=1;a<=3;a++)for(let i=0;i<15;i++)t.progress.cleared[t.levelKey(a,i)]=true;
   t.saveProgress();
@@ -458,10 +425,6 @@ probe('shop themes: locked until bought or earned',()=>{
   t.progress.cleared={}; t.saveProgress();
 });
 
-// Beta 15 stopped selling themes. A look is either free or earned by
-// clearing the area it belongs to — coins were never the interesting
-// gate, and charging for a palette sat badly beside areas that hand you
-// one for playing. buyTheme is gone; this checks the new rule.
 probe('themes are free, except the six earned by clearing an area',()=>{
   const t=T();
   t.progress.cleared={}; t.saveProgress();
@@ -470,11 +433,9 @@ probe('themes are free, except the six earned by clearing an area',()=>{
     if(t.themeOwned(id))throw new Error(id+' should be locked on a fresh save');
   });
   if(!t.themeOwned('graphite'))throw new Error('graphite should always be free');
-  // Every generated theme is free.
   const gen=t.GEN_THEMES;
   const paidGen=gen.filter(g=>!t.themeOwned(g.id));
   if(paidGen.length)throw new Error(paidGen.length+' generated themes are still locked');
-  // Clearing an area unlocks exactly its theme, and costs nothing.
   const coinsBefore=t.profile.coins;
   const c={}; for(let i=0;i<15;i++)c['1-'+i]=true;
   t.progress.cleared=c; t.saveProgress();
@@ -501,12 +462,10 @@ probe('daily: claimable once, then locked until tomorrow',()=>{
 
 probe('daily: streak advances, missing a day resets it',()=>{
   const t=T();
-  // claimed yesterday, streak 3 -> continues to day 4
   window.localStorage.setItem('rd_daily',JSON.stringify({day:t.dayKeyOffset(-1),streak:3}));
   let st=t.dailyState();
   if(st.streak!==3)throw new Error('streak lost, got '+st.streak);
   if(st.next.day!==4)throw new Error('expected day 4, got '+st.next.day);
-  // claimed three days ago -> reset
   window.localStorage.setItem('rd_daily',JSON.stringify({day:t.dayKeyOffset(-3),streak:5}));
   st=t.dailyState();
   if(st.streak!==0)throw new Error('streak survived a gap: '+st.streak);
@@ -560,7 +519,6 @@ probe('songs run 1.5-3 minutes',()=>{
   const lo=Math.min(...secs),hi=Math.max(...secs);
   if(lo<78)throw new Error('shortest song is '+lo+'s');
   if(hi>200)throw new Error('longest song is '+hi+'s');
-  // and they should get longer as the campaign goes on
   const early=C.levelSeconds(C.buildCampaignLevel(1,0));
   const late=C.levelSeconds(C.buildCampaignLevel(10,14));
   if(late<=early)throw new Error('songs do not lengthen: '+early+'s -> '+late+'s');
@@ -637,8 +595,6 @@ probe('pattern vocabulary is wide and varied',()=>{
 });
 
 probe('no bar family repeats back-to-back',()=>{
-  // Approximated by checking a chart doesn't collapse into one
-  // repeated bar shape.
   const l=C.buildCampaignLevel(5,7);
   const bars={};
   for(let i=0;i<l.grid.length;i+=4){
@@ -709,11 +665,6 @@ probe('34 named structures, all buildable',()=>{
   notes.push(C.SHAPES.length+' structures, '+Object.keys(C.SECTION_ROLES).length+' section roles, all build with 2+ voices');
 });
 
-// Beta 14 changed this contract deliberately. A repeating section used
-// to come back byte-identical, which made a third of a long chart
-// literal copy. It now returns recognisably the same with a minority of
-// bars ornamented — an extra fill, a dropped hit, a note left ringing —
-// seeded from the song so every device ornaments identically.
 probe('repeating sections return recognisably, not identically',()=>{
   const checks=[['Jazz Head','Head'],['Rondo','Refrain'],['Pop','Chorus'],['Ritornello','Ritornello']];
   const seen=[];
@@ -729,14 +680,11 @@ probe('repeating sections return recognisably, not identically',()=>{
     const n=A.length;
     let same=0;for(let i=0;i<n;i++)if(A[i]===B[i])same++;
     const pct=Math.round(100*same/n);
-    // Still the same section...
     if(pct<55)throw new Error(shape+' '+sec+' only '+pct+'% the same — that is a new section, not a return');
-    // ...but not a literal copy.
     if(same===n)throw new Error(shape+' '+sec+' returned byte-identical — ornamentation did not run');
     seen.push(sec+' '+pct+'%');
   });
   if(!seen.length)throw new Error('no repeating sections were found to check');
-  // And the ornaments must be deterministic, or share codes break.
   const g1=C.generateChart(4242,6,60,3,'B','Pop'),g2=C.generateChart(4242,6,60,3,'B','Pop');
   if(JSON.stringify(g1)!==JSON.stringify(g2))throw new Error('ornamented repeats are not deterministic');
   notes.push('repeats return ornamented, not copied: '+seen.join(', ')+' — and deterministically');

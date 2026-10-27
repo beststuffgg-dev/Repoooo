@@ -1,35 +1,17 @@
 #!/usr/bin/env node
-// Generates RhythmDropV7-Redesign/ from RhythmDropV7/.
-//
-// The Redesign is a visual-only alternate build: same JS, same
-// features, same tests, only popup.html differs. Generating it rather
-// than hand-maintaining a second copy is what makes that claim
-// enforceable — every .js file is copied byte-for-byte, so the two
-// builds cannot drift apart in behaviour.
-//
-//   node RhythmDrop/tools/build-redesign.js
-//   node RhythmDrop/tools/build-single.js RhythmDrop/v7/RhythmDropV7-Redesign RhythmDrop/v7/RhythmDrop-Redesign.html
 'use strict';
 const fs = require('fs');
 const path = require('path');
 
-// tools/ lives under RhythmDrop/, alongside the two build folders.
 const ROOT = path.join(__dirname, '..', '..');
 const SRC = path.join(ROOT, 'RhythmDrop', 'v7', 'RhythmDropV7');
 const OUT = path.join(ROOT, 'RhythmDrop', 'v7', 'RhythmDropV7-Redesign');
 
-// A static fractal-noise tile. Static, not animated: the point is to
-// break up large flat panels so they don't read as vector fills, and a
-// moving grain would cost a repaint every frame for that.
 const GRAIN =
   "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E" +
   "%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3' " +
   "stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E";
 
-// Sentinels so the divergence between the two builds is not merely
-// asserted in prose but checkable: redesigntest.js strips everything
-// between them and the result must equal the shipping popup.html byte
-// for byte.
 const OPEN = '/* ▼▼▼ REDESIGN ▼▼▼ */';
 const CLOSE = '/* ▲▲▲ REDESIGN ▲▲▲ */';
 
@@ -117,7 +99,6 @@ const MARKUP =
   '  <!--' + CLOSE + '-->\n';
 
 function patchPopup(html) {
-  // The stylesheet ends at the last </style> before the body.
   const marker = '</style>';
   const at = html.indexOf(marker);
   if (at < 0) throw new Error('no </style> in popup.html');
@@ -135,9 +116,6 @@ function patchPopup(html) {
 
 function patchManifest(json) {
   const m = JSON.parse(json);
-  // So the two can be loaded as unpacked extensions side by side and
-  // told apart in the toolbar. Nothing in the JS reads the manifest,
-  // so this is presentation only.
   m.name = 'RhythmDrop (Redesign)';
   m.action.default_title = 'RhythmDrop (Redesign)';
   m.version_name = m.version_name + ' — Redesign';

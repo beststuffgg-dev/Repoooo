@@ -1,12 +1,4 @@
 #!/usr/bin/env bash
-# Regenerates every derived artifact.
-#
-# V8 is the game: its single-file build and zip land at the top level.
-# V7 is kept whole alongside it under RhythmDrop/v7/, and rebuilds in place.
-#
-# The 150 campaign songs are NOT rebuilt here. Baking them is a
-# deliberate act with a large diff — run RhythmDrop/tools/bake-levels.js
-# yourself when you mean to change the campaign.
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 
@@ -20,9 +12,6 @@ node RhythmDrop/tools/build-single.js RhythmDrop/v7/RhythmDropV7-Redesign Rhythm
 
 python3 - <<'PY'
 import zipfile, os
-# Fixed timestamps and sorted entries: folders get regenerated, so real
-# mtimes would make a zip differ byte-for-byte each run even when
-# nothing changed. Reproducible artifacts keep `git status` meaningful.
 STAMP = (1980, 1, 1, 0, 0, 0)
 def make(src, out):
     if os.path.exists(out): os.remove(out)

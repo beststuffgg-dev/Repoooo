@@ -1,4 +1,3 @@
-// Two V7 gameplay features brought over: the hit window, and the Double.
 const { chromium } = require('playwright');
 const path = require('path');
 const { launchOpts, v8Dir } = require('./browser');
@@ -27,7 +26,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       currentSettings.hitWindow = 'strict';  out.strict = hitTol();
       currentSettings.hitWindow = 'normal';  out.normal = hitTol();
       currentSettings.hitWindow = 'forgiving'; out.forgiving = hitTol();
-      // The setting is reachable and clickable in Gameplay.
       settingsSubTab = 'gameplay'; buildSettingsPanel();
       const btns = [...document.querySelectorAll('#tab-settings .bg-radio-btn')]
         .filter(x => /strict|normal|forgiving/i.test(x.textContent));
@@ -48,8 +46,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
 
   console.log('== a stricter window actually judges a late tap harder ==');
   {
-    // Same tile position, two windows: forgiving accepts a distance the
-    // strict window rejects. Drive processTap directly with a crafted tile.
     const r = await page.evaluate(async () => {
       launchCampaignLevel(1, 0);
       document.getElementById('g-overlay').classList.remove('show');
@@ -58,12 +54,9 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       const probe = win => {
         currentSettings.hitWindow = win;
         const tol = hitTol();
-        // A tap 90% of the *forgiving* tolerance away — inside forgiving,
-        // outside strict.
         return { tol, edge: hitTol() };
       };
       const f = probe('forgiving'), s = probe('strict');
-      // Distance that is a hit under forgiving but a miss under strict.
       const dist = (f.tol + s.tol) / 2;
       const acceptedForgiving = dist < f.tol;
       const acceptedStrict = dist < s.tol;
@@ -90,9 +83,8 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       out.xpNormal = document.getElementById('ov-xp').textContent;
       const dbl = document.getElementById('ov-double-btn');
       out.doubleOffered = !!dbl && dbl.style.display !== 'none';
-      // take the Double
       const coinsBeforeDouble = profile.coins;
-      dbl.click();                 // relaunches as a Double, on the pre-game card
+      dbl.click();
       out.launchName = lvlName.textContent;
       out.isDouble = doubleMode;
       document.getElementById('g-overlay').classList.remove('show');
@@ -101,7 +93,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       notesHit = notesTotal; score = 8000;
       endGame(true);
       out.coinsDouble = profile.coins - coinsBeforeDouble;
-      // A Double never re-offers itself.
       const dbl2 = document.getElementById('ov-double-btn');
       out.chainedOffer = !!dbl2 && dbl2.style.display !== 'none';
       return out;
@@ -136,7 +127,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
   console.log('== a normal launch is never accidentally a Double ==');
   {
     const r = await page.evaluate(async () => {
-      // First clear something as a Double, then launch a normal level.
       showScreen('home'); renderHome();
       launchCampaignLevel(1, 0);
       const beat = (() => { document.getElementById('g-overlay').classList.remove('show'); startGame(); return currentBeatMs; })();
@@ -148,9 +138,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
 
   console.log('== a tile is drawn exactly where the game judges it ==');
   {
-    // Tiles are placed by transform (a compositor-only move) and judged
-    // by their JS position, so the two have to agree or the picture lies
-    // about the hit. Measured on the real layout, at two UI scales.
     for (const scale of [1, 1.4]) {
       const r = await page.evaluate(async scale => {
         currentSettings.uiScale = scale; applySettingsToDOM();
@@ -158,12 +145,11 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
         document.getElementById('g-overlay').classList.remove('show'); startGame();
         const t0 = Date.now();
         while (activeTiles.length < 2 && Date.now() - t0 < 6000) await new Promise(r => setTimeout(r, 60));
-        await new Promise(r => setTimeout(r, 500));          // let them fall a while
+        await new Promise(r => setTimeout(r, 500));
         const worst = { drift: 0, n: 0, usesTop: 0, transform: 0 };
         activeTiles.forEach(t => {
           const lane = t.el.parentElement.getBoundingClientRect();
           const box = t.el.getBoundingClientRect();
-          // Both rects are in screen px, which the UI-scale zoom has multiplied.
           const z = lane.height / t.el.parentElement.clientHeight;
           const drawn = (box.top - lane.top) / z;
           worst.drift = Math.max(worst.drift, Math.abs(drawn - t.y));

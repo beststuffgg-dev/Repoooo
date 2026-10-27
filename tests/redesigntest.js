@@ -1,13 +1,3 @@
-// The Redesign variant: does the decorative ghost-lane strip stay
-// inside the hero, and is it identical to the shipping build in every
-// way that isn't the two visual blocks?
-//
-// This is a browser suite because the bug it guards was a clipping
-// bug: #home already carries its own 3D tilt from lighting.js, and a
-// second perspective/rotateX nested inside an already-3D-transformed
-// ancestor is a spot where Chromium's overflow clipping misses — the
-// strip bled past the hero into the nav and the song list. jsdom has
-// no layout engine and structurally cannot see that.
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
@@ -27,9 +17,6 @@ const probe = () => {
   if (!strip) return { missing: true };
   const nav = document.getElementById('home-nav');
   const navBox = nav.getBoundingClientRect();
-  // The painted bottom of the tilted lanes, not the strip's own box:
-  // rotateX means the lanes can land somewhere other than where the
-  // untransformed element would.
   let painted = -Infinity;
   strip.querySelectorAll('.gl-floor i').forEach(el => {
     painted = Math.max(painted, el.getBoundingClientRect().bottom);
@@ -68,11 +55,6 @@ const probe = () => {
   ok(/position:relative/.test(rdHtml.slice(rdHtml.indexOf('REDESIGN — film grain'), rdHtml.indexOf('REDESIGN — ghost lanes'))),
     'body gets position:relative, which the film grain needs as a containing block');
 
-  // Divergence audit, exact rather than eyeballed: strip everything
-  // between the redesign sentinels and undo the title, and what's left
-  // must be the shipping popup.html byte for byte. That is what keeps
-  // "same JS, same features, only popup.html differs" a fact instead
-  // of a claim.
   const shipHtml = fs.readFileSync(path.join(SHIP, 'popup.html'), 'utf8');
   const OPEN = '/* \u25bc\u25bc\u25bc REDESIGN \u25bc\u25bc\u25bc */';
   const CLOSE = '/* \u25b2\u25b2\u25b2 REDESIGN \u25b2\u25b2\u25b2 */';
@@ -84,7 +66,6 @@ const probe = () => {
     let b2 = stripped.indexOf(CLOSE, a);
     if (b2 < 0) { ok(false, 'unterminated redesign block'); break; }
     b2 += CLOSE.length;
-    // Take the surrounding comment wrapper and the trailing newline with it.
     let s0 = a, e0 = b2;
     if (stripped.slice(s0 - 6, s0) === '  <!--') s0 -= 6;
     if (stripped.slice(e0, e0 + 3) === '-->') e0 += 3;

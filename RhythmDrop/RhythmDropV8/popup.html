@@ -4,16 +4,6 @@
 <meta charset="UTF-8">
 <title>RhythmDrop</title>
 <style>
-/* ── Fonts ──
-   No @import here on purpose. This used to pull two families from
-   fonts.googleapis.com, which is a render-blocking request at the very
-   top of the sheet — so every open of the popup waited on the network,
-   and offline (or as a packed extension, where the fetch is blocked
-   outright) it waited and then fell back anyway. The stacks below name
-   the same faces first, so anyone who has them installed still gets
-   them, and everyone else gets a good local match immediately.
-
-   It is also what makes "no network calls" true rather than aspirational. */
 :root {
   --font-display: 'Archivo', 'Segoe UI Variable Display', 'Segoe UI',
                   system-ui, -apple-system, 'Roboto', 'Helvetica Neue', sans-serif;
@@ -23,9 +13,6 @@
                   'SF Mono', Menlo, monospace;
 }
 
-/* ══════════════════════════════════════
-   THEME VARIABLES — swapped by JS
-══════════════════════════════════════ */
 :root {
   --bg:        #07070f;
   --bg2:       #0e0e1c;
@@ -49,7 +36,6 @@
   --accent:    #FF3A6E;
 }
 
-/* ── THEMES ── */
 body.theme-forest {
   --bg:#04100a; --bg2:#081a0f; --bg3:#0d2415; --bg4:#11301c;
   --border:#143020; --border2:#1f4830;
@@ -82,7 +68,6 @@ body.theme-neon {
   --lane-flash:#002040; --glow-tap:rgba(0,255,255,0.5); --glow-dtap:rgba(255,0,255,0.5);
   --accent:#00ffff;
 }
-/* Dune — spice sand & Fremen-blue eyes */
 body.theme-dune {
   --bg:#140d04; --bg2:#1f1408; --bg3:#2c1d0c; --bg4:#3a2811;
   --border:#3a2810; --border2:#4d3818;
@@ -91,7 +76,6 @@ body.theme-dune {
   --lane-flash:#2c1d08; --glow-tap:rgba(217,164,65,0.45); --glow-dtap:rgba(90,169,230,0.5);
   --accent:#d9a441;
 }
-/* Middle-earth — gold ring & forest green */
 body.theme-lotr {
   --bg:#080a06; --bg2:#0f130c; --bg3:#171c12; --bg4:#1f261a;
   --border:#1f261a; --border2:#2e3826;
@@ -100,7 +84,6 @@ body.theme-lotr {
   --lane-flash:#1a1c10; --glow-tap:rgba(201,162,39,0.45); --glow-dtap:rgba(107,142,78,0.45);
   --accent:#c9a227;
 }
-/* Foundation — deep space, psychohistory cyan & gold */
 body.theme-foundation {
   --bg:#04060c; --bg2:#080d18; --bg3:#0c1424; --bg4:#121d33;
   --border:#0f1d33; --border2:#1a2c4d;
@@ -109,7 +92,6 @@ body.theme-foundation {
   --lane-flash:#0a1830; --glow-tap:rgba(90,209,230,0.5); --glow-dtap:rgba(224,176,32,0.45);
   --accent:#5ad1e6;
 }
-/* Nintendo — bold red & blue on black */
 body.theme-nintendo {
   --bg:#0a0a0a; --bg2:#141414; --bg3:#1d1d1d; --bg4:#262626;
   --border:#2a2a2a; --border2:#3a3a3a;
@@ -118,7 +100,6 @@ body.theme-nintendo {
   --lane-flash:#2a0006; --glow-tap:rgba(230,0,18,0.5); --glow-dtap:rgba(0,160,233,0.5);
   --accent:#e60012;
 }
-/* Liquid Glass — frosted translucent panels; --glass-a controls opacity */
 body.theme-glass {
   --glass-a:0.5;
   --bg:#0a0e16; --text:#eaf2ff; --muted:#7d8aa8; --dim:rgba(255,255,255,.08);
@@ -130,12 +111,6 @@ body.theme-glass {
   --accent:#f0abfc;
   background:radial-gradient(1200px 800px at 20% -10%, #1b2740 0%, #0a0e16 60%) fixed;
 }
-/* ── GRAPHITE — the v7 faceplate look ──
-   Near-neutral graphite surfaces rather than blue-black, and two
-   desaturated LEDs (dusty teal + burnt amber) doing all the work, so
-   the board reads as an instrument panel instead of a stock dark-mode
-   template. This is the default theme; the twelve originals are all
-   still here, one tap away. */
 body.theme-graphite {
   --bg:#0B0D0E; --bg2:#121517; --bg3:#191D20; --bg4:#232A2D;
   --border:#1E2325; --border2:#2C3235;
@@ -147,12 +122,6 @@ body.theme-graphite {
   --accent:#6FA8B5;
 }
 
-/* ══════════════════════════════════════
-   TEXTURED "MATERIAL" THEMES  (from V7)
-   Each carries a real --mat-grain — wood streak, paper tooth, brushed
-   brass, frosted glass, blueprint linen, rubber stipple — painted as a
-   texture layer over the faceplate (see the grain rules further down).
-══════════════════════════════════════ */
 body.theme-walnut {
   --mat-grain:
     radial-gradient(ellipse 13px 44px at 77% 20%, rgba(0,0,0,.11), transparent 72%),
@@ -231,17 +200,6 @@ body.theme-mono {
   --accent:#FF4757;
 }
 
-/* ══════════════════════════════════════
-   CAMPAIGN THEMES — one per area, earned by clearing every song in it.
-   Each is built from its area's own materials (see the blurbs in
-   levels.js): straw and poppy, lapis and sandstone, marble, crimson
-   and laurel, obsidian, jade, oak and moss, gold braid, concrete,
-   chrome. Each carries its own --mat-grain, so what you earn is a
-   different surface under your hands, not only a different tint. Two
-   (Marble, Concrete) are light and set the light-theme variables.
-   Which are unlocked is derived from campaign progress, not stored.
-══════════════════════════════════════ */
-/* Farmstead — woven burlap over a night field */
 body.theme-harvest {
   --mat-grain:
     repeating-linear-gradient(0deg,  rgba(0,0,0,.11) 0 1px, transparent 1px 4px),
@@ -255,7 +213,6 @@ body.theme-harvest {
   --lane-flash:#1F3320; --glow-tap:rgba(229,196,106,.30); --glow-dtap:rgba(220,99,81,.34);
   --accent:#E5C46A;
 }
-/* Egypt — warm-black sandstone, strata and a fine sand stipple */
 body.theme-lapis {
   --mat-grain:
     repeating-linear-gradient(180deg, rgba(255,222,150,.03) 0 1px, transparent 1px 9px),
@@ -268,7 +225,6 @@ body.theme-lapis {
   --lane-flash:#1A2540; --glow-tap:rgba(79,134,224,.38); --glow-dtap:rgba(217,174,62,.36);
   --accent:#D9AE3E;
 }
-/* Greece — pale marble, long cool veins (light) */
 body.theme-marble {
   --mat-grain:
     linear-gradient(112deg, transparent 40%, rgba(80,100,125,.08) 40.3%, transparent 41%),
@@ -286,7 +242,6 @@ body.theme-marble {
   --note-key-text:rgba(26,35,48,.8); --lane-hitglow-clr:rgba(31,95,174,.08);
   --cr-note-sel-border:rgba(0,0,0,.15); --cr-note-sel-bg:rgba(255,255,255,.65); --input-text:#1A2330;
 }
-/* Rome — wine-black travertine, pitted and layered */
 body.theme-imperium {
   --mat-grain:
     repeating-linear-gradient(180deg, rgba(255,230,210,.025) 0 1px, transparent 1px 14px),
@@ -300,7 +255,6 @@ body.theme-imperium {
   --lane-flash:#3A1A22; --glow-tap:rgba(214,92,108,.36); --glow-dtap:rgba(217,176,76,.34);
   --accent:#D9B04C;
 }
-/* Aztec — volcanic glass: a conchoidal sheen over near-black */
 body.theme-obsidian {
   --mat-grain:
     linear-gradient(125deg, rgba(255,255,255,.055) 0%, transparent 28%, transparent 60%, rgba(120,220,255,.04) 74%, transparent 90%),
@@ -313,7 +267,6 @@ body.theme-obsidian {
   --lane-flash:#0E2A2C; --glow-tap:rgba(44,199,180,.38); --glow-dtap:rgba(240,122,56,.38);
   --accent:#2CC7B4;
 }
-/* Maya — carved stone hatching over deep jade */
 body.theme-jade {
   --mat-grain:
     repeating-linear-gradient(45deg,  rgba(0,0,0,.13) 0 1px, transparent 1px 9px),
@@ -327,7 +280,6 @@ body.theme-jade {
   --lane-flash:#0F3325; --glow-tap:rgba(63,217,142,.36); --glow-dtap:rgba(227,193,88,.34);
   --accent:#3FD98E;
 }
-/* Old England — organ pipes, vertical, over moss */
 body.theme-oakmoss {
   --mat-grain:
     repeating-linear-gradient(90deg, rgba(255,255,230,.032) 0 1px, rgba(0,0,0,.11) 1px 2px, transparent 2px 15px),
@@ -340,7 +292,6 @@ body.theme-oakmoss {
   --lane-flash:#252E14; --glow-tap:rgba(156,194,94,.32); --glow-dtap:rgba(207,106,87,.34);
   --accent:#9CC25E;
 }
-/* Napoleonic — diagonal wool twill under navy */
 body.theme-braid {
   --mat-grain:
     repeating-linear-gradient(45deg, rgba(255,255,255,.042) 0 2px, transparent 2px 6px),
@@ -353,7 +304,6 @@ body.theme-braid {
   --lane-flash:#14214A; --glow-tap:rgba(221,182,71,.36); --glow-dtap:rgba(223,91,84,.36);
   --accent:#DDB647;
 }
-/* Modern — poured concrete: speckle, formwork seams, tie holes (light) */
 body.theme-concrete {
   --mat-grain:
     radial-gradient(circle at 20px 20px, rgba(0,0,0,.13) 2px, transparent 3px) 0 0 / 120px 120px,
@@ -370,7 +320,6 @@ body.theme-concrete {
   --note-key-text:rgba(21,26,31,.8); --lane-hitglow-clr:rgba(8,95,112,.08);
   --cr-note-sel-border:rgba(0,0,0,.15); --cr-note-sel-bg:rgba(255,255,255,.6); --input-text:#151A1F;
 }
-/* Retro-Future — a neon grid and scanlines over indigo */
 body.theme-chrome {
   --mat-grain:
     repeating-linear-gradient(0deg,  rgba(63,224,255,.06) 0 1px, transparent 1px 28px),
@@ -385,10 +334,6 @@ body.theme-chrome {
   --accent:#FF5CA8;
 }
 
-/* Material grain layer — a texture over each screen's faceplate,
-   behind all content. Shows only when the theme sets --mat-grain;
-   every other theme leaves it `none` and paints nothing, so this is
-   inert for the flat themes and both graphics styles. */
 #home, #creator, #game { isolation:isolate; }
 #home::after, #creator::after, #game::after {
   content:''; position:absolute; inset:0; z-index:0; pointer-events:none;
@@ -398,7 +343,6 @@ body.theme-chrome {
 #home > *, #creator > *, #game > * { position:relative; z-index:1; }
 
 
-/* ── LIGHT THEME COMPATIBILITY VARIABLES ── */
 :root {
   --overlay-bg:    rgba(7,7,15,0.92);
   --overlay-scrim: rgba(0,0,0,0.35);
@@ -408,37 +352,20 @@ body.theme-chrome {
   --cr-note-sel-border: rgba(255,255,255,0.15);
   --cr-note-sel-bg:     rgba(0,0,0,0.35);
   --input-text:    var(--text);
-  /* Every theme now carries a faint material tooth by default — a low
-     fractal grain so surfaces read as a physical faceplate rather than
-     flat fill. The six textured themes override this with their own
-     wood / paper / brass / glass / linen / rubber grain. */
   --mat-grain: url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22140%22 height=%22140%22><filter id=%22g%22><feTurbulence type=%22fractalNoise%22 baseFrequency=%220.85%22 numOctaves=%222%22 stitchTiles=%22stitch%22/><feColorMatrix type=%22saturate%22 values=%220%22/></filter><rect width=%22140%22 height=%22140%22 filter=%22url(%23g)%22 opacity=%220.035%22/></svg>');
 }
 
-/* ══════════════════════════════════════
-   DESIGN SYSTEM TOKENS  (Material-3 flavoured)
-   A shape scale, a tonal elevation ramp, state-layer overlays and an
-   emphasized easing — the vocabulary the modern shell and the 3D
-   graphics layer both draw on. Purely tokens; painting happens in the
-   rules below and in the modern graphics layer.
-══════════════════════════════════════ */
 :root {
-  /* Shape scale */
   --r-sm:10px; --r-md:14px; --r-lg:20px; --r-xl:26px; --r-pill:999px;
-  /* Tonal elevation — soft ambient + a tighter key shadow, stacked so
-     raised surfaces read as lifted rather than outlined. */
   --elev-1: 0 1px 2px rgba(0,0,0,.42), 0 1px 3px 1px rgba(0,0,0,.22);
   --elev-2: 0 2px 6px 1px rgba(0,0,0,.26), 0 1px 2px rgba(0,0,0,.5);
   --elev-3: 0 8px 20px 3px rgba(0,0,0,.30), 0 3px 7px rgba(0,0,0,.5);
   --elev-4: 0 14px 34px 6px rgba(0,0,0,.36), 0 5px 12px rgba(0,0,0,.55);
-  /* State layers — a translucent wash of the on-surface tone. */
   --state-hover: color-mix(in srgb, var(--text) 8%, transparent);
   --state-press: color-mix(in srgb, var(--text) 14%, transparent);
-  /* Motion */
   --ease-emph: cubic-bezier(.2, 0, 0, 1);
 }
 
-/* Paper — warm off-white, ink-black */
 body.theme-paper {
   --bg:#f5f0e8; --bg2:#ede8dc; --bg3:#e4ddd0; --bg4:#dbd4c4;
   --border:#ccc4b0; --border2:#b8ae98;
@@ -456,7 +383,6 @@ body.theme-paper {
   --input-text:#1a1510;
 }
 
-/* Arctic — crisp white & ice-blue */
 body.theme-arctic {
   --bg:#f0f6ff; --bg2:#e4eefa; --bg3:#d8e7f8; --bg4:#ccdff5;
   --border:#b8d0ee; --border2:#9abce4;
@@ -474,7 +400,6 @@ body.theme-arctic {
   --input-text:#0a1828;
 }
 
-/* Frost the key panels under the glass theme */
 body.theme-glass .level-card,
 body.theme-glass .avatar-card,
 body.theme-glass .theme-card,
@@ -484,71 +409,34 @@ body.theme-glass #tab-settings > div,
 body.theme-glass .lane { -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
 
 * { box-sizing:border-box; margin:0; padding:0; }
-/* Width is the only adjustable dimension. Vertical resizing never
-   really worked — the board, the creator grid and the campaign list
-   all size themselves off the height, and dragging it left them
-   half-laid-out — so the height is pinned and the corner grip only
-   drags from either edge; on a page it can fill the viewport, and in a
-   Chrome popup Chrome's own ceiling caps it. */
 html {
   width:420px; height:640px; overflow:hidden;
   resize:both; min-width:340px; max-width:1100px;
   min-height:420px; max-height:760px;
   color-scheme:dark;
 }
-/* Light themes are genuinely light surfaces — tell the UA so its own
-   chrome (form controls, the resize grip, autofill) matches instead of
-   painting dark widgets onto a paper background. */
 body.theme-paper, body.theme-arctic, body.theme-bone,
 body.theme-marble, body.theme-concrete { color-scheme:light; }
 body { width:100%; height:100%; overflow:hidden; background:var(--bg); color:var(--text); font-family:var(--font-body); transition:background .3s, color .3s;
-  /* The two-LED brand gradient — every theme's tap and dtap, the two
-     lights that do its colour work, swept into one. Declared here on
-     `body` (not :root) so its var(--tap)/var(--dtap) resolve against the
-     active theme's own tokens, which the theme classes set on `body`;
-     from :root they would bake in the default blue→pink for every theme.
-     Always genuinely two-tone, so a filled primary action reads with
-     real colour rather than a flat tint. */
   --grad-brand: linear-gradient(120deg, var(--tap) 0%, var(--dtap) 100%);
 }
-/* The data face carries every changing number in the UI — score ticking
-   up, coins, combo, records. Lock the digits to one width so they stop
-   twitching as the value changes. */
 .mono { font-family:var(--font-data); font-variant-numeric:tabular-nums; }
 
-/* ══════════════════════════════════════
-   FOUNDATION — cross-cutting reflexes that sit under everything and
-   stay out of the graphics layer, so both Classic and Modern inherit
-   them. Nothing here paints a colour of its own; it is all behaviour:
-   keyboard focus, motion sensitivity, touch latency, steady numerals.
-══════════════════════════════════════ */
-
-/* One visible, consistent keyboard-focus ring across every control.
-   :focus-visible only, so it never shows on a mouse click — only when
-   the keyboard is actually driving. The board keeps its own cues. */
 :root { --focus-ring: color-mix(in srgb, var(--accent) 85%, white); }
 :where(a, button, input, select, textarea, [tabindex], .hnav, .area-chip,
         .song-row, .level-card, .avatar-card, .theme-card, .lane-btn):focus-visible {
   outline:2px solid var(--focus-ring);
   outline-offset:2px;
 }
-/* A mouse press should never leave a ring hanging on the element. */
 :focus:not(:focus-visible) { outline:none; }
 
-/* Taps should register instantly — no 300ms double-tap-zoom wait on the
-   lane keys or any other control, which matters most for a rhythm game. */
 button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 .theme-card, .lane-btn, .cr-cell, .bass-step { touch-action:manipulation; }
 
-/* Steady numerals wherever a number is read at a glance or changes live. */
 .hud-score-num, .hud-combo, #g-score, #ov-score, #ov-score-lbl,
 .xp-lv, .xp-num, #pbar-coins, #pbar-hs, .daily-coins, .song-best,
 .song-meta, .lc-hs-score, .hs-score, .avatar-price { font-variant-numeric:tabular-nums; }
 
-/* Respect a reduced-motion preference. Decorative loops and springy
-   entrances relax to a resting state; the tiles themselves fall on a
-   rAF loop in JS and are left alone so the game stays playable, but the
-   ambient shimmer, shake, flicker and splash all quiet down. */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration:.001ms !important;
@@ -559,13 +447,9 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
   }
 }
 
-/* ── SCREENS ── */
 .screen { width:100%; height:100%; display:none; flex-direction:column; overflow:hidden; position:relative; }
 .screen.active { display:flex; }
 
-/* ══════════════════════════════════════
-   HOME
-══════════════════════════════════════ */
 #home { background:var(--bg); }
 #home-hero {
   padding:22px 22px 16px; border-bottom:1px solid var(--border);
@@ -588,10 +472,6 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 .hero-text h1 { font-size:27px; font-weight:900; letter-spacing:-1.6px; line-height:1; }
 .hero-text h1 span { color:var(--dtap); }
 .hero-text p  { font-size:11px; color:var(--muted); letter-spacing:2px; margin-top:4px; }
-/* The "Drop" half of the wordmark reads as one accent everywhere it
-   appears — the hero, the game overlay, the first-run screen. A clip of
-   the two dtap tones over the glyphs; the plain color above is the
-   fallback wherever background-clip:text isn't honoured. */
 .hero-text h1 span, #ov-title span, .uname-logo span {
   background:linear-gradient(120deg, var(--dtap) 0%, var(--dtap2) 100%);
   -webkit-background-clip:text; background-clip:text;
@@ -607,7 +487,6 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 .ld-tap  { background:var(--tap); }
 .ld-dtap { background:var(--dtap); border:2px solid var(--dtap2); }
 
-/* nav bar */
 #home-nav {
   display:flex; border-bottom:1px solid var(--border);
   padding:0 18px; gap:4px;
@@ -622,11 +501,9 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 .hnav.active { color:var(--accent); border-bottom-color:var(--accent); }
 .hnav:hover:not(.active) { color:var(--text); }
 
-/* tab panes */
 .tab-pane { display:none; flex:1; overflow-y:auto; padding:12px 14px; flex-direction:column; gap:8px; }
 .tab-pane.active { display:flex; }
 
-/* level cards */
 .level-card {
   background:var(--bg2); border:1px solid var(--border); border-radius:12px;
   padding:13px 15px; display:flex; align-items:center; justify-content:space-between;
@@ -673,7 +550,6 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 }
 #new-lvl-btn:hover { border-color:var(--dtap); color:var(--dtap); }
 
-/* ── THEMES PANEL ── */
 .themes-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px; }
 .theme-card {
   border-radius:12px; border:2px solid transparent; padding:14px; cursor:pointer;
@@ -681,8 +557,6 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 }
 .theme-card.selected { border-color:var(--accent); }
 .theme-card:hover { transform:scale(1.02); }
-/* Campaign themes: a header across the grid, and a locked state that
-   still shows what is being earned — dimmed, not hidden. */
 .themes-section {
   grid-column:1 / -1; display:flex; align-items:baseline; justify-content:space-between;
   margin-top:8px; font-family:var(--font-data); font-size:10px; font-weight:700;
@@ -737,18 +611,9 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 .glass-trans-btn.sel { border-color:var(--accent); background:rgba(125,211,252,.15); color:var(--text); }
 
 
-/* ══════════════════════════════════════
-   CAMPAIGN
-   Ten areas, fifteen songs each. The list is a single scrolling
-   column: the area strip picks which fifteen, and nothing inside
-   the pane shrinks — a short window scrolls further, it does not
-   squeeze the rows into stripes.
-══════════════════════════════════════ */
 #tab-levels { padding:0; }
 #cam-wrap { display:flex; flex-direction:column; min-height:0; flex:1; }
 
-/* Daily reward — a card at the top of the campaign, present only
-   while there is something to claim. */
 #daily-card {
   display:none; align-items:center; gap:11px; margin:12px 14px 4px;
   padding:11px 13px; border-radius:12px; cursor:pointer;
@@ -767,12 +632,6 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 .daily-dot { width:12px; height:4px; border-radius:2px; background:var(--dim); }
 .daily-dot.on { background:var(--perfect); }
 
-/* Area strip — a segmented row, v7-style: no boxes, the selected era
-   carries an underline and a lift, the rest are plain dim labels. */
-/* Area strip — a scrolling row of rounded chips (MD3 segmented/filter
-   chips), matching the card language rather than the old underline
-   tabs: each era is its own surface, the selected one fills with a
-   tonal wash of the accent. */
 #cam-areas {
   display:flex; gap:6px; padding:10px 12px; overflow-x:auto; flex-shrink:0;
 }
@@ -782,6 +641,7 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
   background:var(--bg2); border:1px solid var(--border); border-radius:var(--r-md);
   transition:color .15s, border-color .15s, background .15s, box-shadow .15s;
   text-align:left; min-width:78px;
+  display:flex; align-items:center; gap:8px;
 }
 .area-chip .ac-name { font-size:12px; font-weight:700; color:var(--muted); white-space:nowrap; }
 .area-chip .ac-prog { font-size:9px; color:var(--dim); font-family:var(--font-data); margin-top:1px; letter-spacing:.5px; }
@@ -797,13 +657,20 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 .area-chip.locked { opacity:.5; cursor:not-allowed; }
 .area-chip.locked .ac-prog { color:var(--dim); }
 
-/* The songs of the selected area, as one grouped card with hairline
-   dividers — the v7 list language, not fifteen floating cards. */
 #cam-list { flex:1; overflow-y:auto; padding:14px; display:flex; flex-direction:column; gap:12px; }
 #cam-list > * { flex-shrink:0; }
-.cam-head { display:flex; align-items:baseline; gap:8px; padding:0 2px; }
+.cam-head { display:flex; align-items:center; gap:10px; padding:0 2px; }
+.ac-text { min-width:0; }
+.ac-emblem, .ch-emblem {
+  flex:0 0 auto; display:flex; align-items:center; justify-content:center;
+  background:rgba(9,11,15,.82); box-shadow:inset 0 1px 3px rgba(0,0,0,.55);
+}
+.ac-emblem { width:30px; height:30px; padding:3px; border-radius:9px; }
+.ch-emblem { width:46px; height:46px; padding:5px; border-radius:13px; }
+.ac-emblem svg, .ch-emblem svg { display:block; width:100%; height:100%; }
+.area-chip.locked .ac-emblem svg { filter:grayscale(1) brightness(.75); }
 .cam-head .ch-name { font-family:var(--font-display); font-size:18px; font-weight:800; letter-spacing:-.4px; }
-.cam-head .ch-blurb { font-size:11px; color:var(--muted); }
+.cam-head .ch-blurb { min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:11px; color:var(--muted); }
 
 .cam-songs {
   display:flex; flex-direction:column;
@@ -816,10 +683,7 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
   background:none; cursor:pointer; position:relative;
   transition:background .13s;
 }
-/* Hairline between rows — the divided-list look, one card not many. */
 .song-row + .song-row { border-top:1px solid var(--border); }
-/* Left-rail marker: a bar of light down the edge of the row in focus,
-   which is how v7 marks the row you're on rather than a full outline. */
 .song-row::before {
   content:''; position:absolute; left:0; top:6px; bottom:6px; width:3px;
   border-radius:0 3px 3px 0; background:var(--accent);
@@ -854,13 +718,11 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 .song-row.locked:hover::before { opacity:0; }
 .song-lock { font-size:12px; color:var(--muted); }
 
-/* Locked-area notice, in place of the list. */
 .cam-locked-note {
   padding:22px 16px; text-align:center; color:var(--muted); font-size:12px;
   border:1px dashed var(--border2); border-radius:12px;
 }
 
-/* XP strip in the profile bar. */
 .xp-strip { display:flex; align-items:center; gap:7px; margin-top:3px; }
 .xp-lv {
   font-size:11px; font-weight:900; color:var(--perfect);
@@ -873,7 +735,6 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 .xp-fill { display:block; height:100%; border-radius:3px; background:linear-gradient(90deg,var(--perfect),var(--tap)); }
 .xp-num { font-size:9px; color:var(--muted); font-family:var(--font-data); flex-shrink:0; }
 
-/* Level-up and XP on the results overlay. */
 #ov-xp { font-size:12px; color:var(--tap); font-family:var(--font-data); display:none; }
 #ov-levelup, #ov-theme {
   font-size:13px; font-weight:700; color:var(--perfect);
@@ -882,23 +743,6 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
 #ov-theme { color:var(--accent); text-align:center; }
 
 
-/* ══════════════════════════════════════
-   UPDATED GRAPHICS  —  body.gfx-modern
-
-   Everything in this block is ADDITIVE. Nothing here changes a rule
-   above it; the class is either on or it isn't, and with it off the
-   build renders exactly as it always did. That is deliberate: the old
-   look is not a legacy path to be tolerated, it is a setting, and it
-   has to stay pixel-for-pixel intact to be worth offering.
-
-   All twelve themes work under both, because none of this hard-codes a
-   colour — every value here is derived from the theme's own tokens.
-══════════════════════════════════════ */
-
-/* ── The board reads as a shaft, not a flat rectangle ──
-   Notes should look like they are arriving out of somewhere. A dark
-   gradient at the top and a shadow pooling at the bottom does that
-   with no per-frame cost. ::before is already the scanlines. */
 body.gfx-modern .lane::after {
   content:''; position:absolute; inset:0; z-index:1; pointer-events:none;
   background:
@@ -910,10 +754,6 @@ body.gfx-modern .lane {
               inset -1px 0 0 rgba(0,0,0,.40);
 }
 
-/* ── Tiles are objects with a lit edge, not coloured slabs ──
-   A highlight along the top, shading pooling under it, and light cast
-   onto the lane beneath. The gloss is a pseudo-element so it scales
-   with the tile's own height. */
 body.gfx-modern .tile {
   border-radius:8px;
   box-shadow:
@@ -926,8 +766,6 @@ body.gfx-modern .tile::after {
   border-radius:6px 6px 12px 12px; pointer-events:none;
   background:linear-gradient(180deg, rgba(255,255,255,.32), rgba(255,255,255,0));
 }
-/* The ×2 tile has to be legible at a glance and at speed, so it gets a
-   second read: an inner rim, and a pair of marks across its face. */
 body.gfx-modern .tile-dtap {
   box-shadow:
     inset 0 0 0 2px rgba(255,255,255,.24),
@@ -951,23 +789,17 @@ body.gfx-modern .tile-dtap.primed { animation:dtap-pulse-m .18s ease-out infinit
                      inset 0 -3px 8px rgba(0,0,0,.32), 0 6px 30px -2px var(--dtap); }
 }
 
-/* ── The strike line is the most important pixel on screen ──
-   Tapered so it reads as light rather than as a drawn rule, with a
-   bright core and a bloom the tile passes through. */
 body.gfx-modern .lane-hitbar {
   height:3px; border-radius:3px;
   background:linear-gradient(90deg,
     transparent 0%, var(--tap2) 16%, var(--tap2) 84%, transparent 100%);
   box-shadow:0 0 18px var(--glow-tap), 0 0 5px var(--tap);
 }
-/* The landing zone sits above the line, where the tile actually is
-   when it counts — not below it, behind the keycaps. */
 body.gfx-modern .lane-hitglow {
   bottom:54px; height:42px;
   background:linear-gradient(180deg, transparent 0%, var(--lane-hitglow-clr) 78%, transparent 100%);
 }
 
-/* ── Keycaps behave like keys ── */
 body.gfx-modern .lane-btn {
   background:linear-gradient(180deg, var(--bg4) 0%, var(--bg3) 62%, var(--bg2) 100%);
   border-top-color:rgba(255,255,255,.16);
@@ -982,15 +814,12 @@ body.gfx-modern .lane-btn:active {
 }
 body.gfx-modern .lane-key { text-shadow:0 1px 0 rgba(0,0,0,.65); }
 
-/* ── HUD ── */
 body.gfx-modern .hud-score-num { text-shadow:0 2px 14px rgba(0,0,0,.55); }
 body.gfx-modern .hud-combo {
   background:linear-gradient(180deg, var(--bg4), var(--bg3));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 2px 12px -5px var(--glow-tap);
 }
 
-/* ── Panels get one hairline of light along the top edge ──
-   The cheapest way to make a flat fill read as a surface facing up. */
 body.gfx-modern .song-row,
 body.gfx-modern .area-chip,
 body.gfx-modern .level-card,
@@ -1009,8 +838,6 @@ body.gfx-modern .avatar-card,
 body.gfx-modern #daily-card {
   box-shadow:inset 0 1px 0 rgba(255,255,255,.09), var(--elev-2);
 }
-/* With real elevation carrying the separation, the hard 1px stroke
-   softens — the lift reads the surface, not an outline. */
 body.gfx-modern .level-card,
 body.gfx-modern .avatar-card,
 body.gfx-modern #daily-card,
@@ -1019,8 +846,6 @@ body.gfx-modern .endless-band,
 body.gfx-modern .cam-songs {
   border-color:color-mix(in srgb, var(--border) 50%, transparent);
 }
-/* Cards lift toward the reader on hover — the key 3D beat, a stronger
-   key shadow plus a brighter top edge so the surface reads as rising. */
 body.gfx-modern .level-card:hover,
 body.gfx-modern .avatar-card:hover,
 body.gfx-modern #daily-card:hover {
@@ -1037,7 +862,6 @@ body.gfx-modern .song-row.done .song-no {
   box-shadow:inset 0 1px 0 rgba(255,255,255,.10), 0 0 12px -3px var(--good);
 }
 
-/* ── Chrome ── */
 body.gfx-modern #profile-bar,
 body.gfx-modern #home-hero {
   background-image:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,0) 70%);
@@ -1047,7 +871,6 @@ body.gfx-modern .hnav.active { text-shadow:0 0 14px var(--glow-dtap); }
 body.gfx-modern #pbar-avatar { box-shadow:0 3px 10px -4px rgba(0,0,0,.8); }
 body.gfx-modern .xp-fill { box-shadow:0 0 8px -1px var(--perfect); }
 
-/* ── Creator ── */
 body.gfx-modern .cr-cell-editor {
   box-shadow:0 18px 40px -10px rgba(0,0,0,.8), inset 0 1px 0 rgba(255,255,255,.06);
   background-image:linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,0) 60%);
@@ -1060,8 +883,6 @@ body.gfx-modern .cr-cell.is-dtap {
              0 2px 9px -5px var(--glow-dtap);
 }
 
-/* The light themes need the highlights inverted — a white sheen on a
-   near-white panel is invisible, and the shadow is what reads there. */
 body.gfx-modern.theme-paper .song-row,
 body.gfx-modern.theme-paper .area-chip,
 body.gfx-modern.theme-paper .avatar-card,
@@ -1091,36 +912,18 @@ body.gfx-modern.theme-concrete .lane::after {
 }
 
 
-/* ══ END UPDATED GRAPHICS ══ */
-
-/* ══════════════════════════════════════
-   CONTROLS POLISH — one consistent, physical response across the app's
-   buttons and top chrome. All static and token-driven, so it rides on
-   top of every theme and both graphics styles without touching either,
-   and none of it animates on its own (press and hover only), so the
-   Classic/Modern comparison stays exact.
-══════════════════════════════════════ */
-
-/* Every button dips a pixel when pressed — the same tactile beat whether
-   it's Play, Save, Apply or a shop buy. */
 .uname-btn:active, .ctf-apply:active, .cr-save-btn:active, .mb-close-btn:active,
 .ov-play-btn:active, #custom-av-buy-btn:active, .gen-go:active, .gen-play:active,
 .chaos-toggle:active, .glass-trans-btn:active, .shop-subnav button:active {
   transform:translateY(1px);
 }
 
-/* The home tabs take a faint seat on hover, so the hit target reads
-   before the click. The active tab keeps its underline and accent. */
 .hnav { border-radius:8px 8px 0 0; }
 .hnav:hover:not(.active) { background:color-mix(in srgb, var(--text) 6%, transparent); }
 
-/* Small lifts in the top chrome: the logo mark catches a hairline of the
-   accent instead of sitting as an empty well, and the coin count carries
-   a little more weight since it's the number the shop spends. */
 .logo-mark { box-shadow:inset 0 0 0 1px color-mix(in srgb, var(--accent) 22%, transparent); }
 #pbar-coins { font-weight:700; }
 
-/* ── Generate + Endless ── */
 .gen-row { display:flex; gap:8px; margin:0 0 6px; }
 .gen-main {
   flex:1; padding:12px; border-radius:11px; border:1px solid var(--accent);
@@ -1151,7 +954,6 @@ body.gfx-modern.theme-concrete .lane::after {
 .endless-sub { display:block; font-size:11px; color:var(--muted); font-family:var(--font-data); margin-top:1px; }
 
 
-/* ── Advanced panel: mode toggle + generation menu ── */
 .adv-modes {
   display:flex; gap:4px; margin-bottom:10px;
   background:var(--bg3); border:1px solid var(--border); border-radius:9px; padding:3px;
@@ -1180,13 +982,10 @@ body.gfx-modern.theme-concrete .lane::after {
 .gen-play { border-color:var(--border2); background:var(--bg3); color:var(--text); }
 .gen-play:hover { background:var(--bg4); }
 
-/* Endless as an era tab — a chip like the areas, tinted so it reads as
-   the special one at the end of the row. */
 .area-chip.endless-chip .ac-name { color:var(--dtap); }
 .area-chip.endless-chip.sel { background:color-mix(in srgb,var(--dtap) 16%,var(--bg2)); border-color:color-mix(in srgb,var(--dtap) 55%,var(--border)); }
 .area-chip.endless-chip.sel .ac-name { color:var(--dtap); }
 
-/* The endless panel shown in the list when its tab is selected. */
 .endless-pane { display:flex; flex-direction:column; gap:12px; padding:6px 2px; }
 .endless-band {
   display:flex; align-items:center; gap:12px; padding:14px; cursor:pointer;
@@ -1199,9 +998,6 @@ body.gfx-modern.theme-concrete .lane::after {
 .endless-band .eb-sub { font-size:11px; color:var(--muted); font-family:var(--font-data); margin-top:2px; }
 .endless-locked-note { padding:22px 16px; text-align:center; color:var(--muted); font-size:12px; border:1px dashed var(--border2); border-radius:12px; }
 
-/* ═══════════════════════════════════════
-   CREATOR (standard)
-═══════════════════════════════════════ */
 #creator { background:var(--bg); }
 .cr-header {
   display:flex; align-items:center; gap:10px; flex-wrap:wrap;
@@ -1248,8 +1044,6 @@ body.gfx-modern.theme-concrete .lane::after {
 .tool-btn.as { border-color:var(--accent);color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
 .cr-sep { width:1px; height:26px; background:var(--border); }
 
-/* Select mode: the marked block, the row the keyboard writes to, and the
-   toolbar that acts on a selection. */
 .cr-cell-sel { outline:2px solid var(--accent); outline-offset:-2px;
   box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 30%,transparent); }
 .cr-cell.cur { border-color:color-mix(in srgb,var(--accent) 45%,var(--border)); }
@@ -1295,9 +1089,6 @@ body.gfx-modern.theme-concrete .lane::after {
 .cr-cell.is-tap  { background:color-mix(in srgb,var(--tap) 40%,transparent); border-color:var(--tap); }
 .cr-cell.is-dtap { background:color-mix(in srgb,var(--dtap) 40%,transparent); border-color:var(--dtap); }
 
-/* Advanced mode: the chip shows its note name and a sustain dot, so a
-   chart reads at a glance. Everything else about the note is edited in
-   the popup that opens on a second tap. */
 .cr-cell-named {
   height:auto; min-height:24px; display:flex; align-items:center; justify-content:center;
   gap:3px; position:relative; font-family:var(--font-data); font-size:9px; font-weight:700;
@@ -1309,7 +1100,6 @@ body.gfx-modern.theme-concrete .lane::after {
   background:var(--perfect); box-shadow:0 0 3px var(--perfect);
 }
 
-/* ── The combined cell editor (type + pitch + sustain) ── */
 .cr-cell-editor {
   position:fixed; z-index:120; width:172px;
   background:var(--bg2); border:1px solid var(--border2); border-radius:11px;
@@ -1341,7 +1131,6 @@ body.gfx-modern.theme-concrete .lane::after {
 }
 .cce-schip.on { border-color:var(--perfect); color:var(--perfect); background:color-mix(in srgb,var(--perfect) 12%,transparent); }
 
-/* Per-note frequency selector inside cells (advanced mode) */
 .cr-cell.has-note-pick {
   height: auto; min-height: 24px; display:flex; flex-direction:column; align-items:stretch;
   padding: 2px 2px 2px 2px; gap: 2px;
@@ -1363,11 +1152,6 @@ body.gfx-modern.theme-concrete .lane::after {
 }
 .cr-add-btn:hover { border-color:var(--tap); color:var(--tap); }
 
-/* ── CREATOR BODY: grid on the left, advanced panel on the right ──
-   The panel used to open downward, between the toolbar and the grid,
-   which pushed the grid off the bottom of a window that cannot grow
-   taller. It opens sideways now and takes its space from a widened
-   window, so the chart you are editing never moves. */
 .cr-body { flex:1; display:flex; min-height:0; position:relative; }
 .cr-main { flex:1; display:flex; flex-direction:column; min-width:0; }
 
@@ -1382,20 +1166,15 @@ body.gfx-modern.theme-concrete .lane::after {
   overflow-y:auto; overflow-x:hidden;
   border-left-color:var(--border);
 }
-/* When the window is already as wide as it can go, the panel floats
-   over the grid rather than squeezing it — the pre-widening
-   behaviour, kept as the fallback so a panel is never unusable. */
 body.adv-overlay #adv-panel.open {
   position:absolute; top:0; right:0; bottom:0; z-index:30;
   box-shadow:-14px 0 30px -10px rgba(0,0,0,.55);
 }
-/* The panel's own controls have to survive a narrow column. */
 #adv-panel .lane-note-grid { grid-template-columns:repeat(2,1fr); }
 #adv-panel .bass-step-grid { gap:3px; }
 #adv-panel .bass-step { width:32px; height:30px; }
 .adv-section { font-size:10px; font-weight:700; color:var(--muted); letter-spacing:1.5px; text-transform:uppercase; margin-bottom:2px; }
 
-/* per-lane note picker */
 .lane-note-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:6px; }
 .lnote-col { display:flex; flex-direction:column; gap:4px; align-items:center; }
 .lnote-label { font-size:11px; font-weight:700; color:var(--tap); font-family:var(--font-data); }
@@ -1404,7 +1183,6 @@ body.adv-overlay #adv-panel.open {
   background:var(--bg3); color:var(--text); font-size:10px; outline:none; cursor:pointer;
 }
 
-/* bg sound settings */
 .bg-sound-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 .bg-radio-group { display:flex; gap:6px; }
 .bg-radio-btn {
@@ -1414,7 +1192,6 @@ body.adv-overlay #adv-panel.open {
 }
 .bg-radio-btn.sel { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 8%,transparent); }
 
-/* bass pattern editor */
 #bass-editor { display:none; flex-direction:column; gap:6px; margin-top:4px; }
 #bass-editor.open { display:flex; }
 .bass-step-grid { display:flex; gap:4px; flex-wrap:wrap; }
@@ -1433,9 +1210,6 @@ body.adv-overlay #adv-panel.open {
   background:var(--bg3); color:var(--text); font-size:11px; outline:none; width:120px;
 }
 
-/* ═══════════════════════════════════════
-   GAME SCREEN
-═══════════════════════════════════════ */
 #game { background:var(--bg); }
 #g-hud {
   padding:10px 16px 8px; display:flex; align-items:center;
@@ -1456,12 +1230,10 @@ body.adv-overlay #adv-panel.open {
   flex:1; position:relative; border-radius:10px; overflow:hidden;
   border:1px solid var(--border); transition:background .3s;
 }
-/* each lane has its own bg color for tap glow */
 .lane[data-lane="0"] { background:color-mix(in srgb,var(--tap) 4%,var(--bg2)); }
 .lane[data-lane="1"] { background:color-mix(in srgb,var(--dtap) 4%,var(--bg2)); }
 .lane[data-lane="2"] { background:color-mix(in srgb,var(--tap) 4%,var(--bg2)); }
 .lane[data-lane="3"] { background:color-mix(in srgb,var(--dtap) 4%,var(--bg2)); }
-/* scanlines */
 .lane::before {
   content:''; position:absolute; inset:0; z-index:0;
   background:repeating-linear-gradient(0deg,transparent,transparent 11px,var(--scanline-clr) 12px);
@@ -1476,7 +1248,6 @@ body.adv-overlay #adv-panel.open {
   position:absolute; bottom:41px; left:0; right:0; height:22px;
   background:var(--lane-hitglow-clr); z-index:2;
 }
-/* lane flash: replaces background briefly on tap */
 .lane.glow-tap  { background:color-mix(in srgb,var(--tap) 22%,var(--bg2)) !important; }
 .lane.glow-dtap { background:color-mix(in srgb,var(--dtap) 22%,var(--bg2)) !important; }
 
@@ -1496,11 +1267,6 @@ body.adv-overlay #adv-panel.open {
 }
 .lane-fb.show { opacity:1; }
 
-/* tiles */
-/* A tile is placed by transform alone (play.js: translateY(y)), anchored
-   at top:0. Moving it by `top` forced a layout and a repaint of the lane
-   every frame for every tile; a transform on its own layer is handled
-   by the compositor and costs the main thread nothing. */
 .tile {
   position:absolute; top:0; left:5px; right:5px; border-radius:7px; z-index:4;
   will-change:transform;
@@ -1533,7 +1299,6 @@ body.adv-overlay #adv-panel.open {
 }
 #g-menu-btn:hover { color:var(--text); }
 
-/* ── GAME OVERLAY ── */
 #g-overlay {
   position:absolute; inset:0; background:rgba(7,7,15,.95);
   backdrop-filter:blur(6px);
@@ -1575,7 +1340,6 @@ body.adv-overlay #adv-panel.open {
 .ov-play-btn:hover { background:color-mix(in srgb,var(--dtap) 25%,transparent); transform:scale(1.02); }
 .ov-hint { font-size:10px; color:var(--dim); font-family:var(--font-data); letter-spacing:1px; }
 
-/* ── SPEED HUD badge ── */
 #speed-badge {
   position:absolute; top:8px; right:14px;
   font-size:10px; font-weight:700; color:var(--accent);
@@ -1584,12 +1348,10 @@ body.adv-overlay #adv-panel.open {
 }
 #speed-badge.show { opacity:1; }
 
-/* scrollbar */
 ::-webkit-scrollbar { width:3px; }
 ::-webkit-scrollbar-track { background:transparent; }
 ::-webkit-scrollbar-thumb { background:var(--border2); border-radius:2px; }
 
-/* ── PROFILE BAR ── */
 #profile-bar {
   display:flex; align-items:center; gap:8px;
   padding:8px 14px 6px; border-bottom:1px solid var(--border);
@@ -1609,7 +1371,6 @@ body.adv-overlay #adv-panel.open {
 #pbar-coins { font-size:11px; color:var(--perfect); font-family:var(--font-data); }
 #pbar-hs { font-size:10px; color:var(--muted); font-family:var(--font-data); }
 
-/* ── HIGH SCORE DISPLAY ── */
 .hs-entry {
   display:flex; align-items:center; gap:8px;
   padding:8px 12px; border-radius:10px; background:var(--bg2);
@@ -1622,7 +1383,6 @@ body.adv-overlay #adv-panel.open {
 .hs-coins { font-size:10px; color:var(--perfect); }
 .hs-lvl { font-size:10px; color:var(--muted); }
 
-/* ── SHOP ── */
 .shop-section-head {
   font-size:10px; font-weight:700; letter-spacing:2px; color:var(--muted);
   font-family:var(--font-data); text-transform:uppercase; margin:10px 0 6px;
@@ -1651,7 +1411,6 @@ body.adv-overlay #adv-panel.open {
 .av-badge-owned { background:color-mix(in srgb,var(--good) 20%,transparent); color:var(--good); }
 .av-badge-eq { background:color-mix(in srgb,var(--dtap) 20%,transparent); color:var(--dtap); }
 
-/* ── SHOP sub-nav ── */
 .shop-subnav { display:flex; gap:4px; margin-bottom:12px; }
 .shop-subnav button {
   flex:1; padding:7px 4px; border-radius:8px; font-size:11px; font-weight:700;
@@ -1660,7 +1419,6 @@ body.adv-overlay #adv-panel.open {
 }
 .shop-subnav button.active { border-color:var(--accent); background:color-mix(in srgb,var(--accent) 12%,transparent); color:var(--accent); }
 
-/* rarity tag on shop cards */
 .rarity-tag {
   position:absolute; top:4px; left:4px; font-size:7px; font-weight:700;
   padding:2px 5px; border-radius:4px; text-transform:uppercase; letter-spacing:.5px;
@@ -1668,7 +1426,6 @@ body.adv-overlay #adv-panel.open {
   mix-blend-mode: normal;
   text-shadow: 0 1px 2px rgba(0,0,0,0.4);
 }
-/* trail preview swatch */
 .trail-swatch {
   width:60px; height:80px; border-radius:6px; display:flex; align-items:flex-end;
   justify-content:center; overflow:hidden; position:relative; background:var(--bg3);
@@ -1682,7 +1439,6 @@ body.adv-overlay #adv-panel.open {
   to   { transform:scaleY(1.1) translateY(-2px); opacity:1; }
 }
 
-/* ── MYSTERY BOX open animation ── */
 #mystery-overlay {
   position:fixed; inset:0; background:var(--overlay-bg); backdrop-filter:blur(6px);
   display:flex; flex-direction:column; align-items:center; justify-content:center;
@@ -1712,7 +1468,6 @@ body.adv-overlay #adv-panel.open {
 }
 .mb-close-btn:hover { background:color-mix(in srgb,var(--accent) 25%,transparent); }
 
-/* ── STREAK note trail particles (in-game) ── */
 .streak-particle {
   position:absolute; width:9px; height:9px; border-radius:50%; z-index:6;
   pointer-events:none; filter:blur(.5px);
@@ -1723,7 +1478,6 @@ body.adv-overlay #adv-panel.open {
   100% { transform:translateY(-46px) scale(.2); opacity:0; }
 }
 
-/* ── Minimalist normal tap pulse (in-game) ── */
 .tap-pulse {
   position:absolute; left:50%; transform:translate(-50%,-50%);
   border-radius:50%; border:1.5px solid var(--tap); z-index:5; pointer-events:none;
@@ -1734,7 +1488,6 @@ body.adv-overlay #adv-panel.open {
   100% { width:40px; height:40px; opacity:0; }
 }
 
-/* Custom avatar upload area */
 .custom-av-upload {
   border:2px dashed var(--border2); border-radius:10px; padding:14px;
   display:flex; flex-direction:column; align-items:center; gap:6px;
@@ -1747,7 +1500,6 @@ body.adv-overlay #adv-panel.open {
   display:flex; align-items:center; justify-content:center;
 }
 
-/* ── CHAOS MODE ── */
 .chaos-toggle {
   font-size:11px; font-weight:700; padding:8px 18px; border-radius:8px;
   border:1px solid var(--border2); background:var(--bg3);
@@ -1763,7 +1515,6 @@ body.adv-overlay #adv-panel.open {
   font-family:var(--font-data); pointer-events:none;
 }
 
-/* ── END GAME overlay additions ── */
 #ov-currency-reward {
   font-size:13px; font-weight:700; color:var(--perfect);
   font-family:var(--font-data); display:none;
@@ -1772,7 +1523,6 @@ body.adv-overlay #adv-panel.open {
   font-size:10px; color:var(--muted); font-family:var(--font-data); display:none;
 }
 
-/* ── USERNAME SETUP ── */
 #username-screen { background:var(--bg); }
 .uname-wrap {
   flex:1; display:flex; flex-direction:column; align-items:center;
@@ -1795,18 +1545,6 @@ body.adv-overlay #adv-panel.open {
 }
 .uname-btn:hover { opacity:.85; }
 
-/* ══════════════════════════════════════
-   MODERN SHELL — the Material-3 pass over the whole popup: a rounder
-   shape scale, tonal raised surfaces, state-layer hovers, pill buttons
-   and a more expressive type scale. It sits at the end of the base
-   layer, so it upgrades every component in BOTH graphics styles; the
-   modern graphics layer then layers dimensional lighting on top. All static
-   — press and hover only — so the Classic/Modern render comparison and
-   its stability check stay exact.
-══════════════════════════════════════ */
-
-/* ── Shape: the card family rounds up to the large step, so the whole
-      surface reads as soft stacked cards rather than boxed panels. ── */
 .level-card, .avatar-card, .theme-card, #daily-card, #endless-card,
 .endless-band, .hs-entry, .cam-songs, .custom-av-preview, .trail-swatch,
 .mb-reveal-thumb, .cr-cell-editor {
@@ -1814,13 +1552,9 @@ body.adv-overlay #adv-panel.open {
 }
 .leg-pill { border-radius:var(--r-pill); }
 
-/* ── State layers: hover washes the on-surface tone, MD3-style, in one
-      consistent value across rows and tabs. ── */
 .song-row:hover { background:var(--state-hover); }
 .hnav:hover:not(.active) { background:var(--state-hover); }
 
-/* ── Buttons: a pill-forward, tactile language on the headline actions,
-      with the primary Play carrying its own elevation. ── */
 .ov-play-btn, .uname-btn, .ctf-apply, .mb-close-btn,
 #custom-av-buy-btn, .chaos-toggle, .cr-save-btn, .gen-main {
   border-radius:var(--r-pill);
@@ -1828,19 +1562,11 @@ body.adv-overlay #adv-panel.open {
 .ov-play-btn { box-shadow:var(--elev-2); padding:13px 46px; }
 .uname-btn, .ctf-apply, #custom-av-buy-btn { box-shadow:var(--elev-1); }
 
-/* ── Type: a more expressive display scale on the headline moments. ── */
 .hero-text h1     { font-size:30px; letter-spacing:-1.8px; }
 .cam-head .ch-name { font-size:20px; }
 #ov-title         { font-size:26px; }
 .hud-score-num    { font-size:32px; }
 
-/* ══════════════════════════════════════
-   COLOR ENERGY — the one primary action on each screen carries the
-   two-LED brand gradient, filled and lifted, so it reads with real
-   colour confidence instead of a quiet tint. Secondary and tonal
-   buttons stay calm, so the gradient always points at the main move.
-   All static; the gradient is deterministic, so render-stability holds.
-══════════════════════════════════════ */
 .ov-play-btn, .uname-btn, .ctf-apply, #custom-av-buy-btn, .gen-main, .mb-close-btn {
   background:var(--grad-brand); color:#fff; border:none; box-shadow:var(--elev-2);
 }
@@ -1849,10 +1575,6 @@ body.adv-overlay #adv-panel.open {
   filter:brightness(1.08); background:var(--grad-brand); opacity:1;
 }
 
-/* An emphasized easing on the interactive families, so hover, press and
-   the panel/tab transitions feel snappy and intentional rather than
-   linear. Longhand, so it only swaps the curve on the existing
-   transitions — durations are untouched. */
 .level-card, .avatar-card, .theme-card, .song-row, .area-chip, .hnav,
 .endless-band, #daily-card, #endless-card, button {
   transition-timing-function:var(--ease-emph);
@@ -1861,8 +1583,19 @@ body.adv-overlay #adv-panel.open {
 </style>
 </head>
 <body>
+<svg id="emblem-sprite" width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+<symbol id="emblem-farmstead" viewBox="0 0 64 64"><path fill="#F0C030" d="M15 16h1v1h-1zM31 24h1v1h-1zM29 25h4v1h-4zM28 26h6v1h-6zM28 27h3v1h-3zM32 27h2v1h-2zM26 28h6v1h-6zM33 28h2v1h-2zM24 29h8v1h-8zM33 29h3v1h-3zM23 30h4v1h-4zM28 30h5v1h-5zM34 30h3v1h-3zM23 31h5v1h-5zM29 31h8v1h-8zM21 32h8v1h-8zM30 32h7v1h-7zM22 33h8v1h-8zM31 33h5v1h-5zM23 34h1v1h-1zM25 34h10v1h-10zM24 35h1v1h-1zM27 35h6v1h-6zM25 36h1v1h-1zM28 36h4v1h-4zM41 36h1v1h-1zM26 37h1v1h-1zM29 37h2v1h-2zM40 37h3v1h-3zM27 38h1v1h-1zM29 38h1v1h-1zM39 38h5v1h-5zM28 39h1v1h-1zM38 39h5v1h-5zM44 39h1v1h-1zM36 40h7v1h-7zM45 40h1v1h-1zM35 41h9v1h-9zM46 41h1v1h-1zM33 42h13v1h-13zM47 42h2v1h-2zM31 43h16v1h-16zM48 43h2v1h-2zM32 44h11v1h-11zM44 44h4v1h-4zM49 44h3v1h-3zM32 45h12v1h-12zM45 45h4v1h-4zM50 45h3v1h-3zM33 46h6v1h-6zM40 46h5v1h-5zM46 46h4v1h-4zM51 46h3v1h-3zM34 47h1v1h-1zM36 47h4v1h-4zM41 47h5v1h-5zM47 47h8v1h-8zM34 48h1v1h-1zM37 48h3v1h-3zM41 48h5v1h-5zM48 48h5v1h-5zM54 48h2v1h-2zM35 49h1v1h-1zM37 49h4v1h-4zM42 49h5v1h-5zM48 49h6v1h-6zM55 49h3v1h-3zM35 50h2v1h-2zM38 50h3v1h-3zM42 50h6v1h-6zM49 50h10v1h-10zM36 51h2v1h-2zM39 51h3v1h-3zM43 51h6v1h-6zM50 51h8v1h-8zM37 52h2v1h-2zM40 52h16v1h-16zM37 53h2v1h-2zM40 53h17v1h-17zM38 54h2v1h-2zM41 54h18v1h-18zM38 55h3v1h-3zM42 55h16v1h-16zM39 56h14v1h-14zM57 56h1v1h-1zM39 57h12v1h-12zM52 57h2v1h-2zM40 58h1v1h-1zM42 58h7v1h-7zM50 58h1v1h-1zM43 59h1v1h-1zM45 59h2v1h-2zM48 59h1v1h-1zM46 60h1v1h-1zM49 60h1v1h-1z"/><path fill="#906000" d="M25 10h1v1h-1zM25 12h2v1h-2zM21 13h1v1h-1zM25 13h2v1h-2zM21 14h2v1h-2zM26 14h1v1h-1zM22 15h1v1h-1zM27 15h1v1h-1zM18 16h1v1h-1zM23 16h1v1h-1zM19 17h1v1h-1zM24 17h1v1h-1zM28 17h1v1h-1zM15 18h1v1h-1zM24 18h1v1h-1zM28 18h1v1h-1zM16 19h1v1h-1zM20 19h1v1h-1zM25 19h1v1h-1zM29 19h1v1h-1zM17 20h1v1h-1zM21 20h1v1h-1zM29 20h1v1h-1zM18 21h1v1h-1zM23 21h1v1h-1zM26 21h1v1h-1zM29 21h2v1h-2zM19 22h1v1h-1zM24 22h1v1h-1zM30 22h1v1h-1zM14 23h1v1h-1zM17 23h1v1h-1zM20 23h1v1h-1zM24 23h2v1h-2zM30 23h1v1h-1zM10 24h1v1h-1zM14 24h2v1h-2zM18 24h1v1h-1zM21 24h1v1h-1zM26 24h2v1h-2zM11 25h1v1h-1zM16 25h1v1h-1zM19 25h1v1h-1zM22 25h1v1h-1zM11 26h2v1h-2zM17 26h1v1h-1zM19 26h2v1h-2zM23 26h2v1h-2zM27 26h1v1h-1zM13 27h2v1h-2zM18 27h1v1h-1zM20 27h2v1h-2zM25 27h2v1h-2zM15 28h1v1h-1zM21 28h1v1h-1zM16 29h2v1h-2zM22 29h1v1h-1zM18 30h1v1h-1zM22 30h1v1h-1zM19 31h3v1h-3zM19 32h1v1h-1zM38 32h2v1h-2zM37 33h3v1h-3zM0 34h1v1h-1zM35 34h6v1h-6zM0 35h1v1h-1zM34 35h7v1h-7zM33 36h8v1h-8zM32 37h8v1h-8zM31 38h8v1h-8zM30 39h7v1h-7zM29 40h7v1h-7zM29 41h5v1h-5zM29 42h3v1h-3z"/><path fill="#F0D890" d="M19 9h2v1h-2zM23 9h3v1h-3zM18 10h1v1h-1zM21 10h2v1h-2zM26 10h1v1h-1zM18 11h1v1h-1zM26 11h1v1h-1zM17 12h3v1h-3zM16 13h1v1h-1zM27 13h1v1h-1zM16 14h1v1h-1zM27 14h1v1h-1zM16 15h2v1h-2zM28 15h1v1h-1zM11 17h4v1h-4zM11 18h1v1h-1zM14 18h1v1h-1zM11 19h1v1h-1zM11 20h1v1h-1zM30 20h1v1h-1zM10 21h1v1h-1zM9 22h1v1h-1zM31 22h1v1h-1zM8 23h2v1h-2zM7 24h1v1h-1zM32 24h1v1h-1zM7 25h1v1h-1zM33 25h1v1h-1zM7 26h1v1h-1zM34 27h1v1h-1zM9 28h1v1h-1zM35 28h1v1h-1zM10 29h1v1h-1zM36 29h1v1h-1zM11 30h1v1h-1zM37 30h1v1h-1zM13 31h1v1h-1zM37 31h3v1h-3zM19 33h3v1h-3zM40 33h1v1h-1zM21 34h2v1h-2zM23 35h1v1h-1zM24 36h1v1h-1zM42 36h1v1h-1zM25 37h1v1h-1zM43 37h1v1h-1zM26 38h1v1h-1zM44 38h1v1h-1zM27 39h1v1h-1zM45 39h1v1h-1zM27 40h1v1h-1zM46 40h1v1h-1zM47 41h2v1h-2zM28 42h1v1h-1zM49 42h2v1h-2zM29 43h2v1h-2zM50 43h2v1h-2zM30 44h2v1h-2zM52 44h1v1h-1zM31 45h1v1h-1zM53 45h1v1h-1zM32 46h1v1h-1zM54 46h2v1h-2zM32 47h2v1h-2zM55 47h2v1h-2zM33 48h1v1h-1zM56 48h2v1h-2zM34 49h1v1h-1zM58 49h1v1h-1zM34 50h1v1h-1zM59 50h2v1h-2zM35 51h1v1h-1zM58 51h4v1h-4zM36 52h1v1h-1zM56 52h8v1h-8zM36 53h1v1h-1zM57 53h7v1h-7zM37 54h1v1h-1zM59 54h5v1h-5zM37 55h1v1h-1zM58 55h4v1h-4zM38 56h1v1h-1zM53 56h4v1h-4zM58 56h5v1h-5zM38 57h1v1h-1zM51 57h1v1h-1zM54 57h8v1h-8zM39 58h1v1h-1zM41 58h1v1h-1zM49 58h1v1h-1zM51 58h8v1h-8zM39 59h4v1h-4zM44 59h1v1h-1zM47 59h1v1h-1zM49 59h7v1h-7zM57 59h2v1h-2zM40 60h1v1h-1zM42 60h4v1h-4zM47 60h2v1h-2zM50 60h7v1h-7zM43 61h2v1h-2zM46 61h2v1h-2zM49 61h5v1h-5zM55 61h2v1h-2zM46 62h3v1h-3zM50 62h5v1h-5zM47 63h2v1h-2zM51 63h5v1h-5z"/><path fill="#C09018" d="M19 10h2v1h-2zM23 10h2v1h-2zM19 11h7v1h-7zM20 12h5v1h-5zM17 13h4v1h-4zM22 13h3v1h-3zM17 14h4v1h-4zM23 14h3v1h-3zM18 15h4v1h-4zM23 15h4v1h-4zM16 16h2v1h-2zM19 16h4v1h-4zM24 16h5v1h-5zM15 17h4v1h-4zM20 17h4v1h-4zM25 17h3v1h-3zM12 18h2v1h-2zM16 18h8v1h-8zM25 18h3v1h-3zM29 18h1v1h-1zM12 19h4v1h-4zM17 19h3v1h-3zM21 19h4v1h-4zM26 19h3v1h-3zM12 20h5v1h-5zM18 20h3v1h-3zM22 20h7v1h-7zM11 21h7v1h-7zM19 21h4v1h-4zM24 21h2v1h-2zM27 21h2v1h-2zM10 22h9v1h-9zM20 22h4v1h-4zM25 22h5v1h-5zM10 23h4v1h-4zM15 23h2v1h-2zM18 23h2v1h-2zM21 23h3v1h-3zM26 23h4v1h-4zM31 23h1v1h-1zM8 24h2v1h-2zM11 24h3v1h-3zM16 24h2v1h-2zM19 24h2v1h-2zM22 24h4v1h-4zM28 24h3v1h-3zM8 25h3v1h-3zM12 25h4v1h-4zM17 25h2v1h-2zM20 25h2v1h-2zM23 25h6v1h-6zM8 26h3v1h-3zM13 26h4v1h-4zM18 26h1v1h-1zM21 26h2v1h-2zM25 26h2v1h-2zM8 27h5v1h-5zM15 27h3v1h-3zM19 27h1v1h-1zM22 27h3v1h-3zM27 27h1v1h-1zM31 27h1v1h-1zM10 28h5v1h-5zM16 28h5v1h-5zM22 28h4v1h-4zM32 28h1v1h-1zM11 29h5v1h-5zM18 29h4v1h-4zM23 29h1v1h-1zM32 29h1v1h-1zM12 30h6v1h-6zM19 30h3v1h-3zM27 30h1v1h-1zM33 30h1v1h-1zM14 31h5v1h-5zM22 31h1v1h-1zM28 31h1v1h-1zM16 32h3v1h-3zM20 32h1v1h-1zM29 32h1v1h-1zM37 32h1v1h-1zM30 33h1v1h-1zM36 33h1v1h-1zM24 34h1v1h-1zM25 35h2v1h-2zM33 35h1v1h-1zM41 35h1v1h-1zM26 36h2v1h-2zM32 36h1v1h-1zM27 37h2v1h-2zM31 37h1v1h-1zM28 38h1v1h-1zM30 38h1v1h-1zM29 39h1v1h-1zM37 39h1v1h-1zM43 39h1v1h-1zM28 40h1v1h-1zM43 40h2v1h-2zM28 41h1v1h-1zM34 41h1v1h-1zM44 41h2v1h-2zM32 42h1v1h-1zM46 42h1v1h-1zM47 43h1v1h-1zM43 44h1v1h-1zM48 44h1v1h-1zM44 45h1v1h-1zM49 45h1v1h-1zM39 46h1v1h-1zM45 46h1v1h-1zM50 46h1v1h-1zM35 47h1v1h-1zM40 47h1v1h-1zM46 47h1v1h-1zM35 48h2v1h-2zM40 48h1v1h-1zM46 48h2v1h-2zM53 48h1v1h-1zM36 49h1v1h-1zM41 49h1v1h-1zM47 49h1v1h-1zM54 49h1v1h-1zM37 50h1v1h-1zM41 50h1v1h-1zM48 50h1v1h-1zM38 51h1v1h-1zM42 51h1v1h-1zM49 51h1v1h-1zM39 52h1v1h-1zM39 53h1v1h-1zM40 54h1v1h-1zM41 55h1v1h-1z"/></symbol>
+<symbol id="emblem-egypt" viewBox="0 0 64 64"><path fill="#C09018" d="M33 15h1v1h-1zM33 16h1v1h-1zM32 17h2v1h-2zM31 18h5v1h-5zM31 19h3v1h-3zM35 19h1v1h-1zM30 20h4v1h-4zM36 20h1v1h-1zM30 21h7v1h-7zM29 22h9v1h-9zM29 23h1v1h-1zM31 23h1v1h-1zM33 23h4v1h-4zM28 24h2v1h-2zM31 24h4v1h-4zM36 24h3v1h-3zM28 25h11v1h-11zM27 26h13v1h-13zM27 27h14v1h-14zM27 28h3v1h-3zM32 28h1v1h-1zM36 28h5v1h-5zM26 29h4v1h-4zM37 29h5v1h-5zM25 30h4v1h-4zM30 30h1v1h-1zM38 30h4v1h-4zM25 31h4v1h-4zM39 31h4v1h-4zM24 32h1v1h-1zM27 32h2v1h-2zM24 33h4v1h-4zM39 33h5v1h-5zM23 34h2v1h-2zM26 34h2v1h-2zM29 34h1v1h-1zM33 34h1v1h-1zM39 34h5v1h-5zM23 35h5v1h-5zM33 35h2v1h-2zM39 35h6v1h-6zM22 36h1v1h-1zM27 36h1v1h-1zM33 36h2v1h-2zM39 36h3v1h-3zM43 36h1v1h-1zM22 37h6v1h-6zM29 37h1v1h-1zM33 37h2v1h-2zM38 37h8v1h-8zM21 38h8v1h-8zM33 38h1v1h-1zM38 38h6v1h-6zM45 38h1v1h-1zM20 39h4v1h-4zM26 39h3v1h-3zM38 39h2v1h-2zM42 39h5v1h-5zM22 40h2v1h-2zM42 40h1v1h-1zM45 40h1v1h-1zM19 41h6v1h-6zM26 41h1v1h-1zM42 41h6v1h-6zM19 42h6v1h-6zM42 42h6v1h-6zM19 43h6v1h-6zM42 43h5v1h-5zM18 44h4v1h-4zM23 44h2v1h-2zM42 44h2v1h-2zM45 44h5v1h-5zM17 45h8v1h-8zM42 45h2v1h-2zM45 45h5v1h-5zM20 46h2v1h-2zM24 46h1v1h-1zM26 46h4v1h-4zM37 46h13v1h-13zM16 47h15v1h-15zM36 47h4v1h-4zM41 47h3v1h-3zM45 47h6v1h-6zM16 48h15v1h-15zM36 48h16v1h-16zM15 49h2v1h-2zM18 49h1v1h-1zM20 49h3v1h-3zM25 49h2v1h-2zM29 49h2v1h-2zM36 49h5v1h-5zM42 49h4v1h-4zM47 49h4v1h-4zM15 50h16v1h-16zM36 50h6v1h-6zM43 50h10v1h-10zM14 51h5v1h-5zM20 51h10v1h-10zM36 51h18v1h-18zM14 52h7v1h-7zM25 52h5v1h-5zM36 52h2v1h-2zM39 52h2v1h-2zM43 52h5v1h-5zM49 52h5v1h-5zM13 53h4v1h-4zM18 53h12v1h-12zM36 53h19v1h-19zM13 54h17v1h-17zM37 54h2v1h-2zM41 54h1v1h-1zM44 54h11v1h-11zM12 55h13v1h-13zM26 55h3v1h-3zM37 55h9v1h-9zM47 55h9v1h-9zM12 56h4v1h-4zM19 56h3v1h-3zM23 56h1v1h-1zM27 56h2v1h-2zM37 56h19v1h-19zM11 57h18v1h-18zM38 57h2v1h-2zM41 57h16v1h-16zM11 58h4v1h-4zM16 58h12v1h-12zM38 58h9v1h-9zM48 58h9v1h-9zM11 59h9v1h-9zM21 59h2v1h-2zM24 59h1v1h-1zM27 59h1v1h-1zM38 59h20v1h-20zM10 60h49v1h-49zM9 61h3v1h-3zM15 61h5v1h-5zM22 61h3v1h-3zM27 61h1v1h-1zM29 61h7v1h-7zM57 61h1v1h-1zM10 62h1v1h-1zM12 62h16v1h-16z"/><path fill="#F0C060" d="M32 15h1v1h-1zM32 16h1v1h-1zM34 16h1v1h-1zM34 17h1v1h-1zM34 19h1v1h-1zM34 20h2v1h-2zM37 21h1v1h-1zM30 23h1v1h-1zM32 23h1v1h-1zM37 23h2v1h-2zM30 24h1v1h-1zM35 24h1v1h-1zM39 25h1v1h-1zM26 28h1v1h-1zM30 28h2v1h-2zM33 28h3v1h-3zM30 29h7v1h-7zM29 30h1v1h-1zM31 30h7v1h-7zM29 31h10v1h-10zM25 32h2v1h-2zM29 32h15v1h-15zM28 33h11v1h-11zM25 34h1v1h-1zM28 34h1v1h-1zM30 34h3v1h-3zM34 34h5v1h-5zM44 34h1v1h-1zM22 35h1v1h-1zM28 35h5v1h-5zM35 35h4v1h-4zM23 36h4v1h-4zM28 36h5v1h-5zM35 36h4v1h-4zM42 36h1v1h-1zM44 36h2v1h-2zM21 37h1v1h-1zM28 37h1v1h-1zM30 37h3v1h-3zM35 37h3v1h-3zM29 38h4v1h-4zM34 38h4v1h-4zM44 38h1v1h-1zM46 38h1v1h-1zM24 39h2v1h-2zM29 39h9v1h-9zM40 39h2v1h-2zM20 40h2v1h-2zM24 40h18v1h-18zM43 40h2v1h-2zM46 40h2v1h-2zM25 41h1v1h-1zM27 41h15v1h-15zM25 42h17v1h-17zM48 42h1v1h-1zM18 43h1v1h-1zM25 43h17v1h-17zM47 43h2v1h-2zM22 44h1v1h-1zM25 44h17v1h-17zM44 44h1v1h-1zM25 45h17v1h-17zM44 45h1v1h-1zM50 45h1v1h-1zM17 46h3v1h-3zM22 46h2v1h-2zM25 46h1v1h-1zM30 46h7v1h-7zM50 46h1v1h-1zM31 47h5v1h-5zM40 47h1v1h-1zM44 47h1v1h-1zM51 47h1v1h-1zM31 48h5v1h-5zM17 49h1v1h-1zM19 49h1v1h-1zM23 49h2v1h-2zM27 49h2v1h-2zM31 49h5v1h-5zM41 49h1v1h-1zM46 49h1v1h-1zM51 49h2v1h-2zM31 50h5v1h-5zM42 50h1v1h-1zM19 51h1v1h-1zM30 51h6v1h-6zM21 52h4v1h-4zM30 52h6v1h-6zM38 52h1v1h-1zM41 52h2v1h-2zM48 52h1v1h-1zM17 53h1v1h-1zM30 53h6v1h-6zM30 54h7v1h-7zM39 54h2v1h-2zM42 54h2v1h-2zM25 55h1v1h-1zM29 55h8v1h-8zM46 55h1v1h-1zM16 56h3v1h-3zM22 56h1v1h-1zM24 56h3v1h-3zM29 56h8v1h-8zM56 56h1v1h-1zM29 57h9v1h-9zM40 57h1v1h-1zM10 58h1v1h-1zM15 58h1v1h-1zM28 58h10v1h-10zM47 58h1v1h-1zM57 58h1v1h-1zM10 59h1v1h-1zM20 59h1v1h-1zM23 59h1v1h-1zM25 59h2v1h-2zM28 59h10v1h-10zM12 61h3v1h-3zM20 61h2v1h-2zM25 61h2v1h-2zM28 61h1v1h-1zM36 61h21v1h-21zM58 61h1v1h-1zM9 62h1v1h-1zM11 62h1v1h-1zM28 62h21v1h-21z"/><path fill="#F0F0C0" d="M31 16h1v1h-1zM31 17h1v1h-1zM35 17h1v1h-1zM30 18h1v1h-1zM30 19h1v1h-1zM36 19h1v1h-1zM29 21h1v1h-1zM28 22h1v1h-1zM28 23h1v1h-1zM27 24h1v1h-1zM27 25h1v1h-1zM26 26h1v1h-1zM26 27h1v1h-1zM25 28h1v1h-1zM41 28h1v1h-1zM25 29h1v1h-1zM24 30h1v1h-1zM42 30h1v1h-1zM24 31h1v1h-1zM23 32h1v1h-1zM23 33h1v1h-1zM22 34h1v1h-1zM45 35h1v1h-1zM21 36h1v1h-1zM20 38h1v1h-1zM47 39h1v1h-1zM19 40h1v1h-1zM48 41h1v1h-1zM18 42h1v1h-1zM49 43h1v1h-1zM17 44h1v1h-1zM16 46h1v1h-1zM51 46h1v1h-1zM15 48h1v1h-1zM14 50h1v1h-1zM13 52h1v1h-1zM54 52h1v1h-1zM12 54h1v1h-1zM55 54h1v1h-1zM11 56h1v1h-1zM10 57h1v1h-1zM9 58h1v1h-1zM9 59h1v1h-1zM9 60h1v1h-1zM49 62h4v1h-4z"/></symbol>
+<symbol id="emblem-greece" viewBox="0 0 64 64"><path fill="#C0C0C0" d="M25 27h3v1h-3zM23 28h3v1h-3zM22 29h2v1h-2zM20 30h2v1h-2zM16 31h4v1h-4zM14 32h3v1h-3zM13 33h2v1h-2zM28 34h10v1h-10zM7 35h50v1h-50zM6 36h15v1h-15zM26 36h8v1h-8zM35 36h9v1h-9zM46 36h4v1h-4zM51 36h1v1h-1zM54 36h2v1h-2zM9 37h2v1h-2zM19 37h2v1h-2zM29 37h3v1h-3zM40 37h2v1h-2zM46 37h6v1h-6zM54 37h1v1h-1zM9 38h2v1h-2zM19 38h2v1h-2zM29 38h3v1h-3zM40 38h2v1h-2zM48 38h2v1h-2zM9 39h2v1h-2zM19 39h2v1h-2zM29 39h3v1h-3zM40 39h2v1h-2zM48 39h2v1h-2zM9 40h2v1h-2zM19 40h2v1h-2zM30 40h2v1h-2zM40 40h2v1h-2zM48 40h2v1h-2zM9 41h2v1h-2zM19 41h2v1h-2zM30 41h2v1h-2zM40 41h2v1h-2zM48 41h2v1h-2zM9 42h2v1h-2zM19 42h2v1h-2zM30 42h2v1h-2zM40 42h2v1h-2zM48 42h2v1h-2zM9 43h2v1h-2zM19 43h2v1h-2zM30 43h2v1h-2zM40 43h2v1h-2zM48 43h2v1h-2zM9 44h2v1h-2zM19 44h2v1h-2zM30 44h2v1h-2zM40 44h2v1h-2zM48 44h2v1h-2zM9 45h2v1h-2zM19 45h2v1h-2zM30 45h2v1h-2zM40 45h2v1h-2zM48 45h2v1h-2zM9 46h2v1h-2zM19 46h2v1h-2zM30 46h2v1h-2zM40 46h2v1h-2zM48 46h2v1h-2zM9 47h2v1h-2zM19 47h2v1h-2zM30 47h2v1h-2zM40 47h2v1h-2zM48 47h2v1h-2zM9 48h2v1h-2zM19 48h2v1h-2zM29 48h3v1h-3zM40 48h2v1h-2zM48 48h2v1h-2zM9 49h2v1h-2zM19 49h2v1h-2zM29 49h3v1h-3zM40 49h2v1h-2zM48 49h2v1h-2zM9 50h1v1h-1zM19 50h2v1h-2zM29 50h3v1h-3zM40 50h2v1h-2zM48 50h2v1h-2zM8 51h2v1h-2zM19 51h2v1h-2zM29 51h3v1h-3zM39 51h3v1h-3zM48 51h2v1h-2zM8 52h2v1h-2zM19 52h2v1h-2zM29 52h3v1h-3zM39 52h3v1h-3zM48 52h2v1h-2zM8 53h2v1h-2zM19 53h2v1h-2zM29 53h2v1h-2zM39 53h3v1h-3zM48 53h2v1h-2zM8 54h2v1h-2zM19 54h2v1h-2zM29 54h2v1h-2zM39 54h3v1h-3zM48 54h2v1h-2zM8 55h2v1h-2zM19 55h2v1h-2zM29 55h2v1h-2zM39 55h3v1h-3zM48 55h2v1h-2zM8 56h2v1h-2zM19 56h2v1h-2zM29 56h2v1h-2zM39 56h3v1h-3zM48 56h2v1h-2zM8 57h2v1h-2zM19 57h2v1h-2zM29 57h2v1h-2zM39 57h3v1h-3zM48 57h2v1h-2zM8 58h2v1h-2zM19 58h2v1h-2zM29 58h2v1h-2zM39 58h3v1h-3zM48 58h2v1h-2zM8 59h2v1h-2zM19 59h2v1h-2zM29 59h2v1h-2zM39 59h3v1h-3zM48 59h2v1h-2zM8 60h2v1h-2zM19 60h2v1h-2zM30 60h1v1h-1zM39 60h3v1h-3zM8 61h1v1h-1zM19 61h2v1h-2zM30 61h1v1h-1zM40 61h2v1h-2zM19 62h2v1h-2zM30 62h1v1h-1zM20 63h1v1h-1z"/></symbol>
+<symbol id="emblem-rome" viewBox="0 0 64 64"><path fill="#D8A830" d="M36 32h5v1h-5zM31 33h15v1h-15zM30 34h2v1h-2zM44 34h5v1h-5zM47 35h4v1h-4zM48 36h4v1h-4zM52 37h2v1h-2zM53 38h2v1h-2zM54 39h2v1h-2zM41 40h5v1h-5zM54 40h2v1h-2zM40 41h6v1h-6zM54 41h2v1h-2zM39 42h8v1h-8zM54 42h2v1h-2zM38 43h9v1h-9zM53 43h4v1h-4zM38 44h9v1h-9zM53 44h4v1h-4zM38 45h9v1h-9zM53 45h3v1h-3zM38 46h9v1h-9zM52 46h4v1h-4zM38 47h8v1h-8zM47 47h2v1h-2zM50 47h5v1h-5zM7 48h1v1h-1zM38 48h15v1h-15zM6 49h1v1h-1zM40 49h12v1h-12zM6 50h1v1h-1zM40 50h1v1h-1zM42 50h9v1h-9zM6 51h1v1h-1zM41 51h9v1h-9zM6 52h1v1h-1zM35 52h13v1h-13zM6 53h1v1h-1zM35 53h11v1h-11zM6 54h2v1h-2zM29 54h13v1h-13zM43 54h1v1h-1zM7 55h1v1h-1zM25 55h11v1h-11zM37 55h3v1h-3zM8 56h5v1h-5zM16 56h1v1h-1zM22 56h14v1h-14zM37 56h1v1h-1zM9 57h25v1h-25zM11 58h17v1h-17zM15 59h1v1h-1zM19 59h2v1h-2z"/><path fill="#487818" d="M37 34h5v1h-5zM37 35h3v1h-3zM57 35h2v1h-2zM37 36h2v1h-2zM57 36h2v1h-2zM36 37h2v1h-2zM56 37h2v1h-2zM36 38h2v1h-2zM56 38h2v1h-2zM50 39h1v1h-1zM56 39h2v1h-2zM50 40h2v1h-2zM56 40h2v1h-2zM50 41h2v1h-2zM56 41h2v1h-2zM31 42h2v1h-2zM51 42h1v1h-1zM56 42h2v1h-2zM31 43h2v1h-2zM51 43h2v1h-2zM30 44h4v1h-4zM50 44h3v1h-3zM27 45h2v1h-2zM31 45h3v1h-3zM50 45h3v1h-3zM27 46h2v1h-2zM32 46h3v1h-3zM50 46h2v1h-2zM27 47h1v1h-1zM32 47h4v1h-4zM49 47h1v1h-1zM20 48h2v1h-2zM27 48h3v1h-3zM35 48h2v1h-2zM19 49h2v1h-2zM28 49h3v1h-3zM36 49h3v1h-3zM19 50h3v1h-3zM29 50h2v1h-2zM37 50h3v1h-3zM19 51h4v1h-4zM29 51h3v1h-3zM39 51h2v1h-2zM60 51h2v1h-2zM19 52h5v1h-5zM30 52h4v1h-4zM49 52h2v1h-2zM53 52h2v1h-2zM59 52h3v1h-3zM20 53h4v1h-4zM31 53h4v1h-4zM48 53h8v1h-8zM21 54h4v1h-4zM42 54h1v1h-1zM48 54h7v1h-7zM60 54h4v1h-4zM23 55h2v1h-2zM41 55h2v1h-2zM60 55h3v1h-3zM41 56h2v1h-2zM60 56h2v1h-2zM40 57h3v1h-3zM60 57h2v1h-2zM28 58h3v1h-3zM39 58h3v1h-3zM16 59h2v1h-2zM28 59h2v1h-2zM37 59h4v1h-4zM14 60h4v1h-4zM26 60h3v1h-3zM36 60h4v1h-4zM13 61h3v1h-3zM26 61h3v1h-3zM35 61h4v1h-4zM12 62h3v1h-3zM26 62h2v1h-2zM35 62h3v1h-3zM12 63h2v1h-2zM25 63h3v1h-3z"/><path fill="#60C018" d="M45 28h1v1h-1zM45 29h2v1h-2zM45 30h2v1h-2zM45 31h2v1h-2zM45 32h3v1h-3zM46 33h3v1h-3zM50 37h2v1h-2zM50 38h3v1h-3zM52 39h2v1h-2zM53 40h1v1h-1zM53 41h1v1h-1zM48 42h1v1h-1zM48 43h1v1h-1zM48 44h2v1h-2zM47 45h3v1h-3zM26 46h1v1h-1zM47 46h3v1h-3zM56 46h1v1h-1zM26 47h1v1h-1zM28 47h1v1h-1zM46 47h1v1h-1zM55 47h2v1h-2zM31 48h4v1h-4zM53 48h3v1h-3zM24 49h4v1h-4zM31 49h5v1h-5zM52 49h3v1h-3zM24 50h5v1h-5zM31 50h6v1h-6zM51 50h3v1h-3zM12 51h2v1h-2zM24 51h5v1h-5zM32 51h7v1h-7zM7 52h1v1h-1zM12 52h3v1h-3zM24 52h6v1h-6zM34 52h1v1h-1zM48 52h1v1h-1zM7 53h2v1h-2zM13 53h4v1h-4zM24 53h7v1h-7zM8 54h3v1h-3zM13 54h8v1h-8zM25 54h4v1h-4zM8 55h4v1h-4zM15 55h8v1h-8zM17 56h5v1h-5zM36 56h1v1h-1zM34 57h3v1h-3zM31 58h5v1h-5zM18 59h1v1h-1zM21 59h4v1h-4zM27 59h1v1h-1zM31 59h4v1h-4zM20 60h4v1h-4zM31 60h4v1h-4zM19 61h3v1h-3zM31 61h2v1h-2zM19 62h2v1h-2zM19 63h1v1h-1z"/><path fill="#D8F0C0" d="M44 28h1v1h-1zM44 29h1v1h-1zM44 30h1v1h-1zM36 31h4v1h-4zM44 31h1v1h-1zM31 32h5v1h-5zM41 32h4v1h-4zM48 32h1v1h-1zM29 33h2v1h-2zM28 34h2v1h-2zM32 34h1v1h-1zM42 34h2v1h-2zM49 34h1v1h-1zM36 35h1v1h-1zM46 35h1v1h-1zM51 35h1v1h-1zM36 36h1v1h-1zM47 36h1v1h-1zM52 36h1v1h-1zM56 36h1v1h-1zM49 37h1v1h-1zM54 37h1v1h-1zM55 38h1v1h-1zM36 39h1v1h-1zM41 39h4v1h-4zM49 39h1v1h-1zM51 39h1v1h-1zM40 40h1v1h-1zM49 40h1v1h-1zM52 40h1v1h-1zM31 41h1v1h-1zM39 41h1v1h-1zM46 41h4v1h-4zM52 41h1v1h-1zM30 42h1v1h-1zM38 42h1v1h-1zM47 42h1v1h-1zM49 42h1v1h-1zM53 42h1v1h-1zM33 43h1v1h-1zM47 43h1v1h-1zM25 44h1v1h-1zM27 44h1v1h-1zM37 44h1v1h-1zM47 44h1v1h-1zM34 45h1v1h-1zM37 45h1v1h-1zM56 45h1v1h-1zM25 46h1v1h-1zM31 46h1v1h-1zM37 46h1v1h-1zM57 46h1v1h-1zM6 47h2v1h-2zM30 47h2v1h-2zM36 47h2v1h-2zM6 48h1v1h-1zM19 48h1v1h-1zM24 48h2v1h-2zM30 48h1v1h-1zM37 48h1v1h-1zM5 49h1v1h-1zM7 49h1v1h-1zM23 49h1v1h-1zM39 49h1v1h-1zM5 50h1v1h-1zM7 50h1v1h-1zM12 50h2v1h-2zM18 50h1v1h-1zM22 50h2v1h-2zM41 50h1v1h-1zM5 51h1v1h-1zM7 51h1v1h-1zM11 51h1v1h-1zM23 51h1v1h-1zM50 51h1v1h-1zM5 52h1v1h-1zM11 52h1v1h-1zM15 52h2v1h-2zM51 52h2v1h-2zM5 53h1v1h-1zM9 53h1v1h-1zM12 53h1v1h-1zM17 53h3v1h-3zM46 53h1v1h-1zM6 55h1v1h-1zM12 55h3v1h-3zM36 55h1v1h-1zM40 55h1v1h-1zM13 56h3v1h-3zM38 56h1v1h-1zM40 56h1v1h-1zM37 57h1v1h-1zM39 57h1v1h-1zM10 58h1v1h-1zM36 58h2v1h-2zM14 59h1v1h-1zM26 59h1v1h-1zM30 59h1v1h-1zM36 59h1v1h-1zM19 60h1v1h-1zM29 60h2v1h-2zM35 60h1v1h-1zM12 61h1v1h-1zM25 61h1v1h-1zM30 61h1v1h-1zM33 61h2v1h-2zM18 62h1v1h-1zM25 62h1v1h-1zM31 62h1v1h-1zM18 63h1v1h-1z"/><path fill="#909090" d="M46 28h1v1h-1zM47 31h1v1h-1zM58 34h1v1h-1zM50 42h1v1h-1zM52 42h1v1h-1zM30 43h1v1h-1zM49 43h2v1h-2zM25 45h2v1h-2zM35 46h1v1h-1zM25 47h1v1h-1zM29 47h1v1h-1zM26 48h1v1h-1zM56 48h1v1h-1zM21 49h1v1h-1zM55 49h1v1h-1zM14 51h1v1h-1zM62 51h1v1h-1zM8 52h1v1h-1zM58 52h1v1h-1zM62 52h2v1h-2zM47 53h1v1h-1zM59 53h5v1h-5zM11 54h1v1h-1zM59 54h1v1h-1zM59 55h1v1h-1zM63 55h1v1h-1zM59 56h1v1h-1zM62 56h2v1h-2zM62 57h2v1h-2zM38 58h1v1h-1zM61 58h3v1h-3zM25 59h1v1h-1zM35 59h1v1h-1zM62 59h2v1h-2zM13 60h1v1h-1zM18 60h1v1h-1zM63 60h1v1h-1zM21 62h1v1h-1zM20 63h1v1h-1z"/></symbol>
+<symbol id="emblem-aztec" viewBox="0 0 64 64"><path fill="#909090" d="M20 34h5v1h-5zM19 35h5v1h-5zM18 36h4v1h-4zM17 37h5v1h-5zM17 38h5v1h-5zM17 39h5v1h-5zM14 40h3v1h-3zM18 40h4v1h-4zM13 41h5v1h-5zM19 41h4v1h-4zM26 41h2v1h-2zM12 42h7v1h-7zM20 42h1v1h-1zM23 42h6v1h-6zM12 43h4v1h-4zM14 44h3v1h-3zM13 45h4v1h-4zM8 46h2v1h-2zM11 46h2v1h-2zM14 46h5v1h-5zM8 47h4v1h-4zM14 47h2v1h-2zM18 47h6v1h-6zM29 47h1v1h-1zM8 48h4v1h-4zM24 48h1v1h-1zM26 48h1v1h-1zM38 48h1v1h-1zM8 49h1v1h-1zM11 49h1v1h-1zM37 49h1v1h-1zM3 50h5v1h-5zM10 50h2v1h-2zM3 51h4v1h-4zM8 51h3v1h-3zM12 51h5v1h-5zM0 52h2v1h-2zM3 52h3v1h-3zM8 52h2v1h-2zM14 52h7v1h-7zM22 52h1v1h-1zM30 52h1v1h-1zM32 52h2v1h-2zM36 52h3v1h-3zM0 53h1v1h-1zM30 53h1v1h-1zM42 53h1v1h-1zM2 54h3v1h-3zM0 55h2v1h-2zM6 55h1v1h-1zM18 55h1v1h-1zM28 55h1v1h-1zM0 56h2v1h-2zM3 56h1v1h-1zM6 56h3v1h-3zM0 57h1v1h-1zM3 57h1v1h-1zM7 57h7v1h-7zM15 57h2v1h-2zM18 57h2v1h-2zM27 57h1v1h-1zM40 57h1v1h-1zM0 58h1v1h-1zM2 58h2v1h-2zM10 58h1v1h-1zM14 58h4v1h-4zM19 58h1v1h-1zM27 58h1v1h-1zM40 58h1v1h-1zM43 58h1v1h-1zM0 59h1v1h-1zM2 59h1v1h-1zM2 60h2v1h-2zM9 60h1v1h-1zM17 60h1v1h-1zM0 61h4v1h-4zM25 61h2v1h-2zM1 62h3v1h-3zM32 62h12v1h-12zM46 62h2v1h-2zM2 63h2v1h-2zM24 63h1v1h-1zM27 63h1v1h-1zM44 63h4v1h-4z"/><path fill="#304818" d="M16 43h1v1h-1zM8 44h1v1h-1zM12 44h2v1h-2zM7 45h6v1h-6zM24 45h1v1h-1zM7 46h1v1h-1zM10 46h1v1h-1zM13 46h1v1h-1zM24 46h3v1h-3zM36 46h1v1h-1zM7 47h1v1h-1zM12 47h2v1h-2zM25 47h4v1h-4zM36 47h1v1h-1zM3 48h1v1h-1zM6 48h2v1h-2zM12 48h1v1h-1zM21 48h3v1h-3zM27 48h3v1h-3zM36 48h2v1h-2zM2 49h5v1h-5zM9 49h2v1h-2zM12 49h1v1h-1zM20 49h2v1h-2zM29 49h1v1h-1zM38 49h1v1h-1zM1 50h2v1h-2zM8 50h2v1h-2zM20 50h2v1h-2zM29 50h1v1h-1zM38 50h2v1h-2zM1 51h2v1h-2zM7 51h1v1h-1zM21 51h2v1h-2zM29 51h1v1h-1zM32 51h2v1h-2zM40 51h1v1h-1zM6 52h2v1h-2zM21 52h1v1h-1zM29 52h1v1h-1zM34 52h2v1h-2zM40 52h2v1h-2zM2 53h6v1h-6zM20 53h2v1h-2zM29 53h1v1h-1zM35 53h3v1h-3zM41 53h1v1h-1zM43 53h2v1h-2zM0 54h2v1h-2zM6 54h1v1h-1zM20 54h1v1h-1zM29 54h2v1h-2zM37 54h4v1h-4zM43 54h3v1h-3zM3 55h3v1h-3zM11 55h1v1h-1zM19 55h1v1h-1zM29 55h2v1h-2zM40 55h2v1h-2zM45 55h1v1h-1zM2 56h1v1h-1zM18 56h2v1h-2zM28 56h3v1h-3zM40 56h2v1h-2zM44 56h2v1h-2zM1 57h2v1h-2zM28 57h1v1h-1zM41 57h1v1h-1zM44 57h2v1h-2zM1 58h1v1h-1zM9 58h1v1h-1zM28 58h1v1h-1zM41 58h2v1h-2zM46 58h1v1h-1zM1 59h1v1h-1zM8 59h2v1h-2zM17 59h2v1h-2zM28 59h2v1h-2zM41 59h2v1h-2zM45 59h2v1h-2zM1 60h1v1h-1zM8 60h1v1h-1zM28 60h2v1h-2zM41 60h2v1h-2zM46 60h1v1h-1zM48 60h2v1h-2zM7 61h2v1h-2zM15 61h2v1h-2zM28 61h2v1h-2zM40 61h2v1h-2zM49 61h1v1h-1zM6 62h26v1h-26zM48 62h2v1h-2zM4 63h18v1h-18zM28 63h7v1h-7zM36 63h3v1h-3zM48 63h2v1h-2z"/><path fill="#C0C0C0" d="M21 33h3v1h-3zM18 35h1v1h-1zM17 36h1v1h-1zM22 36h1v1h-1zM13 40h1v1h-1zM17 40h1v1h-1zM12 41h1v1h-1zM18 41h1v1h-1zM23 41h3v1h-3zM28 41h1v1h-1zM19 42h1v1h-1zM21 42h2v1h-2zM29 42h1v1h-1zM17 43h1v1h-1zM17 44h1v1h-1zM27 44h1v1h-1zM17 45h1v1h-1zM19 46h1v1h-1zM35 46h1v1h-1zM6 47h1v1h-1zM16 47h2v1h-2zM24 47h1v1h-1zM30 47h1v1h-1zM2 48h1v1h-1zM13 48h4v1h-4zM25 48h1v1h-1zM12 50h1v1h-1zM28 50h1v1h-1zM32 50h1v1h-1zM11 51h1v1h-1zM17 51h2v1h-2zM34 51h1v1h-1zM13 52h1v1h-1zM23 52h5v1h-5zM31 52h1v1h-1zM39 52h1v1h-1zM22 53h7v1h-7zM31 53h4v1h-4zM38 53h3v1h-3zM45 53h1v1h-1zM11 54h1v1h-1zM10 55h1v1h-1zM5 56h1v1h-1zM9 56h2v1h-2zM6 57h1v1h-1zM14 57h1v1h-1zM17 57h1v1h-1zM20 57h7v1h-7zM30 57h10v1h-10zM42 57h2v1h-2zM12 58h2v1h-2zM20 58h7v1h-7zM30 58h10v1h-10zM3 59h1v1h-1zM48 59h1v1h-1zM7 60h1v1h-1zM16 60h1v1h-1zM45 60h1v1h-1zM47 60h1v1h-1zM24 61h1v1h-1zM27 61h1v1h-1zM39 61h1v1h-1zM44 62h2v1h-2zM39 63h5v1h-5z"/><path fill="#607860" d="M25 45h1v1h-1zM6 46h1v1h-1zM35 47h1v1h-1zM1 49h1v1h-1zM7 49h1v1h-1zM30 49h1v1h-1zM30 50h1v1h-1zM33 50h1v1h-1zM28 51h1v1h-1zM39 51h1v1h-1zM2 52h1v1h-1zM28 52h1v1h-1zM1 53h1v1h-1zM5 54h1v1h-1zM42 54h1v1h-1zM2 55h1v1h-1zM12 55h1v1h-1zM20 55h1v1h-1zM39 55h1v1h-1zM44 55h1v1h-1zM11 56h1v1h-1zM17 56h1v1h-1zM29 57h1v1h-1zM18 58h1v1h-1zM29 58h1v1h-1zM45 58h1v1h-1zM0 60h1v1h-1zM40 60h1v1h-1zM9 61h1v1h-1zM14 61h1v1h-1zM48 61h1v1h-1zM4 62h2v1h-2zM22 63h2v1h-2zM35 63h1v1h-1z"/></symbol>
+<symbol id="emblem-maya" viewBox="0 0 64 64"><path fill="#483000" d="M30 12h4v1h-4zM34 13h4v1h-4zM29 14h5v1h-5zM38 14h1v1h-1zM26 15h11v1h-11zM39 15h2v1h-2zM24 16h15v1h-15zM40 16h2v1h-2zM22 17h21v1h-21zM18 18h3v1h-3zM22 18h22v1h-22zM19 19h26v1h-26zM19 20h27v1h-27zM20 21h22v1h-22zM44 21h2v1h-2zM20 22h21v1h-21zM43 22h3v1h-3zM21 23h19v1h-19zM42 23h5v1h-5zM21 24h8v1h-8zM34 24h6v1h-6zM44 24h3v1h-3zM21 25h8v1h-8zM34 25h6v1h-6zM44 25h4v1h-4zM22 26h6v1h-6zM35 26h5v1h-5zM45 26h3v1h-3zM23 27h5v1h-5zM35 27h4v1h-4zM46 27h2v1h-2zM23 28h5v1h-5zM36 28h3v1h-3zM45 28h4v1h-4zM24 29h4v1h-4zM36 29h3v1h-3zM46 29h3v1h-3zM24 30h4v1h-4zM37 30h2v1h-2zM46 30h4v1h-4zM24 31h4v1h-4zM37 31h3v1h-3zM46 31h4v1h-4zM24 32h4v1h-4zM37 32h4v1h-4zM46 32h4v1h-4zM24 33h4v1h-4zM37 33h4v1h-4zM46 33h5v1h-5zM24 34h4v1h-4zM37 34h5v1h-5zM46 34h5v1h-5zM24 35h4v1h-4zM36 35h6v1h-6zM46 35h5v1h-5zM25 36h5v1h-5zM36 36h7v1h-7zM44 36h7v1h-7zM25 37h7v1h-7zM35 37h17v1h-17zM25 38h8v1h-8zM35 38h17v1h-17zM25 39h27v1h-27zM26 40h26v1h-26zM26 41h27v1h-27zM18 42h35v1h-35zM17 43h36v1h-36zM17 44h36v1h-36zM18 45h35v1h-35zM26 46h27v1h-27zM26 47h28v1h-28zM26 48h14v1h-14zM52 48h2v1h-2zM27 49h8v1h-8zM42 49h12v1h-12zM27 50h5v1h-5zM36 50h18v1h-18zM27 51h3v1h-3zM33 51h21v1h-21zM27 52h3v1h-3zM31 52h18v1h-18zM50 52h4v1h-4zM27 53h2v1h-2zM31 53h18v1h-18zM50 53h4v1h-4zM27 54h2v1h-2zM31 54h18v1h-18zM50 54h4v1h-4zM27 55h3v1h-3zM31 55h18v1h-18zM50 55h4v1h-4zM27 56h3v1h-3zM31 56h23v1h-23zM27 57h3v1h-3zM32 57h22v1h-22zM26 58h4v1h-4zM32 58h22v1h-22zM26 59h28v1h-28zM26 60h29v1h-29zM26 61h29v1h-29zM26 62h26v1h-26zM27 63h23v1h-23z"/><path fill="#906018" d="M28 12h2v1h-2zM34 12h2v1h-2zM25 13h9v1h-9zM23 14h6v1h-6zM34 14h4v1h-4zM39 14h1v1h-1zM22 15h4v1h-4zM37 15h2v1h-2zM21 16h3v1h-3zM39 16h1v1h-1zM42 16h1v1h-1zM19 17h3v1h-3zM43 17h1v1h-1zM21 18h1v1h-1zM44 18h1v1h-1zM42 21h2v1h-2zM41 22h2v1h-2zM46 22h1v1h-1zM40 23h2v1h-2zM29 24h2v1h-2zM33 24h1v1h-1zM40 24h2v1h-2zM43 24h1v1h-1zM47 24h1v1h-1zM29 25h1v1h-1zM40 25h1v1h-1zM28 26h2v1h-2zM40 26h1v1h-1zM21 27h2v1h-2zM28 27h2v1h-2zM39 27h2v1h-2zM45 27h1v1h-1zM48 27h1v1h-1zM21 28h2v1h-2zM28 28h1v1h-1zM39 28h2v1h-2zM20 29h4v1h-4zM28 29h1v1h-1zM39 29h2v1h-2zM49 29h1v1h-1zM19 30h5v1h-5zM28 30h1v1h-1zM36 30h1v1h-1zM39 30h2v1h-2zM18 31h6v1h-6zM28 31h1v1h-1zM36 31h1v1h-1zM40 31h1v1h-1zM18 32h6v1h-6zM28 32h1v1h-1zM36 32h1v1h-1zM17 33h7v1h-7zM28 33h2v1h-2zM36 33h1v1h-1zM41 33h1v1h-1zM17 34h5v1h-5zM28 34h2v1h-2zM36 34h1v1h-1zM16 35h6v1h-6zM28 35h2v1h-2zM42 35h1v1h-1zM16 36h5v1h-5zM30 36h1v1h-1zM43 36h1v1h-1zM51 36h1v1h-1zM15 37h6v1h-6zM15 38h5v1h-5zM33 38h2v1h-2zM14 39h6v1h-6zM14 40h5v1h-5zM25 40h1v1h-1zM52 40h1v1h-1zM15 41h4v1h-4zM15 42h3v1h-3zM16 43h1v1h-1zM17 45h1v1h-1zM53 45h1v1h-1zM53 46h1v1h-1zM40 48h12v1h-12zM26 49h1v1h-1zM35 49h7v1h-7zM26 50h1v1h-1zM32 50h4v1h-4zM26 51h1v1h-1zM30 51h3v1h-3zM26 52h1v1h-1zM30 52h1v1h-1zM49 52h1v1h-1zM26 53h1v1h-1zM29 53h2v1h-2zM49 53h1v1h-1zM26 54h1v1h-1zM29 54h2v1h-2zM49 54h1v1h-1zM26 55h1v1h-1zM30 55h1v1h-1zM49 55h1v1h-1zM26 56h1v1h-1zM30 56h1v1h-1zM54 56h1v1h-1zM26 57h1v1h-1zM30 57h2v1h-2zM30 58h2v1h-2zM54 59h1v1h-1zM26 63h1v1h-1z"/></symbol>
+<symbol id="emblem-england" viewBox="0 0 64 64"><path fill="#783018" d="M46 4h1v1h-1zM27 5h2v1h-2zM44 5h3v1h-3zM26 6h3v1h-3zM43 6h4v1h-4zM27 7h2v1h-2zM43 7h4v1h-4zM26 8h3v1h-3zM43 8h4v1h-4zM27 9h2v1h-2zM43 9h4v1h-4zM27 10h3v1h-3zM43 10h4v1h-4zM27 11h3v1h-3zM43 11h4v1h-4zM27 12h3v1h-3zM44 12h3v1h-3zM27 13h3v1h-3zM44 13h3v1h-3zM27 14h3v1h-3zM44 14h3v1h-3zM27 15h3v1h-3zM44 15h3v1h-3zM26 16h4v1h-4zM44 16h3v1h-3zM26 17h4v1h-4zM44 17h3v1h-3zM26 18h4v1h-4zM44 18h3v1h-3zM26 19h4v1h-4zM44 19h3v1h-3zM26 20h4v1h-4zM43 20h4v1h-4zM26 21h4v1h-4zM44 21h3v1h-3zM26 22h4v1h-4zM44 22h3v1h-3zM26 23h4v1h-4zM44 23h3v1h-3zM27 24h3v1h-3zM44 24h3v1h-3zM61 24h3v1h-3zM27 25h3v1h-3zM44 25h3v1h-3zM61 25h3v1h-3zM27 26h3v1h-3zM44 26h3v1h-3zM60 26h4v1h-4zM27 27h3v1h-3zM44 27h3v1h-3zM60 27h4v1h-4zM27 28h2v1h-2zM44 28h3v1h-3zM59 28h4v1h-4zM27 29h2v1h-2zM44 29h4v1h-4zM59 29h4v1h-4zM27 30h2v1h-2zM44 30h4v1h-4zM58 30h4v1h-4zM27 31h2v1h-2zM44 31h4v1h-4zM58 31h4v1h-4zM27 32h2v1h-2zM44 32h4v1h-4zM57 32h4v1h-4zM27 33h2v1h-2zM44 33h4v1h-4zM57 33h4v1h-4zM27 34h2v1h-2zM44 34h4v1h-4zM55 34h6v1h-6zM27 35h2v1h-2zM44 35h4v1h-4zM53 35h7v1h-7zM27 36h2v1h-2zM43 36h5v1h-5zM50 36h10v1h-10zM27 37h1v1h-1zM38 37h2v1h-2zM43 37h2v1h-2zM46 37h1v1h-1zM49 37h11v1h-11zM27 38h2v1h-2zM31 38h5v1h-5zM39 38h1v1h-1zM42 38h2v1h-2zM48 38h11v1h-11zM23 39h1v1h-1zM27 39h2v1h-2zM46 39h13v1h-13zM16 40h1v1h-1zM44 40h14v1h-14zM15 41h1v1h-1zM42 41h16v1h-16zM15 42h1v1h-1zM37 42h21v1h-21zM15 43h5v1h-5zM28 43h1v1h-1zM33 43h24v1h-24zM14 44h42v1h-42zM15 45h41v1h-41zM14 46h42v1h-42zM14 47h42v1h-42zM14 48h41v1h-41zM15 49h39v1h-39zM16 50h38v1h-38zM17 51h37v1h-37zM18 52h36v1h-36zM20 53h33v1h-33zM21 54h32v1h-32zM24 55h28v1h-28zM26 56h1v1h-1zM28 56h23v1h-23zM32 57h4v1h-4zM39 57h10v1h-10z"/><path fill="#C0C0C0" d="M48 0h2v1h-2zM45 4h1v1h-1zM47 8h1v1h-1zM17 11h1v1h-1zM31 11h1v1h-1zM17 12h1v1h-1zM31 12h1v1h-1zM17 13h1v1h-1zM31 13h2v1h-2zM17 14h1v1h-1zM31 14h2v1h-2zM49 14h1v1h-1zM17 15h1v1h-1zM31 15h2v1h-2zM49 15h1v1h-1zM17 16h1v1h-1zM31 16h2v1h-2zM49 16h1v1h-1zM17 17h1v1h-1zM31 17h2v1h-2zM49 17h1v1h-1zM16 18h2v1h-2zM31 18h2v1h-2zM43 18h1v1h-1zM49 18h2v1h-2zM16 19h1v1h-1zM31 19h2v1h-2zM43 19h1v1h-1zM49 19h2v1h-2zM16 20h1v1h-1zM30 20h3v1h-3zM49 20h1v1h-1zM16 21h1v1h-1zM31 21h2v1h-2zM49 21h1v1h-1zM16 22h1v1h-1zM31 22h2v1h-2zM49 22h1v1h-1zM16 23h1v1h-1zM31 23h2v1h-2zM49 23h1v1h-1zM15 24h2v1h-2zM31 24h1v1h-1zM34 24h8v1h-8zM49 24h1v1h-1zM15 25h1v1h-1zM32 25h4v1h-4zM49 25h1v1h-1zM15 26h1v1h-1zM47 26h1v1h-1zM49 26h1v1h-1zM15 27h1v1h-1zM49 27h1v1h-1zM15 28h1v1h-1zM48 28h2v1h-2zM54 28h2v1h-2zM15 29h1v1h-1zM30 29h2v1h-2zM48 29h2v1h-2zM53 29h2v1h-2zM14 30h2v1h-2zM30 30h1v1h-1zM48 30h2v1h-2zM52 30h1v1h-1zM14 31h2v1h-2zM30 31h2v1h-2zM48 31h1v1h-1zM51 31h1v1h-1zM57 31h1v1h-1zM14 32h1v1h-1zM30 32h2v1h-2zM48 32h1v1h-1zM50 32h1v1h-1zM14 33h1v1h-1zM31 33h1v1h-1zM48 33h2v1h-2zM13 34h2v1h-2zM30 34h2v1h-2zM48 34h1v1h-1zM13 35h2v1h-2zM31 35h9v1h-9zM51 35h1v1h-1zM15 36h8v1h-8zM36 36h6v1h-6zM18 37h7v1h-7zM26 37h1v1h-1zM40 37h3v1h-3zM48 37h1v1h-1zM23 38h1v1h-1zM41 38h1v1h-1zM47 38h1v1h-1zM18 39h1v1h-1zM32 39h2v1h-2zM35 39h7v1h-7zM21 40h6v1h-6zM30 40h9v1h-9zM41 40h3v1h-3zM21 41h12v1h-12zM37 41h2v1h-2zM40 41h1v1h-1zM22 42h2v1h-2zM25 42h1v1h-1zM27 42h5v1h-5zM33 42h1v1h-1zM35 42h1v1h-1zM20 43h2v1h-2zM24 43h1v1h-1zM26 43h1v1h-1zM31 43h1v1h-1zM25 56h1v1h-1z"/><path fill="#786048" d="M27 4h2v1h-2zM44 4h1v1h-1zM26 5h1v1h-1zM29 5h1v1h-1zM43 5h1v1h-1zM47 5h1v1h-1zM29 6h1v1h-1zM47 6h1v1h-1zM26 7h1v1h-1zM47 7h1v1h-1zM26 9h1v1h-1zM29 9h1v1h-1zM26 10h1v1h-1zM26 11h1v1h-1zM30 11h1v1h-1zM26 12h1v1h-1zM30 12h1v1h-1zM43 12h1v1h-1zM26 13h1v1h-1zM30 13h1v1h-1zM43 13h1v1h-1zM26 14h1v1h-1zM30 14h1v1h-1zM43 14h1v1h-1zM26 15h1v1h-1zM30 15h1v1h-1zM43 15h1v1h-1zM30 16h1v1h-1zM43 16h1v1h-1zM30 17h1v1h-1zM43 17h1v1h-1zM30 18h1v1h-1zM30 19h1v1h-1zM43 21h1v1h-1zM43 22h1v1h-1zM43 23h1v1h-1zM26 24h1v1h-1zM43 24h1v1h-1zM26 25h1v1h-1zM43 25h1v1h-1zM60 25h1v1h-1zM26 26h1v1h-1zM43 26h1v1h-1zM26 27h1v1h-1zM43 27h1v1h-1zM47 27h1v1h-1zM59 27h1v1h-1zM26 28h1v1h-1zM29 28h1v1h-1zM43 28h1v1h-1zM47 28h1v1h-1zM63 28h1v1h-1zM26 29h1v1h-1zM29 29h1v1h-1zM43 29h1v1h-1zM58 29h1v1h-1zM29 30h1v1h-1zM43 30h1v1h-1zM62 30h1v1h-1zM43 31h1v1h-1zM43 32h1v1h-1zM61 32h1v1h-1zM43 33h1v1h-1zM56 33h1v1h-1zM43 34h1v1h-1zM54 34h1v1h-1zM43 35h1v1h-1zM52 35h1v1h-1zM60 35h1v1h-1zM48 36h2v1h-2zM60 36h1v1h-1zM28 37h1v1h-1zM32 37h6v1h-6zM45 37h1v1h-1zM24 38h3v1h-3zM29 38h2v1h-2zM36 38h3v1h-3zM40 38h1v1h-1zM44 38h1v1h-1zM59 38h1v1h-1zM16 39h2v1h-2zM19 39h4v1h-4zM24 39h3v1h-3zM29 39h3v1h-3zM45 39h1v1h-1zM59 39h1v1h-1zM15 40h1v1h-1zM17 40h4v1h-4zM27 40h2v1h-2zM58 40h1v1h-1zM16 41h1v1h-1zM39 41h1v1h-1zM41 41h1v1h-1zM58 41h1v1h-1zM16 42h3v1h-3zM34 42h1v1h-1zM36 42h1v1h-1zM14 43h1v1h-1zM22 43h2v1h-2zM25 43h1v1h-1zM27 43h1v1h-1zM29 43h2v1h-2zM32 43h1v1h-1zM57 43h1v1h-1zM56 44h1v1h-1zM14 45h1v1h-1zM56 45h1v1h-1zM54 49h1v1h-1zM54 50h1v1h-1zM54 51h1v1h-1zM19 53h1v1h-1zM53 53h1v1h-1zM53 54h1v1h-1zM23 55h1v1h-1zM52 55h1v1h-1zM27 56h1v1h-1zM51 56h1v1h-1zM30 57h2v1h-2zM36 57h3v1h-3zM49 57h1v1h-1z"/></symbol>
+<symbol id="emblem-napoleon" viewBox="0 0 64 64"><path fill="#909090" d="M31 8h2v1h-2zM31 9h2v1h-2zM30 10h3v1h-3zM30 11h3v1h-3zM30 12h3v1h-3zM30 13h3v1h-3zM30 14h3v1h-3zM30 15h3v1h-3zM30 16h3v1h-3zM30 17h3v1h-3zM30 18h3v1h-3zM30 19h3v1h-3zM30 20h3v1h-3zM30 21h3v1h-3zM30 22h3v1h-3zM30 23h3v1h-3zM0 24h1v1h-1zM30 24h3v1h-3zM0 25h2v1h-2zM30 25h3v1h-3zM0 26h1v1h-1zM30 26h3v1h-3zM30 27h3v1h-3zM29 28h4v1h-4zM29 29h4v1h-4zM29 30h4v1h-4zM29 31h4v1h-4zM28 32h5v1h-5zM29 33h4v1h-4zM28 34h5v1h-5zM28 35h5v1h-5zM27 36h6v1h-6zM27 37h6v1h-6zM26 38h7v1h-7zM27 39h6v1h-6zM26 40h7v1h-7zM25 41h8v1h-8zM26 42h7v1h-7zM25 43h8v1h-8zM25 44h9v1h-9zM24 45h10v1h-10zM23 46h11v1h-11zM23 47h11v1h-11zM22 48h12v1h-12zM23 49h11v1h-11zM22 50h12v1h-12zM21 51h13v1h-13zM21 52h13v1h-13zM20 53h7v1h-7zM31 53h3v1h-3zM20 54h7v1h-7zM31 54h3v1h-3zM19 55h7v1h-7zM31 55h3v1h-3zM18 56h8v1h-8zM30 56h4v1h-4zM18 57h7v1h-7zM30 57h4v1h-4zM17 58h7v1h-7zM30 58h4v1h-4zM16 59h7v1h-7zM29 59h5v1h-5zM15 60h8v1h-8zM29 60h5v1h-5zM15 61h7v1h-7zM29 61h5v1h-5zM14 62h6v1h-6zM30 62h4v1h-4zM30 63h4v1h-4z"/><path fill="#C0C0C0" d="M33 6h1v1h-1zM31 7h4v1h-4zM30 8h1v1h-1zM33 8h3v1h-3zM30 9h1v1h-1zM33 9h4v1h-4zM33 10h4v1h-4zM33 11h4v1h-4zM33 12h3v1h-3zM33 13h3v1h-3zM33 14h3v1h-3zM33 15h3v1h-3zM33 16h3v1h-3zM33 17h3v1h-3zM33 18h2v1h-2zM33 19h2v1h-2zM37 19h1v1h-1zM33 20h2v1h-2zM37 20h1v1h-1zM33 21h2v1h-2zM37 21h1v1h-1zM33 22h2v1h-2zM37 22h1v1h-1zM33 23h2v1h-2zM37 23h1v1h-1zM1 24h1v1h-1zM33 24h2v1h-2zM37 24h1v1h-1zM33 25h2v1h-2zM37 25h1v1h-1zM33 26h2v1h-2zM37 26h1v1h-1zM29 27h1v1h-1zM33 27h2v1h-2zM36 27h1v1h-1zM38 27h1v1h-1zM33 28h2v1h-2zM38 28h1v1h-1zM33 29h2v1h-2zM38 29h1v1h-1zM33 30h2v1h-2zM36 30h1v1h-1zM38 30h1v1h-1zM28 31h1v1h-1zM33 31h4v1h-4zM38 31h1v1h-1zM33 32h4v1h-4zM38 32h2v1h-2zM28 33h1v1h-1zM33 33h4v1h-4zM38 33h2v1h-2zM33 34h5v1h-5zM27 35h1v1h-1zM33 35h5v1h-5zM39 35h1v1h-1zM33 36h3v1h-3zM37 36h1v1h-1zM39 36h2v1h-2zM33 37h3v1h-3zM39 37h2v1h-2zM33 38h3v1h-3zM40 38h1v1h-1zM26 39h1v1h-1zM33 39h3v1h-3zM38 39h1v1h-1zM40 39h1v1h-1zM33 40h3v1h-3zM38 40h1v1h-1zM41 40h1v1h-1zM33 41h3v1h-3zM38 41h2v1h-2zM41 41h1v1h-1zM25 42h1v1h-1zM33 42h3v1h-3zM39 42h1v1h-1zM33 43h3v1h-3zM39 43h1v1h-1zM42 43h1v1h-1zM24 44h1v1h-1zM34 44h2v1h-2zM37 44h1v1h-1zM42 44h1v1h-1zM34 45h3v1h-3zM38 45h1v1h-1zM40 45h1v1h-1zM43 45h1v1h-1zM34 46h3v1h-3zM40 46h2v1h-2zM43 46h1v1h-1zM34 47h3v1h-3zM41 47h1v1h-1zM43 47h2v1h-2zM34 48h3v1h-3zM39 48h1v1h-1zM41 48h1v1h-1zM44 48h1v1h-1zM22 49h1v1h-1zM34 49h3v1h-3zM38 49h2v1h-2zM42 49h1v1h-1zM45 49h1v1h-1zM21 50h1v1h-1zM34 50h3v1h-3zM38 50h3v1h-3zM45 50h1v1h-1zM34 51h3v1h-3zM38 51h3v1h-3zM43 51h1v1h-1zM46 51h1v1h-1zM20 52h1v1h-1zM34 52h3v1h-3zM42 52h3v1h-3zM46 52h2v1h-2zM27 53h1v1h-1zM30 53h1v1h-1zM34 53h3v1h-3zM38 53h1v1h-1zM43 53h2v1h-2zM47 53h1v1h-1zM19 54h1v1h-1zM30 54h1v1h-1zM34 54h2v1h-2zM38 54h1v1h-1zM44 54h2v1h-2zM48 54h1v1h-1zM30 55h1v1h-1zM34 55h1v1h-1zM44 55h1v1h-1zM29 56h1v1h-1zM36 56h1v1h-1zM46 56h2v1h-2zM17 57h1v1h-1zM29 57h1v1h-1zM36 57h2v1h-2zM45 57h4v1h-4zM29 58h1v1h-1zM36 58h1v1h-1zM46 58h2v1h-2zM23 59h1v1h-1zM34 59h2v1h-2zM47 59h1v1h-1zM49 59h2v1h-2zM34 60h2v1h-2zM38 60h1v1h-1zM47 60h5v1h-5zM34 61h2v1h-2zM38 61h1v1h-1zM48 61h7v1h-7zM29 62h1v1h-1zM34 62h5v1h-5zM50 62h1v1h-1zM52 62h3v1h-3zM29 63h1v1h-1zM34 63h2v1h-2zM37 63h1v1h-1z"/></symbol>
+<symbol id="emblem-modern" viewBox="0 0 64 64"><path fill="#000048" d="M24 14h6v1h-6zM22 15h9v1h-9zM21 16h11v1h-11zM21 17h11v1h-11zM21 18h10v1h-10zM21 19h10v1h-10zM21 20h10v1h-10zM21 21h10v1h-10zM22 22h9v1h-9zM39 22h3v1h-3zM22 23h9v1h-9zM38 23h4v1h-4zM22 24h9v1h-9zM38 24h5v1h-5zM22 25h9v1h-9zM36 25h7v1h-7zM22 26h9v1h-9zM35 26h8v1h-8zM22 27h9v1h-9zM35 27h8v1h-8zM22 28h9v1h-9zM35 28h7v1h-7zM22 29h9v1h-9zM35 29h5v1h-5zM41 29h1v1h-1zM22 30h9v1h-9zM35 30h5v1h-5zM22 31h9v1h-9zM35 31h6v1h-6zM23 32h8v1h-8zM35 32h6v1h-6zM23 33h8v1h-8zM35 33h6v1h-6zM23 34h8v1h-8zM34 34h7v1h-7zM15 35h1v1h-1zM23 35h7v1h-7zM34 35h6v1h-6zM23 36h7v1h-7zM35 36h5v1h-5zM23 37h7v1h-7zM36 37h4v1h-4zM24 38h6v1h-6zM35 38h5v1h-5zM24 39h6v1h-6zM35 39h4v1h-4zM8 40h3v1h-3zM24 40h6v1h-6zM35 40h4v1h-4zM49 40h1v1h-1zM52 40h2v1h-2zM7 41h5v1h-5zM24 41h5v1h-5zM35 41h4v1h-4zM48 41h7v1h-7zM6 42h6v1h-6zM24 42h5v1h-5zM35 42h4v1h-4zM49 42h7v1h-7zM6 43h7v1h-7zM24 43h5v1h-5zM35 43h4v1h-4zM48 43h5v1h-5zM54 43h2v1h-2zM6 44h7v1h-7zM24 44h5v1h-5zM34 44h5v1h-5zM48 44h8v1h-8zM6 45h7v1h-7zM24 45h5v1h-5zM34 45h5v1h-5zM47 45h9v1h-9zM7 46h5v1h-5zM21 46h8v1h-8zM34 46h5v1h-5zM47 46h9v1h-9zM7 47h5v1h-5zM19 47h10v1h-10zM34 47h5v1h-5zM47 47h8v1h-8zM7 48h6v1h-6zM17 48h12v1h-12zM34 48h5v1h-5zM46 48h9v1h-9zM7 49h6v1h-6zM16 49h13v1h-13zM35 49h4v1h-4zM46 49h9v1h-9zM8 50h5v1h-5zM15 50h14v1h-14zM35 50h4v1h-4zM45 50h10v1h-10zM9 51h20v1h-20zM35 51h4v1h-4zM45 51h9v1h-9zM8 52h21v1h-21zM35 52h4v1h-4zM44 52h10v1h-10zM9 53h20v1h-20zM35 53h4v1h-4zM44 53h10v1h-10zM9 54h20v1h-20zM35 54h4v1h-4zM44 54h10v1h-10zM9 55h20v1h-20zM35 55h4v1h-4zM43 55h10v1h-10zM9 56h20v1h-20zM35 56h5v1h-5zM43 56h10v1h-10zM9 57h21v1h-21zM35 57h5v1h-5zM42 57h11v1h-11zM10 58h20v1h-20zM35 58h5v1h-5zM42 58h11v1h-11zM10 59h20v1h-20zM34 59h18v1h-18zM10 60h23v1h-23zM35 60h1v1h-1zM45 60h6v1h-6zM11 61h16v1h-16zM29 61h2v1h-2zM12 62h4v1h-4z"/><path fill="#6060A8" d="M34 5h5v1h-5zM32 6h8v1h-8zM31 7h9v1h-9zM31 8h9v1h-9zM31 9h8v1h-8zM30 10h9v1h-9zM30 11h9v1h-9zM30 12h9v1h-9zM28 13h1v1h-1zM30 13h9v1h-9zM31 14h8v1h-8zM31 15h8v1h-8zM32 16h7v1h-7zM32 17h7v1h-7zM31 18h7v1h-7zM32 19h6v1h-6zM31 20h7v1h-7zM17 21h4v1h-4zM31 21h7v1h-7zM16 22h6v1h-6zM31 22h8v1h-8zM16 23h6v1h-6zM31 23h7v1h-7zM16 24h6v1h-6zM31 24h7v1h-7zM16 25h6v1h-6zM31 25h5v1h-5zM16 26h6v1h-6zM31 26h4v1h-4zM51 26h4v1h-4zM17 27h5v1h-5zM31 27h4v1h-4zM51 27h5v1h-5zM17 28h5v1h-5zM31 28h4v1h-4zM42 28h1v1h-1zM51 28h6v1h-6zM16 29h1v1h-1zM20 29h2v1h-2zM31 29h4v1h-4zM51 29h6v1h-6zM20 30h2v1h-2zM31 30h4v1h-4zM45 30h1v1h-1zM50 30h6v1h-6zM20 31h2v1h-2zM31 31h4v1h-4zM50 31h6v1h-6zM20 32h2v1h-2zM31 32h4v1h-4zM48 32h1v1h-1zM50 32h5v1h-5zM20 33h3v1h-3zM31 33h3v1h-3zM48 33h7v1h-7zM20 34h3v1h-3zM31 34h3v1h-3zM48 34h6v1h-6zM20 35h3v1h-3zM31 35h3v1h-3zM48 35h6v1h-6zM20 36h3v1h-3zM48 36h6v1h-6zM20 37h2v1h-2zM48 37h5v1h-5zM20 38h1v1h-1zM48 38h5v1h-5zM48 39h4v1h-4zM47 40h2v1h-2zM50 40h2v1h-2zM15 41h1v1h-1zM47 41h1v1h-1zM55 41h1v1h-1zM56 43h1v1h-1zM6 46h1v1h-1zM8 51h1v1h-1zM8 53h1v1h-1zM9 58h1v1h-1zM44 60h1v1h-1zM27 61h1v1h-1z"/><path fill="#180090" d="M30 14h1v1h-1zM31 19h1v1h-1zM17 29h3v1h-3zM40 29h1v1h-1zM16 30h4v1h-4zM40 30h5v1h-5zM16 31h4v1h-4zM41 31h7v1h-7zM16 32h4v1h-4zM22 32h1v1h-1zM41 32h7v1h-7zM15 33h5v1h-5zM34 33h1v1h-1zM41 33h7v1h-7zM15 34h5v1h-5zM41 34h7v1h-7zM16 35h4v1h-4zM30 35h1v1h-1zM40 35h8v1h-8zM15 36h5v1h-5zM30 36h5v1h-5zM40 36h8v1h-8zM15 37h5v1h-5zM22 37h1v1h-1zM30 37h6v1h-6zM40 37h8v1h-8zM15 38h5v1h-5zM21 38h3v1h-3zM30 38h5v1h-5zM40 38h8v1h-8zM15 39h9v1h-9zM30 39h5v1h-5zM39 39h9v1h-9zM15 40h9v1h-9zM30 40h5v1h-5zM39 40h8v1h-8zM16 41h8v1h-8zM29 41h6v1h-6zM39 41h8v1h-8zM16 42h8v1h-8zM29 42h6v1h-6zM39 42h10v1h-10zM15 43h9v1h-9zM29 43h6v1h-6zM39 43h9v1h-9zM53 43h1v1h-1zM13 44h11v1h-11zM29 44h5v1h-5zM39 44h9v1h-9zM13 45h11v1h-11zM29 45h5v1h-5zM39 45h8v1h-8zM12 46h9v1h-9zM29 46h5v1h-5zM39 46h8v1h-8zM12 47h7v1h-7zM29 47h5v1h-5zM39 47h8v1h-8zM55 47h1v1h-1zM13 48h4v1h-4zM29 48h5v1h-5zM39 48h7v1h-7zM13 49h3v1h-3zM29 49h6v1h-6zM39 49h7v1h-7zM13 50h2v1h-2zM29 50h6v1h-6zM39 50h6v1h-6zM29 51h6v1h-6zM39 51h6v1h-6zM29 52h6v1h-6zM39 52h5v1h-5zM29 53h6v1h-6zM39 53h5v1h-5zM29 54h6v1h-6zM39 54h5v1h-5zM29 55h6v1h-6zM39 55h4v1h-4zM29 56h6v1h-6zM40 56h3v1h-3zM30 57h5v1h-5zM40 57h2v1h-2zM30 58h5v1h-5zM40 58h2v1h-2zM30 59h4v1h-4z"/><path fill="#C0C0C0" d="M5 0h1v1h-1zM20 0h1v1h-1zM5 1h1v1h-1zM4 2h39v1h-39zM45 2h9v1h-9zM6 3h37v1h-37zM51 3h1v1h-1zM27 13h1v1h-1zM16 27h1v1h-1zM16 28h1v1h-1zM15 32h1v1h-1zM6 41h1v1h-1zM15 42h1v1h-1zM11 62h1v1h-1z"/></symbol>
+<symbol id="emblem-retro" viewBox="0 0 64 64"><path fill="#C0C0C0" d="M26 0h1v1h-1zM46 19h7v1h-7zM42 20h12v1h-12zM39 21h15v1h-15zM36 22h18v1h-18zM35 23h19v1h-19zM33 24h20v1h-20zM32 25h21v1h-21zM31 26h21v1h-21zM30 27h20v1h-20zM30 28h19v1h-19zM17 29h3v1h-3zM30 29h18v1h-18zM15 30h4v1h-4zM31 30h14v1h-14zM12 31h5v1h-5zM26 31h2v1h-2zM31 31h12v1h-12zM10 32h4v1h-4zM25 32h3v1h-3zM32 32h8v1h-8zM8 33h5v1h-5zM23 33h3v1h-3zM31 33h5v1h-5zM7 34h3v1h-3zM20 34h4v1h-4zM30 34h6v1h-6zM5 35h4v1h-4zM18 35h4v1h-4zM24 35h1v1h-1zM30 35h5v1h-5zM4 36h3v1h-3zM16 36h4v1h-4zM24 36h2v1h-2zM29 36h6v1h-6zM3 37h2v1h-2zM15 37h3v1h-3zM24 37h1v1h-1zM28 37h6v1h-6zM7 38h2v1h-2zM13 38h3v1h-3zM23 38h2v1h-2zM28 38h6v1h-6zM7 39h3v1h-3zM13 39h1v1h-1zM23 39h2v1h-2zM27 39h6v1h-6zM8 40h4v1h-4zM22 40h2v1h-2zM28 40h4v1h-4zM8 41h5v1h-5zM22 41h1v1h-1zM10 42h4v1h-4zM11 43h4v1h-4zM13 44h3v1h-3zM23 45h9v1h-9zM20 46h10v1h-10zM19 47h9v1h-9zM16 48h9v1h-9zM15 49h8v1h-8zM14 50h6v1h-6zM12 51h4v1h-4zM61 62h1v1h-1z"/><path fill="#483000" d="M63 53h1v1h-1zM63 54h1v1h-1zM63 55h1v1h-1zM63 56h1v1h-1zM62 57h2v1h-2zM62 58h2v1h-2zM62 59h2v1h-2zM61 60h3v1h-3zM61 61h3v1h-3z"/></symbol>
+</defs></svg>
 
-<!-- ══════════ USERNAME SETUP ══════════ -->
 <div class="screen" id="username-screen">
   <div class="uname-wrap">
     <div class="uname-logo">Rhythm<span>Drop</span></div>
@@ -1872,9 +1605,7 @@ body.adv-overlay #adv-panel.open {
   </div>
 </div>
 
-<!-- ══════════ HOME ══════════ -->
 <div class="screen" id="home">
-  <!-- Profile Bar -->
   <div id="profile-bar">
     <div id="pbar-avatar" title="Change avatar"><span class="default-av">🎵</span></div>
     <div class="pbar-info">
@@ -1940,11 +1671,9 @@ body.adv-overlay #adv-panel.open {
   </div>
 
 
-  <!-- SHOP TAB -->
   <div class="tab-pane" id="tab-shop">
     <div class="shop-subnav" id="shop-subnav"></div>
 
-    <!-- Avatars / Icons section -->
     <div class="shop-section" id="shop-sec-avatars">
       <div class="shop-section-head">Avatars &amp; Icons</div>
       <div class="avatar-grid" id="shop-avatar-grid"></div>
@@ -1960,14 +1689,12 @@ body.adv-overlay #adv-panel.open {
       <button id="custom-av-buy-btn" style="display:none;width:100%;margin-top:8px;padding:10px;border-radius:10px;border:none;background:var(--accent);color:#fff;font-size:13px;font-weight:700;font-family:var(--font-body);cursor:pointer;">Buy &amp; Equip Custom Avatar — 1000 🪙</button>
     </div>
 
-    <!-- Effects (note trails) section -->
     <div class="shop-section" id="shop-sec-effects" style="display:none">
       <div class="shop-section-head">Note Trail Effects</div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Equip one — at a 100+ streak your notes leave a fire trail.</div>
       <div class="avatar-grid" id="shop-trail-grid"></div>
     </div>
 
-    <!-- Mystery Boxes section -->
     <div class="shop-section" id="shop-sec-mystery" style="display:none">
       <div class="shop-section-head">Mystery Boxes</div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Open for a random avatar or trail — better boxes hold rarer loot.</div>
@@ -1999,7 +1726,6 @@ body.adv-overlay #adv-panel.open {
   <div class="tab-pane" id="tab-settings"></div>
 </div>
 
-<!-- ══════════ CREATOR ══════════ -->
 <div class="screen" id="creator">
   <div class="cr-header">
     <button class="cr-back" id="cr-back" type="button" aria-label="Back to menu">←</button>
@@ -2024,9 +1750,6 @@ body.adv-overlay #adv-panel.open {
     <div class="cr-sep"></div>
     <button class="adv-toggle" id="adv-toggle">⚙ Advanced</button>
   </div>
-  <!-- Shown only in Select mode. Copy/cut/paste/delete the marked block,
-       or nudge it with the arrows. Keyboard: Ctrl/Cmd+C/X/V, Delete,
-       and the arrow keys do the same. -->
   <div class="cr-selbar" id="cr-selbar">
     <button id="sel-copy">⧉ Copy</button>
     <button id="sel-cut">✂ Cut</button>
@@ -2046,10 +1769,7 @@ body.adv-overlay #adv-panel.open {
   </div>
   </div>
 
-  <!-- Advanced panel — a side column, not a drawer -->
   <div id="adv-panel">
-    <!-- A toggle at the top switches the whole panel between the note
-         settings and a generation menu, the way the request asked. -->
     <div class="adv-modes">
       <button class="adv-mode sel" data-mode="settings">Settings</button>
       <button class="adv-mode" data-mode="generate">🎲 Generate</button>
@@ -2097,13 +1817,12 @@ body.adv-overlay #adv-panel.open {
       <div id="bass-note-sel-wrap" style="margin:4px 0;"></div>
       <div class="bass-step-grid" id="bass-step-grid"></div>
     </div>
-    </div><!-- /#adv-settings -->
+    </div>
   </div>
 
   </div>
 </div>
 
-<!-- ══════════ GAME ══════════ -->
 <div class="screen" id="game">
   <div id="g-hud">
     <div>
@@ -2151,7 +1870,6 @@ body.adv-overlay #adv-panel.open {
   </div>
 </div>
 
-<!-- ══════════ INTRO SPLASH ══════════ -->
 <div id="intro-splash">
   <div id="intro-inner">
     <div id="intro-word-rhythm">
@@ -2162,7 +1880,6 @@ body.adv-overlay #adv-panel.open {
 </div>
 
 <style>
-/* ── INTRO SPLASH ── */
 #intro-splash {
   position:fixed; inset:0; z-index:9999;
   background:var(--bg);
@@ -2174,7 +1891,6 @@ body.adv-overlay #adv-panel.open {
   gap:0; overflow:visible;
 }
 
-/* RHYTHM letters — each drops in sequentially */
 #intro-word-rhythm {
   display:flex; gap:2px; overflow:visible;
 }
@@ -2201,7 +1917,6 @@ body.adv-overlay #adv-panel.open {
   100% { opacity:1; transform:translateY(0)    scaleY(1); }
 }
 
-/* DROP word — falls from above after all letters land */
 #intro-word-drop {
   font-family:var(--font-body);
   font-size:38px; font-weight:900;
@@ -2219,7 +1934,6 @@ body.adv-overlay #adv-panel.open {
   100% { opacity:1;   transform:translateY(0)     scaleY(1); }
 }
 
-/* Slide the whole thing to final position, then fade splash out */
 #intro-inner {
   animation: slideToPos 0.25s cubic-bezier(.4,0,.2,1) 0.82s both;
 }
@@ -2228,7 +1942,6 @@ body.adv-overlay #adv-panel.open {
   100% { transform:translateY(-190px); opacity:0; }
 }
 
-/* Fade the overlay itself out last */
 #intro-splash {
   animation: splashOut 0.12s ease-in 1.08s forwards;
 }
@@ -2239,7 +1952,6 @@ body.adv-overlay #adv-panel.open {
 
 <script>
 (function() {
-  // Remove splash from DOM entirely after animation ends
   var splash = document.getElementById('intro-splash');
   splash.addEventListener('animationend', function(e) {
     if (e.target === splash) {
@@ -2249,19 +1961,12 @@ body.adv-overlay #adv-panel.open {
 })();
 </script>
 
-<!-- Load order matters: the baked campaign data first, then the engine
-     that reads it, then audio, then the game that wires them together. -->
 <script src="levels.js"></script>
 <script src="campaign.js"></script>
 <script src="codec.js"></script>
 <script src="audio.js"></script>
-<!-- V7's composer, bundled for live generation and endless mode. -->
 <script src="generator.js"></script>
-<!-- Makes every generated row one kind of note; play.js applies it. -->
 <script src="rowtypes.js"></script>
-<!-- The creator (and its note picker) and the gameplay engine, split out
-     of game.js. They load before game.js so its boot code (which wires
-     everything and starts the game) still runs last. -->
 <script src="notepicker.js"></script>
 <script src="creator.js"></script>
 <script src="play.js"></script>

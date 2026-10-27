@@ -1,5 +1,3 @@
-// Creator multi-select: drag a rectangle, then cut / copy / paste,
-// scoped to the level being edited.
 const { boot } = require('./harness');
 const HOOK = `
 ;window.__t = {
@@ -88,7 +86,7 @@ probe('paste drops the block anchored at its first cell', () => {
 
 probe('paste keeps every field, including sustain', () => {
   freshGrid();
-  T().crSel = { r0: 2, c0: 1, r1: 2, c1: 1 };   // the dtap with sustain .5
+  T().crSel = { r0: 2, c0: 1, r1: 2, c1: 1 };
   T().copySelection(false);
   T().commitPaste(12, 3);
   const p = T().crGrid[12][3];
@@ -97,9 +95,9 @@ probe('paste keeps every field, including sustain', () => {
 
 probe('paste clamps to the four lanes rather than dropping notes', () => {
   freshGrid();
-  T().crSel = { r0: 2, c0: 0, r1: 2, c1: 1 };  // 1x2
+  T().crSel = { r0: 2, c0: 0, r1: 2, c1: 1 };
   T().copySelection(false);
-  T().commitPaste(8, 3);                        // would need lanes 3 and 4
+  T().commitPaste(8, 3);
   const g = T().crGrid;
   const landed = [g[8][0], g[8][1], g[8][2], g[8][3]].filter(Boolean).length;
   notes.push('a 1x2 block pasted at lane 3 landed ' + landed + ' notes');
@@ -109,7 +107,7 @@ probe('paste clamps to the four lanes rather than dropping notes', () => {
 probe('pasting past the end grows the chart instead of truncating', () => {
   freshGrid();
   const rows = T().crGrid.length;
-  T().crSel = { r0: 2, c0: 0, r1: 4, c1: 0 };   // 3 rows
+  T().crSel = { r0: 2, c0: 0, r1: 4, c1: 0 };
   T().copySelection(false);
   T().commitPaste(rows - 1, 0);
   notes.push(`chart grew ${rows} -> ${T().crGrid.length} rows to fit the paste`);
@@ -157,7 +155,7 @@ probe('paste with an empty clipboard is a no-op, not a crash', () => {
   T().crClip = null;
   T().armPaste();
   if (T().crPasting) throw new Error('armed a paste with nothing to paste');
-  T().commitPaste(3, 0);   // must not throw
+  T().commitPaste(3, 0);
 });
 
 probe('the toolbar buttons follow what is actually possible', () => {
@@ -173,7 +171,6 @@ probe('the toolbar buttons follow what is actually possible', () => {
 });
 
 probe('the selection is scoped to the chart being edited', () => {
-  // A selection that outlived the level would paste into the next one.
   const src = require('fs').readFileSync(require('path').join(require('./browser').appDir(), 'game.js'), 'utf8');
   if (!/clearSelection\(\)/.test(src)) throw new Error('nothing ever clears the selection');
   const calls = (src.match(/clearSelection\(\)/g) || []).length;

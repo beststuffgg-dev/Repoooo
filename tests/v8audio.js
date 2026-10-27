@@ -1,12 +1,3 @@
-// Does the audio engine actually make a sound?
-//
-// Every other check on audio.js so far has been structural — the
-// roster has twelve ids, the file parses, the functions exist. None of
-// that would catch a voice that was lifted from another build and now
-// calls a helper that isn't here, or an envelope that ramps to zero
-// and stays there. So this renders each instrument through a real
-// OfflineAudioContext in Chromium and measures the samples that come
-// out.
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -18,19 +9,8 @@ const errors = [];
 let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, console.log('  FAIL: ' + m)); };
 
-// Rendering one voice at a time, because audio.js builds its context
-// lazily and once: re-injecting the source wrapped in a function gives
-// each render a clean module scope without redeclaring its top-level
-// bindings.
-// `setup` must be a real function, not a source string: page.evaluate
-// given a string evaluates it as an expression, so an arrow function
-// passed that way is merely constructed and never called — which
-// renders perfect silence and looks exactly like a dead audio engine.
 async function render(page, setup, arg) {
   await page.evaluate(() => {
-    // Each render gets a clean slate: audio.js reads its saved volume
-    // back on load, so a probe that turns the volume down would
-    // otherwise silence every render after it.
     try { window.localStorage.removeItem('rd_master_vol'); window.localStorage.removeItem('rd_music_vol'); } catch (e) {}
     const off = new OfflineAudioContext(1, 44100 * 3, 44100);
     window.__off = off;
@@ -51,8 +31,6 @@ async function render(page, setup, arg) {
       sum += d[i] * d[i];
       if (a > 0.001) nonSilent++;
     }
-    // Zero crossings stand in for brightness: a bell and an organ at
-    // the same pitch differ mostly in what sits above the fundamental.
     let zc = 0;
     for (let i = 1; i < d.length; i++) if ((d[i - 1] < 0) !== (d[i] < 0)) zc++;
     return {
@@ -68,10 +46,6 @@ async function render(page, setup, arg) {
   const page = await b.newPage();
   page.on('pageerror', e => errors.push(e.message));
   await page.goto('about:blank');
-  // audio.js reads its saved volumes from localStorage as it loads, and
-  // an about:blank origin has none — the access throws and takes the
-  // whole script with it, which looks exactly like "the engine has no
-  // instruments". Give it somewhere to read from.
   await page.evaluate(() => {
     const mem = {};
     Object.defineProperty(window, 'localStorage', {
@@ -117,9 +91,6 @@ async function render(page, setup, arg) {
 
   console.log('== the seven voices lifted from V7 all work ==');
   {
-    // These are the ones that were not in the v3 base. A helper that
-    // did not come across with them would show up as silence here and
-    // nowhere else.
     const lifted = ['flute', 'lyre', 'brass', 'organ', 'strings', 'chiptune', 'kalimba'];
     const dead = lifted.filter(id => measured[id].peak <= 0.01);
     ok(dead.length === 0, dead.length ? 'silent after the port: ' + dead.join(', ') : 'all seven ported voices sound');
@@ -137,8 +108,6 @@ async function render(page, setup, arg) {
     notes.push(`piano dry ${dry.voicedMs.toFixed(0)}ms, sustain 2.5s ${wet.voicedMs.toFixed(0)}ms`);
     ok(wet.voicedMs > dry.voicedMs * 1.5, 'sustain actually holds the note longer');
 
-    // A campaign chart names a voice per note; the override has to beat
-    // the globally selected instrument or every area sounds the same.
     const asSynth  = await render(page, () => { window.RD_setInstrument('synth'); window.RD_playNoteFreq(440, false, 0); });
     const override = await render(page, () => { window.RD_setInstrument('synth'); window.RD_playNoteFreq(440, false, 0, 'bell'); });
     const realBell = measured.bell;
@@ -150,7 +119,6 @@ async function render(page, setup, arg) {
 
   console.log('== the master bus holds a stack of notes without clipping ==');
   {
-    // Four lanes plus a three-note chord is the worst realistic case.
     const stack = await render(page, () => {
       window.RD_setInstrument('brass');
       [261.63, 329.63, 392.00, 523.25, 659.26, 783.99, 880].forEach(f =>

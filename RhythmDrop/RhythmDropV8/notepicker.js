@@ -1,19 +1,3 @@
-// ═══════════════════════════════════════════
-//  RhythmDrop V8 — notepicker.js
-//
-//  The note-selector modal: a Letter | Octave | Accidental cascade that
-//  resolves to a frequency and calls back with it. A self-contained
-//  reusable picker — the creator opens it for a cell's pitch, for each
-//  lane's default note, and for the bass line.
-//
-//  Split out of creator.js — a plain (non-module) script sharing the
-//  same global scope. It calls autoSave() (creator.js) at runtime, so
-//  popup.html loads this before creator.js.
-// ═══════════════════════════════════════════
-
-// ── Note Picker Modal ────────────────────
-// 3-column layout: Letter | Octave | Accidental
-// Matches screenshot UI. No audio preview on selection.
 function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   const existing = document.getElementById('note-picker-modal');
   if (existing) existing.remove();
@@ -51,27 +35,19 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
     { v:'flat',    label:'\u266d flat'    },
   ];
 
-  // ── Cascade helpers ──────────────────────────────
-  // Col1 (Letter) → restricts Col2 (Octave) valid set
-  // Col2 (Octave) → restricts Col3 (Accidental) valid set
-  // Col1 does NOT directly restrict Col3
-
   function noteExists(letter, octave, acc) {
     const freq = noteToFreq(letter, octave, acc);
     return freq >= 54 && freq <= 4200;
   }
 
-  // Valid octaves given the selected letter (any acc is fine)
   function validOctaves() {
     return new Set(OCTAVES.filter(o => ACCS.some(a => noteExists(selLetter, o, a.v))));
   }
 
-  // Valid accidentals given selected letter + octave (cascade from col2)
   function validAccs() {
     return new Set(ACCS.map(a => a.v).filter(v => noteExists(selLetter, selOctave, v)));
   }
 
-  // Snap: if current combo invalid, find nearest valid note and update state
   function snapToNearest() {
     if (noteExists(selLetter, selOctave, selAcc)) return;
     const targetFreq = noteToFreq(selLetter, selOctave, selAcc);
@@ -86,7 +62,6 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
     selLetter = bestL; selOctave = bestO; selAcc = bestA;
   }
 
-  // Modal shell
   const modal = document.createElement('div');
   modal.id = 'note-picker-modal';
   modal.style.cssText = [
@@ -102,7 +77,6 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   modal.style.top  = Math.min(rect.bottom + 4, window.innerHeight - 380) + 'px';
   modal.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 296)) + 'px';
 
-  // Header
   const header = document.createElement('div');
   header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;';
   const title = document.createElement('div');
@@ -126,7 +100,6 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   header.appendChild(closeBtn);
   modal.appendChild(header);
 
-  // 3-column grid
   const grid = document.createElement('div');
   grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:stretch;';
 
@@ -156,14 +129,11 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   const colLBtns = [], colOBtns = [], colABtns = [];
 
   function refreshAllCols() {
-    // Col1: all letters always selectable (root of cascade — never dimmed)
     colLBtns.forEach((btn, idx) => styleBtn(btn, LETTERS[idx] === selLetter, false));
 
-    // Col2: valid octaves for the selected letter (any acc); cascade from col1
     const vO = validOctaves();
     colOBtns.forEach((btn, idx) => styleBtn(btn, OCTAVES[idx] === selOctave, !vO.has(OCTAVES[idx])));
 
-    // Col3: valid accs for selected letter + octave; cascade from col2 only
     const vA = validAccs();
     colABtns.forEach((btn, idx) => styleBtn(btn, ACCS[idx].v === selAcc, !vA.has(ACCS[idx].v)));
   }

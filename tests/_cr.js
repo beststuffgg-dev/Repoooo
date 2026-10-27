@@ -4,7 +4,6 @@ const OUT='/tmp/claude-0/-home-user-Repoooo/050eb574-5d03-5241-8e85-e1721be8a6f1
 (async()=>{
 const b=await chromium.launch(launchOpts());
 const errs=[];
-// creator generate menu at a wide ratio
 {
   const ctx=await b.newContext({viewport:{width:1000,height:640},deviceScaleFactor:2});
   const p=await ctx.newPage(); p.on('pageerror',e=>errs.push('wide: '+e.message));

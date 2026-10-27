@@ -1,12 +1,3 @@
-// Do the settings actually do anything?
-//
-// Every control here is driven the way a player drives it — the real
-// slider, the real button, the real <select> — and then the effect is
-// measured somewhere else entirely: the audio engine's reported volume,
-// the window's real width, the key that actually triggers a lane. A
-// handler that writes to currentSettings and stops is exactly the bug
-// this is looking for, and it is invisible to any test that reads the
-// setting back.
 const { chromium } = require('playwright');
 const path = require('path');
 const { launchOpts, v8Dir } = require('./browser');
@@ -27,7 +18,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
   await page.waitForTimeout(1400);
   await page.evaluate(() => { showScreen('home'); renderHome(); });
 
-  // Open a settings sub-tab and hand back its panel contents.
   const openTab = tab => page.evaluate(t => { settingsSubTab = t; buildSettingsPanel(); }, tab);
 
   console.log('== controls: remapping a lane key changes what plays it ==');
@@ -40,7 +30,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       sel.dispatchEvent(new Event('change', { bubbles: true }));
       const cap = document.querySelector('#btn0 .lane-key').textContent.trim();
       const saved = JSON.parse(localStorage.getItem('rd_settings') || '{}');
-      // And the remapped key must actually reach the lane.
       launchCampaignLevel(1, 0);
       document.getElementById('g-overlay').classList.remove('show');
       startGame();
@@ -62,7 +51,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
     ok(r.saved === 'KeyJ', 'and the choice is persisted');
     ok(r.firedOnJ, 'the remapped key triggers the lane');
     ok(!r.firedOnA, 'and the old key no longer does');
-    // put it back
     await page.evaluate(() => { currentSettings.keys[0] = 'KeyA'; store.saveSettings(currentSettings); applySettingsToDOM(); });
   }
 
@@ -83,14 +71,12 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       settingsSubTab = 'display'; buildSettingsPanel();
       const sliders = [...document.querySelectorAll('#tab-settings input[type=range]')];
       out.sliderCount = sliders.length;
-      // UI scale is the first slider in the Display tab.
       const scale = sliders[0];
       scale.value = '1.3';
       scale.dispatchEvent(new Event('input', { bubbles: true }));
       out.zoom = String(document.body.style.zoom);
       scale.value = '1'; scale.dispatchEvent(new Event('input', { bubbles: true }));
 
-      // Width stages into _pendingSize and applies on the button.
       const w = document.getElementById('size-w-slider');
       out.hasWidth = !!w;
       out.widthBefore = document.documentElement.offsetWidth;
@@ -125,7 +111,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       const saved = JSON.parse(localStorage.getItem('rd_settings') || '{}');
       out.savedMaster = saved.masterVol; out.savedMusic = saved.musicVol;
 
-      // The instrument buttons must reach the audio engine, not just the panel.
       const btns = [...document.querySelectorAll('#tab-settings button')]
         .filter(x => /Marimba|Organ|Kalimba/.test(x.textContent));
       out.instButtons = document.querySelectorAll('#tab-settings button').length;
@@ -179,9 +164,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       store.saveSettings(currentSettings);
     });
     await page.reload({ waitUntil: 'load' });
-    // Wait for boot to actually finish rather than guessing at a delay:
-    // settings are loaded and applied asynchronously, and a fixed
-    // timeout raced them on a loaded machine.
     await page.waitForFunction(
       () => typeof currentSettings !== 'undefined' && currentSettings.keys
             && window.RD_getVolume && document.querySelector('#btn0 .lane-key'),

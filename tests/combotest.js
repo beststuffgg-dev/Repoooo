@@ -1,10 +1,3 @@
-// Combo heat, milestones, and the hit-window visualizer.
-//
-// The visualizer probe is the important one: the band drawn above the
-// strike line is sized from hitTol() itself, so what you see and what
-// the engine judges cannot drift apart. That's checked at all three
-// window settings, because a constant would pass at one and fail at
-// the other two.
 const { boot } = require('./harness');
 const HOOK = `
 ;window.__t = {
@@ -81,8 +74,6 @@ probe('milestones announce once, at the exact number', () => {
 });
 
 probe('a milestone restarts its own animation', () => {
-  // Two milestones crossed in quick succession must both read; the
-  // class has to come off and go back on, not just stay on.
   const el = D.getElementById('combo-milestone');
   T().applyComboTier(50);
   const first = el.textContent;
@@ -91,7 +82,6 @@ probe('a milestone restarts its own animation', () => {
   if (!el.classList.contains('show')) throw new Error('the second milestone did not show');
 });
 
-// ── the hit-window visualizer ──
 probe('the drawn band is exactly hitTol(), at every setting', () => {
   const root = D.documentElement;
   T().currentSettings.showHitZone = true;
@@ -109,7 +99,6 @@ probe('the drawn band is exactly hitTol(), at every setting', () => {
 });
 
 probe('the three windows really are different sizes', () => {
-  // If they weren't, the probe above would pass on a constant.
   const sizes = Object.keys(T().HIT_WINDOWS).map(w => {
     T().currentSettings.hitWindow = w;
     return T().hitTol();
@@ -121,13 +110,9 @@ probe('the three windows really are different sizes', () => {
 });
 
 probe('the window is expressed in beats, not pixels', () => {
-  // A pixel constant buys less time the taller the screen. As a
-  // fraction of a beat it is the same duration everywhere.
   if (!(T().HIT_TOL_BEATS > 0)) throw new Error('HIT_TOL_BEATS is not a positive number');
   if (!(T().TILE_TRAVEL_BEATS > 0)) throw new Error('TILE_TRAVEL_BEATS is not a positive number');
   notes.push(`window is ${T().HIT_TOL_BEATS} of ${T().TILE_TRAVEL_BEATS} travel beats`);
-  // hitTol scales linearly with lane height, which is what makes the
-  // duration constant.
   const src = require('fs').readFileSync(require('path').join(require('./browser').appDir(), 'game.js'), 'utf8');
   if (!/laneH\(\)\s*\*\s*\(HIT_TOL_BEATS\s*\/\s*TILE_TRAVEL_BEATS\)/.test(src))
     throw new Error('hitTol no longer derives from the beat fraction');

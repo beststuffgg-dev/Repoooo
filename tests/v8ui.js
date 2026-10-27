@@ -1,8 +1,3 @@
-// V8 in a real browser: the two layout changes, and one whole run
-// through the campaign from the list to the results screen.
-//
-// Chromium rather than jsdom because both changes are layout: a panel
-// that widens the window, and a height that must refuse to move.
 const { chromium } = require('playwright');
 const path = require('path');
 const { launchOpts, v8Dir } = require('./browser');
@@ -48,8 +43,6 @@ const open = async (b, w, h) => {
 
   console.log('== both edges move; height goes up to 760 ==');
   {
-    // Viewport is 1000×820 here, so the 760 ceiling — not the viewport —
-    // is what caps the height.
     const r = await page.evaluate(() => {
       currentSettings.width = 640; currentSettings.height = 560; applySettingsToDOM();
       const set = { w: document.documentElement.offsetWidth, h: document.documentElement.offsetHeight };
@@ -165,10 +158,48 @@ const open = async (b, w, h) => {
     ok(r.daily, 'the daily card is offered');
   }
 
+  console.log('== every campaign area has its hand-drawn emblem ==');
+  {
+    const r = await page.evaluate(() => {
+      const areas = window.RD_Campaign.AREAS;
+      const out = { keys: areas.map(a => a.key), missing: [], empty: [] };
+      areas.forEach(a => {
+        const sym = document.getElementById('emblem-' + a.key);
+        if (!sym) { out.missing.push(a.key); return; }
+        if (!sym.querySelectorAll('path').length) out.empty.push(a.key);
+      });
+      renderHome();
+      const chips = [...document.querySelectorAll('.area-chip:not(.endless-chip)')];
+      out.chips = chips.length;
+      out.chipsWithEmblem = chips.filter(c => c.querySelector('.ac-emblem use')).length;
+      const resolves = el => { const u = el.querySelector('use'); const t = u && document.querySelector(u.getAttribute('href')); return !!t; };
+      out.chipsResolve = chips.every(c => resolves(c.querySelector('.ac-emblem')));
+      const sizes = chips.map(c => { const r = c.querySelector('.ac-emblem svg').getBoundingClientRect(); return [r.width, r.height]; });
+      out.chipSize = sizes[0];
+      out.head = !!document.querySelector('.cam-head .ch-emblem use');
+      out.headResolves = resolves(document.querySelector('.cam-head .ch-emblem'));
+      const hr = document.querySelector('.cam-head .ch-emblem svg').getBoundingClientRect();
+      out.headSize = [hr.width, hr.height];
+      out.endlessHasNone = !document.querySelector('.area-chip.endless-chip .ac-emblem');
+      out.lockedGrey = getComputedStyle(document.querySelector('.area-chip.locked .ac-emblem svg')).filter;
+      const sel = document.querySelector('.area-chip.sel .ac-emblem use').getAttribute('href');
+      out.sel = sel;
+      return out;
+    });
+    notes.push('emblems: ' + r.keys.join(', '));
+    ok(r.keys.length === 10 && r.missing.length === 0, 'all ' + r.keys.length + ' areas have an emblem symbol' + (r.missing.length ? ' — missing ' + r.missing.join(', ') : ''));
+    ok(r.empty.length === 0, 'and each is drawn, not an empty shell' + (r.empty.length ? ' — empty: ' + r.empty.join(', ') : ''));
+    ok(r.chips === 10 && r.chipsWithEmblem === 10, 'every area chip carries one (' + r.chipsWithEmblem + ' of ' + r.chips + ')');
+    ok(r.chipsResolve, 'each chip emblem points at a symbol that exists');
+    ok(r.chipSize[0] >= 20 && r.chipSize[1] >= 20, 'and is big enough to read (' + r.chipSize.map(Math.round).join('×') + 'px)');
+    ok(r.head && r.headResolves && r.headSize[0] >= 30, 'the area heading shows the emblem too (' + r.headSize.map(Math.round).join('×') + 'px)');
+    ok(r.sel === '#emblem-farmstead', 'the open area shows its own (' + r.sel + ')');
+    ok(r.endlessHasNone, 'the Endless tab keeps its own mark and has no area emblem');
+    ok(/grayscale/.test(r.lockedGrey), 'a locked area\'s emblem is greyed (' + r.lockedGrey + ')');
+  }
+
   console.log('== panes are built when their tab is shown ==');
   {
-    // Themes, Settings and Shop sit behind tabs most visits never open, so
-    // they are built on show rather than on every return to the menu.
     const f = await open(b, 420, 640);
     const sizes = () => f.page.evaluate(() => ({
       themes: document.querySelectorAll('#themes-grid .theme-card').length,
@@ -191,20 +222,17 @@ const open = async (b, w, h) => {
     await tab('settings'); const g = await sizes();
     ok(g.settings > 0, 'opening Settings builds it (' + g.settings + ' blocks)');
 
-    // The pane in view is refreshed when the home screen is shown again,
-    // so what a run just earned is there on return.
     await tab('themes');
     const earned = await f.page.evaluate(() => {
       const before = document.querySelectorAll('#themes-grid .theme-card.locked').length;
-      for (let i = 0; i < 15; i++) progress.cleared['a1l' + i] = true;   // finish Farmstead
-      launchCampaignLevel(1, 14);                                        // play a song…
+      for (let i = 0; i < 15; i++) progress.cleared['a1l' + i] = true;
+      launchCampaignLevel(1, 14);
       document.getElementById('g-overlay').classList.remove('show'); startGame();
-      quitToMenu();                                                      // …and come back
+      quitToMenu();
       return { before, after: document.querySelectorAll('#themes-grid .theme-card.locked').length };
     });
     ok(earned.before === 10 && earned.after === 9, 'returning to the menu refreshes the pane in view: a theme just earned shows as unlocked (' + earned.before + ' → ' + earned.after + ' locked)');
 
-    // The profile-bar avatar jumps straight to the shop, built.
     await f.page.evaluate(() => { document.querySelector('.hnav[data-tab="levels"]').click(); document.getElementById('shop-avatar-grid').innerHTML = ''; });
     await f.page.evaluate(() => document.getElementById('pbar-avatar').click());
     const jump = await f.page.evaluate(() => ({ active: document.querySelector('.hnav.active').dataset.tab, cards: document.querySelectorAll('#shop-avatar-grid .avatar-card').length }));

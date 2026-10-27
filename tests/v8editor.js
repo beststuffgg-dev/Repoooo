@@ -1,6 +1,3 @@
-// The creator's editing power tools: keyboard note entry on the play
-// keys, multi-select copy / cut / paste / move / delete, and the now-
-// resizable window height.
 const { chromium } = require('playwright');
 const path = require('path');
 const { launchOpts, v8Dir } = require('./browser');
@@ -35,13 +32,13 @@ const boot = async (b, w, h) => {
       openCreator(null);
       crGrid = Array.from({ length: 8 }, () => [null, null, null, null]);
       crCursor = 0; buildGrid();
-      __press('KeyA');            // lane 0, row 0
-      __press('KeyF');            // lane 3, row 0
-      __press('Enter');           // advance cursor
-      __press('KeyS');            // lane 1, row 1
+      __press('KeyA');
+      __press('KeyF');
+      __press('Enter');
+      __press('KeyS');
       const afterType = { r0l0: !!crGrid[0][0], r0l3: !!crGrid[0][3], cursor: crCursor, r1l1: !!crGrid[1][1], total: filled() };
-      __press('ArrowUp');         // back to row 0
-      __press('KeyA');            // same cell — toggles off
+      __press('ArrowUp');
+      __press('KeyA');
       return { afterType, cursorBack: crCursor, r0l0After: !!crGrid[0][0], total2: filled() };
     });
     ok(r.afterType.r0l0 && r.afterType.r0l3, 'A and F place notes in their lanes on the cursor row');
@@ -87,21 +84,17 @@ const boot = async (b, w, h) => {
       selCopy();
       const clip = crClip.length;
 
-      // Paste with nothing selected → anchor at the cursor row, lane 0.
       crSel.clear(); crCursor = 4; selPaste();
       const pasted = { at40: !!crGrid[4][0], at51: !!crGrid[5][1], sel: crSel.size };
 
-      // Nudge the pasted block one lane right.
       selMove(0, 1);
       const moved = { off40: !crGrid[4][0], on41: !!crGrid[4][1], off51: !crGrid[5][1], on52: !!crGrid[5][2] };
 
-      // A move that would leave the four lanes is refused.
       crSel.clear(); crSel.add('4,1'); crSel.add('5,2');
       const beforeBlocked = JSON.stringify(crGrid);
       selMove(0, 5);
       const blocked = JSON.stringify(crGrid) === beforeBlocked;
 
-      // Delete clears the selection's cells.
       selDelete();
       const afterDel = { empty41: !crGrid[4][1], empty52: !crGrid[5][2], sel: crSel.size };
 
@@ -124,8 +117,6 @@ const boot = async (b, w, h) => {
   {
     const { ctx, page, errors } = await boot(b, 420, 700);
     const r = await page.evaluate(async () => {
-      // A saved level, so Export shows alongside Save, and a long name
-      // that would push the buttons off a naive flex row.
       store.save([{ id: 'c1', name: 'A rather long level name goes here', bpm: 180, diff: 'medium',
         grid: Array.from({ length: 8 }, () => [null, null, null, null]) }]);
       currentSettings.width = 420; applySettingsToDOM();
