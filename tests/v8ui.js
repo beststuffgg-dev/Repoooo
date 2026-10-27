@@ -158,6 +158,46 @@ const open = async (b, w, h) => {
     ok(r.daily, 'the daily card is offered');
   }
 
+  console.log('== every campaign area has its hand-drawn emblem ==');
+  {
+    const r = await page.evaluate(() => {
+      const areas = window.RD_Campaign.AREAS;
+      const out = { keys: areas.map(a => a.key), missing: [], empty: [] };
+      areas.forEach(a => {
+        const sym = document.getElementById('emblem-' + a.key);
+        if (!sym) { out.missing.push(a.key); return; }
+        if (!sym.querySelectorAll('path').length) out.empty.push(a.key);
+      });
+      renderHome();
+      const chips = [...document.querySelectorAll('.area-chip:not(.endless-chip)')];
+      out.chips = chips.length;
+      out.chipsWithEmblem = chips.filter(c => c.querySelector('.ac-emblem use')).length;
+      const resolves = el => { const u = el.querySelector('use'); const t = u && document.querySelector(u.getAttribute('href')); return !!t; };
+      out.chipsResolve = chips.every(c => resolves(c.querySelector('.ac-emblem')));
+      const sizes = chips.map(c => { const r = c.querySelector('.ac-emblem svg').getBoundingClientRect(); return [r.width, r.height]; });
+      out.chipSize = sizes[0];
+      out.head = !!document.querySelector('.cam-head .ch-emblem use');
+      out.headResolves = resolves(document.querySelector('.cam-head .ch-emblem'));
+      const hr = document.querySelector('.cam-head .ch-emblem svg').getBoundingClientRect();
+      out.headSize = [hr.width, hr.height];
+      out.endlessHasNone = !document.querySelector('.area-chip.endless-chip .ac-emblem');
+      out.lockedGrey = getComputedStyle(document.querySelector('.area-chip.locked .ac-emblem svg')).filter;
+      const sel = document.querySelector('.area-chip.sel .ac-emblem use').getAttribute('href');
+      out.sel = sel;
+      return out;
+    });
+    notes.push('emblems: ' + r.keys.join(', '));
+    ok(r.keys.length === 10 && r.missing.length === 0, 'all ' + r.keys.length + ' areas have an emblem symbol' + (r.missing.length ? ' — missing ' + r.missing.join(', ') : ''));
+    ok(r.empty.length === 0, 'and each is drawn, not an empty shell' + (r.empty.length ? ' — empty: ' + r.empty.join(', ') : ''));
+    ok(r.chips === 10 && r.chipsWithEmblem === 10, 'every area chip carries one (' + r.chipsWithEmblem + ' of ' + r.chips + ')');
+    ok(r.chipsResolve, 'each chip emblem points at a symbol that exists');
+    ok(r.chipSize[0] >= 20 && r.chipSize[1] >= 20, 'and is big enough to read (' + r.chipSize.map(Math.round).join('×') + 'px)');
+    ok(r.head && r.headResolves && r.headSize[0] >= 30, 'the area heading shows the emblem too (' + r.headSize.map(Math.round).join('×') + 'px)');
+    ok(r.sel === '#emblem-farmstead', 'the open area shows its own (' + r.sel + ')');
+    ok(r.endlessHasNone, 'the Endless tab keeps its own mark and has no area emblem');
+    ok(/grayscale/.test(r.lockedGrey), 'a locked area\'s emblem is greyed (' + r.lockedGrey + ')');
+  }
+
   console.log('== panes are built when their tab is shown ==');
   {
     const f = await open(b, 420, 640);

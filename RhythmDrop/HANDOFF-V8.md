@@ -146,6 +146,10 @@ Ten themes, one per area, earned by clearing every song in that area: **Harvest*
 
 **Contrast was measured, not assumed**, from computed styles in a real browser: body text is at least 11:1 on every surface, secondary text at least 5.4:1, and the note, accent and judgement colours at least 4.6:1. The first draft had six palettes under 4.5:1 for the colours used as small text; the dark themes needed their primary note colour lightened slightly and the two light themes darkened. `v8themes.js` holds the floor.
 
+## 5b. Area emblems
+
+Each of the ten areas has a hand-drawn 64×64 pixel emblem, ported from V7: a wheat bundle (Farmstead), a pyramid (Egypt), columns (Greece), a laurel wreath (Rome), a temple (Aztec), a mask (Maya), a ship (Old England), a tower (Napoleonic), crystals (Modern), a spaceship (Retro-Future). They are `<symbol id="emblem-<area key>">` entries in an inline sprite at the top of `popup.html` (38 KB, no network, no files to load), keyed by the same `key` the baked area data carries, so a new area only needs a symbol with its key. `renderCampaign` shows one on each area tab and in the heading above the song list through `emblemSvg(key)`. They keep their own colours, so each sits on a dark tile that stays readable under the light themes; a locked area's emblem is greyed. The Endless tab has no area and keeps its own mark. `v8ui.js` checks that every area has a drawn emblem that resolves, and that the tabs and heading show it.
+
 ---
 
 ## 6. Architecture

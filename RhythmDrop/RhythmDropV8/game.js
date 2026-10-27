@@ -471,6 +471,9 @@ function recordBest(lvl, score, coins) {
   return true;
 }
 
+const emblemSvg = key =>
+  '<svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href="#emblem-' + key + '"/></svg>';
+
 function renderCampaign() {
   const C = CAM();
   const strip = document.getElementById('cam-areas');
@@ -488,8 +491,9 @@ function renderCampaign() {
       + (area.id === camArea ? ' sel' : '')
       + (!unlocked ? ' locked' : '')
       + (done === C.LEVELS_PER_AREA ? ' done' : '');
-    chip.innerHTML = '<div class="ac-name">' + (unlocked ? area.name : '🔒 ' + area.name) + '</div>'
-      + '<div class="ac-prog">' + done + '/' + C.LEVELS_PER_AREA + '</div>';
+    chip.innerHTML = '<span class="ac-emblem">' + emblemSvg(area.key) + '</span>'
+      + '<div class="ac-text"><div class="ac-name">' + (unlocked ? area.name : '🔒 ' + area.name) + '</div>'
+      + '<div class="ac-prog">' + done + '/' + C.LEVELS_PER_AREA + '</div></div>';
     if (unlocked) chip.addEventListener('click', () => { camArea = area.id; renderCampaign(); });
     strip.appendChild(chip);
   });
@@ -499,8 +503,8 @@ function renderCampaign() {
   echip.className = 'area-chip endless-chip'
     + (camArea === 'endless' ? ' sel' : '')
     + (!endlessReady ? ' locked' : '');
-  echip.innerHTML = '<div class="ac-name">' + (endlessReady ? '♾️ Endless' : '🔒 Endless') + '</div>'
-    + '<div class="ac-prog">' + (endlessReady ? 'no end' : 'clear all') + '</div>';
+  echip.innerHTML = '<div class="ac-text"><div class="ac-name">' + (endlessReady ? '♾️ Endless' : '🔒 Endless') + '</div>'
+    + '<div class="ac-prog">' + (endlessReady ? 'no end' : 'clear all') + '</div></div>';
   if (endlessReady) echip.addEventListener('click', () => { camArea = 'endless'; renderCampaign(); });
   strip.appendChild(echip);
 
@@ -515,7 +519,8 @@ function renderCampaign() {
   list.innerHTML = '';
   const head = document.createElement('div');
   head.className = 'cam-head';
-  head.innerHTML = '<span class="ch-name">' + area.name + '</span>'
+  head.innerHTML = '<span class="ch-emblem">' + emblemSvg(area.key) + '</span>'
+    + '<span class="ch-name">' + area.name + '</span>'
     + '<span class="ch-blurb">' + area.blurb + '</span>';
   list.appendChild(head);
 
