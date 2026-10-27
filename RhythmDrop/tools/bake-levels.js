@@ -1,21 +1,4 @@
 #!/usr/bin/env node
-// Bakes the 150 campaign charts into a permanent data file.
-//
-// The generator itself is kept, not replaced: this loads v7's
-// campaign.js — the same deterministic mulberry32 composer that wrote
-// these songs — runs it once over every area and level, and writes the
-// result out as plain data. V8 then loads that file instead of
-// composing at boot.
-//
-// Why bake at all: a chart that exists as a file can be listened to,
-// hand-edited, diffed and reviewed. A chart that only exists as a seed
-// can only be re-derived, and any change to the composer silently
-// rewrites all 150 songs under the player's feet.
-//
-//   node RhythmDrop/tools/bake-levels.js
-//
-// Re-run it deliberately, and expect the diff to show every song that
-// moved.
 'use strict';
 const fs = require('fs');
 const path = require('path');
@@ -26,23 +9,9 @@ const GENERATOR = path.join(ROOT, 'RhythmDrop', 'v7', 'RhythmDropV7', 'campaign.
 const OUT = path.join(ROOT, 'RhythmDrop', 'RhythmDropV8', 'levels.js');
 const ROWTYPES = path.join(ROOT, 'RhythmDrop', 'RhythmDropV8', 'rowtypes.js');
 
-// The instrument roster V8 ships. The composer resolves each area's
-// voice against whatever `window.RD_INSTRUMENTS` says the target build
-// has, falling back to a near neighbour when it is missing — so baking
-// against an empty roster silently collapses ten area voices into four
-// and every song after Farmstead comes out wrong. This list is what
-// makes the bake honest, and v8levels.js asserts the shipped audio
-// engine still provides every id the baked charts reference.
 const ROSTER = ['synth', 'piano', 'guitar', 'marimba', 'bell', 'flute',
   'lyre', 'brass', 'organ', 'strings', 'chiptune', 'kalimba'];
 
-// Campaign songs are capped to two minutes. The composer aims for
-// 1m30–3m by difficulty, which left the back half of the campaign
-// running past three minutes a track — too long for a pick-up-and-play
-// popup. Capping is done here, on the baked grid, by dropping WHOLE
-// BARS from the tail: a bar is a complete musical phrase, so the song
-// still ends on a bar line rather than mid-figure. Shorter songs are
-// left exactly as composed.
 const MAX_SECONDS = 120;
 
 function capToLength(lvl) {
@@ -51,7 +20,6 @@ function capToLength(lvl) {
   if (seconds <= MAX_SECONDS) return { grid: lvl.grid, rows, seconds, capped: false };
   const rowsPerBar = Math.max(1, Math.round(rows / (lvl._bars || (rows / 4))));
   const maxRows = Math.floor((MAX_SECONDS * lvl.bpm) / 60);
-  // Whole bars only, and at least a few so nothing collapses to a stub.
   const bars = Math.max(4, Math.floor(maxRows / rowsPerBar));
   const keep = Math.min(rows, bars * rowsPerBar);
   return {
@@ -62,8 +30,6 @@ function capToLength(lvl) {
   };
 }
 
-// campaign.js is an IIFE that hangs one global off `window` and never
-// touches the DOM, so a bare context is all it needs.
 function loadGenerator() {
   const sandbox = { window: {} };
   sandbox.window.window = sandbox.window;
@@ -74,17 +40,12 @@ function loadGenerator() {
   return C;
 }
 
-// The one-type-per-row rule is V8's, not the composer's, so it is
-// loaded from the game's own module rather than reimplemented here.
 function loadRowTypes() {
   const sandbox = { window: {} };
   vm.runInContext(fs.readFileSync(ROWTYPES, 'utf8'), vm.createContext(sandbox));
   return sandbox.window.RD_RowTypes;
 }
 
-// Pitches are stored as MIDI numbers rather than frequencies: the
-// composer draws every note from an equal-tempered table, so the
-// number is exact, a third of the size, and readable by a human.
 const toMidi = f => Math.round(69 + 12 * Math.log2(f / 440));
 const toFreq = m => parseFloat((440 * Math.pow(2, (m - 69) / 12)).toFixed(2));
 
@@ -108,17 +69,13 @@ function main() {
     for (let idx = 0; idx < C.LEVELS_PER_AREA; idx++) {
       const l = C.buildCampaignLevel(area.id, idx);
       const cap = capToLength(l);
-      l.grid = cap.grid;                 // trimmed to whole bars under MAX_SECONDS
+      l.grid = cap.grid;
       if (cap.capped) capped++;
-      RowTypes.uniformRowTypes(l.grid);  // one kind of note per row
-      // Flat note list: row, lane, type, midi, sustain in tenths, instrument.
-      // Five small integers beats an object per note by a wide margin at
-      // 150 charts, and the shape is still obvious at a glance.
+      RowTypes.uniformRowTypes(l.grid);
       const nt = [];
       l.grid.forEach((row, r) => row.forEach((cell, lane) => {
         if (!cell) return;
         const midi = toMidi(cell.freq);
-        // Prove the pitch survives the round trip rather than assuming it.
         if (Math.abs(toFreq(midi) - cell.freq) > 0.02) drift++;
         nt.push(r, lane, cell.type === 'dtap' ? 1 : 0, midi,
           Math.round((cell.sustain || 0) * 10), instIdx(cell.inst));
@@ -140,18 +97,11 @@ function main() {
   const body = {
     v: 1,
     generated: 'RhythmDrop/tools/bake-levels.js',
+    warning: 'GENERATED FILE - do not hand-edit the note data. Re-run RhythmDrop/tools/bake-levels.js to regenerate it.',
     areas, instruments, levels,
   };
 
   const out = [
-    '// GENERATED FILE — do not hand-edit the note data.',
-    '// Written by RhythmDrop/tools/bake-levels.js from the deterministic',
-    '// composer in RhythmDrop/v7/RhythmDropV7/campaign.js. Re-run that tool',
-    '// to regenerate; expect the diff to show every song that moved.',
-    '//',
-    '// ' + levels.length + ' levels, ' + notesTotal.toLocaleString() + ' notes, ' + areas.length + ' areas.',
-    '// Notes are flat runs of six ints: row, lane, type(0=tap,1=x2),',
-    '// midi, sustain*10, instrument index.',
     'window.RD_LEVEL_DATA = ' + JSON.stringify(body) + ';',
     '',
   ].join('\n');

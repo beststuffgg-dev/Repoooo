@@ -1,19 +1,9 @@
-// Do simultaneous notes actually sound like harmony?
-//
-// Notes that share a beat used to be whatever interval the melody
-// walker happened to land on, which is how a chart ends up with minor
-// seconds in it. Chords are now stacked in thirds above the first note
-// present — scale degree i, i+2, i+4 — and this suite checks that
-// across every one of the 150 campaign charts rather than a sample,
-// because a single bad seed is exactly the failure mode.
 const { boot } = require('./harness');
 const { window, notes, probe, report } = boot();
 const C = window.RD_Campaign, K = window.RD_Codec;
 
 const semis = (a, b) => Math.abs(Math.round(12 * Math.log2(b / a)));
 
-// Interval class within the octave: what the ear actually hears when
-// the two notes are more than an octave apart.
 const pc = n => ((n % 12) + 12) % 12;
 
 const tally = {}, sizes = {};
@@ -57,9 +47,6 @@ probe('every campaign chart builds', () => {
 });
 
 probe('there are chords to check at all', () => {
-  // This probe exists because the two below pass trivially on an empty
-  // result — a generator that stopped stacking notes would have looked
-  // like a clean sweep.
   if (stacks < 500) throw new Error('only ' + stacks + ' stacks found; the probes below would be vacuous');
 });
 
@@ -74,14 +61,10 @@ probe('thirds and fifths dominate', () => {
 });
 
 probe('tritones are rare, not absent', () => {
-  // A double-harmonic scale has one built in, so demanding zero would
-  // be demanding the wrong thing — demanding it stay incidental is right.
   if (share(6) > 0.05) throw new Error('tritones at ' + (share(6) * 100).toFixed(1) + '%');
 });
 
 probe('stacks are built in thirds above the lowest note', () => {
-  // Take three-note stacks only: i, i+2, i+4 in a diatonic scale is a
-  // third then a third, so both gaps land in the 3-4 semitone band.
   let three = 0, stacked = 0;
   for (const area of C.AREAS) {
     for (let i = 0; i < C.LEVELS_PER_AREA; i += 3) {

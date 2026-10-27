@@ -16,7 +16,7 @@ structurally cannot catch a layout bug.
 | `v8graphics.js` | The graphics layer is strictly additive; Classic and Modern really differ and each renders deterministically |
 | `v8codec.js` | The compact share codes, and every theme carrying a texture (a shared base grain, six distinct material grains) |
 | `v8settings.js` | Every setting driven and its effect measured. **Known intermittent failure** in its reload section, also present on the original build — see HANDOFF §8 |
-| `v8generate.js` | V7's composer bundled verbatim; Generate, Keep and Endless |
+| `v8generate.js` | V7's composer bundled (identical but for comments); Generate, Keep and Endless |
 | `v8rowtypes.js` | One kind of note per row — the rule, the 150 baked songs, 160 generated charts, and every generation path |
 | `v8themes.js` | The ten campaign themes: one per area, the unlock following the whole area, the announcement, saved-theme fallback, contrast floors |
 | `v8gameplay.js` | The hit window and the Double; tiles drawn where they are judged |
@@ -142,6 +142,7 @@ npm run chords
   `document.fonts`, evals the modules in load order, and provides
   `probe()` / `report()`. A platform stub gained here is gained
   everywhere at once.
+- `strip.js` — removes comments using a parser rather than patterns, and compares syntax trees to prove nothing else changed. `v8generate.js` uses it; the repo's source was stripped with it.
 - `browser.js` — resolves which Chromium to launch (newest installed
   build, `PW_CHROME` to override — Playwright's own default asks for a
   headless-shell build that isn't always installed next to the full

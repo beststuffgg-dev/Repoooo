@@ -1,7 +1,4 @@
 const {chromium}=require('playwright');const path=require('path');const fs=require('fs');
-// Which Chromium to launch and which build to point at both live in
-// browser.js, so APP_DIR and PW_CHROME mean the same thing in every
-// suite instead of being re-derived per file.
 const {launchOpts,appDir}=require('./browser');
 const LAUNCH=launchOpts();
 const DIR=appDir();
@@ -41,7 +38,6 @@ const geo = await p.evaluate(()=>{
 });
 ok(geo.laneH > geo.capH*4, `lane is ${geo.laneH.toFixed(0)}px vs a ${geo.capH.toFixed(0)}px keycap — most of it was dead before`);
 
-// Tap high up the lane, far above the keycap.
 const highY = geo.laneTop + geo.laneH*0.35;
 const before = await p.evaluate(()=>({score, combo}));
 await p.touchscreen.tap(geo.laneMidX, highY);
@@ -54,7 +50,6 @@ ok(afterHigh.score !== before.score || afterHigh.flashed,
 console.log('== a tap on the keycap still works and does not double-fire ==');
 await p.evaluate(()=>{ score=0; combo=0; notesHit=0; });
 const capY = geo.capTop + geo.capH/2;
-// Aim at a moment with no tile in range so a hit cannot confuse the count.
 const taps = await p.evaluate(async()=>{
   let n=0; const realHit = window.hit;
   window.__hits = 0;
@@ -68,9 +63,6 @@ ok(true, `keycap tap handled (score ${preCap.s} -> ${postCap.s})`);
 
 console.log('== simultaneous fingers all register (chords on touch) ==');
 const chord = await p.evaluate(async()=>{
-  // Drive the real delegated handler with a genuine multi-touch
-  // TouchEvent: two fingers landing in the same frame, which is what
-  // the browser coalesces into a single event.
   const lanes=[0,2].map(i=>document.getElementById('lane'+i).getBoundingClientRect());
   const hits=[];
   const orig = window.tapLane;

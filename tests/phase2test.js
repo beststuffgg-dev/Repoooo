@@ -1,4 +1,3 @@
-// Phase 2 — Shop: tabs, live previews, free themes, mystery boxes.
 const { boot } = require('./harness');
 const HOOK = `
 ;window.__t = {
@@ -44,7 +43,6 @@ probe('switching tab shows one grid and hides the rest', () => {
 });
 
 probe('the shop actually has stock in every tab', () => {
-  // A tab that renders zero cards would make every probe above vacuous.
   const counts = [];
   for (const [key] of T().SHOP_TABS) {
     T().shopTab = key; T().renderShop();
@@ -58,8 +56,6 @@ probe('the shop actually has stock in every tab', () => {
 });
 
 probe('themes are unlocked by play, not bought with coins', () => {
-  // Coins were never the interesting gate: a look is either free or it
-  // is earned by clearing the area it belongs to.
   const byArea = T().THEME_BY_AREA;
   const gated = Object.keys(byArea);
   notes.push(`${T().THEMES.length} base themes, ${gated.length} earned by clearing an area: `
@@ -67,7 +63,6 @@ probe('themes are unlocked by play, not bought with coins', () => {
   if (gated.length < 5) throw new Error('only ' + gated.length + ' themes are earned');
   const free = T().THEMES.filter(t => !byArea[t.id]);
   if (!free.length) throw new Error('no theme is free from the start');
-  // Every gate must point at a real area.
   const bad = gated.filter(k => !(byArea[k] >= 1 && byArea[k] <= window.RD_Campaign.AREAS.length));
   if (bad.length) throw new Error('themes gated on areas that do not exist: ' + bad.join(', '));
 });
@@ -87,8 +82,6 @@ probe('every mystery box tier has a real weighted table', () => {
 });
 
 probe('the odds shown are the odds rolled', () => {
-  // Both the card and the roll read the same table, so the printed
-  // percentages cannot drift from the behaviour.
   const src = require('fs').readFileSync(require('path').join(require('./browser').appDir(), 'game.js'), 'utf8');
   const shown = src.match(/function boxOdds[\s\S]{0,400}/);
   if (!/BOX_TABLES\[rarity\]/.test(src)) throw new Error('the odds text no longer reads BOX_TABLES');
@@ -116,18 +109,14 @@ probe('opening a box always returns something from its own table', () => {
 probe('a duplicate pull converts to coins instead of nothing', () => {
   const src = require('fs').readFileSync(require('path').join(require('./browser').appDir(), 'game.js'), 'utf8');
   if (!/dup|duplicate/i.test(src)) throw new Error('no duplicate handling in the box path');
-  // ~1/3 of the item's value.
   if (!/\/\s*3|0\.33|\* *\.3/.test(src)) throw new Error('no fractional conversion rate found');
 });
 
 probe('effects and trails preview live before you buy', () => {
-  // The effects tab's key is 'hitfx'.
   const fxKey = T().SHOP_TABS.map(t => t[0]).find(k => /fx|effect/i.test(k));
   T().shopTab = fxKey; T().renderShop();
   const cards = [...D.querySelectorAll('#shop-g-' + fxKey + ' .fx-card')];
   if (!cards.length) throw new Error('no effect cards');
-  // The first click on a locked card previews and arms; it must not
-  // write to storage.
   const before = JSON.stringify(T().store.loadShop());
   const locked = cards.find(c => c.classList.contains('locked')) || cards[0];
   locked.dispatchEvent(new window.Event('click', { bubbles: true }));
@@ -139,7 +128,6 @@ probe('effects and trails preview live before you buy', () => {
 });
 
 probe('an owned item still equips in one click', () => {
-  // The two-step flow guards spending, not browsing.
   const src = require('fs').readFileSync(require('path').join(require('./browser').appDir(), 'game.js'), 'utf8');
   if (!/Only locked items arm/.test(src)) throw new Error('the one-click-equip rule is no longer stated');
 });

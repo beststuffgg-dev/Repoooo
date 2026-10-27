@@ -1,8 +1,3 @@
-// The compact share codes, and the textured material themes.
-//
-// Two V7 things brought across: the codec that turns a multi-kilobyte
-// base64-JSON level export into a short RD2 code, and the material
-// themes that carry a real grain texture rather than a flat palette.
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -14,8 +9,6 @@ const notes = [];
 let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, console.log('  FAIL: ' + m)); };
 
-// A level as V8's creator actually produces one: cells carry type,
-// freq and sustain, no per-note instrument.
 const SAMPLE = {
   name: 'My Chart', bpm: 140, diff: 'medium', instrument: 'guitar', bgMode: 'bass',
   laneFreqs: [220, 277.18, 329.63, 440],
@@ -84,7 +77,7 @@ console.log('== the codec is loaded before the game ==');
   console.log('== export/import wire through the codec ==');
   {
     const r = await page.evaluate(() => {
-      const src = document.documentElement.outerHTML; // not the source; check functions instead
+      const src = document.documentElement.outerHTML;
       return {
         exportUsesCodec: /RD_Codec.*encodeLevel|encodeLevel/.test(exportLevel.toString()),
         importUsesCodec: /RD_Codec.*decodeLevel|decodeLevel/.test(importLevel.toString()),
@@ -96,19 +89,12 @@ console.log('== the codec is loaded before the game ==');
 
   console.log('== every theme carries a grain; the material themes a distinct one ==');
   {
-    // The design refresh gives every palette theme a faint shared base
-    // tooth (set on :root and inherited), so no surface reads as flat
-    // fill; the six material themes still override it with their own
-    // distinct, stronger grain. This suite checks both halves.
     const r = await page.evaluate(() => {
       const out = { flat: {}, mat: {} };
       const read = () => getComputedStyle(document.body).getPropertyValue('--mat-grain').trim();
-      // Palette themes: the shared base tooth, inherited from :root.
       ['graphite', 'dark', 'neon'].forEach(t => { applyTheme(t); out.flat[t] = read(); });
-      // Material themes: a distinct grain each.
       ['walnut', 'bone', 'amber', 'vapor', 'blueprint', 'mono'].forEach(t => { applyTheme(t); out.mat[t] = read(); });
       applyTheme('graphite');
-      // The picker offers the material themes.
       out.offered = THEMES.filter(t => t.mat).map(t => t.id);
       return out;
     });

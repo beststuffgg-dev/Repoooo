@@ -1,10 +1,3 @@
-// Live generation, brought back from V7.
-//
-// V8 ships a baked campaign, but V7's composer is bundled as
-// RD_Generator so a fresh chart can be rolled on the spot. This checks
-// two things: the bundled composer still composes real, deterministic,
-// playable charts, and the game surfaces them — Generate, keep, and
-// endless — without letting a generated run touch campaign progress.
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
@@ -31,25 +24,18 @@ console.log('== the composer is bundled, and does not collide with the engine ==
   ok(typeof G.rollEndlessCode === 'function' && typeof G.buildCodeLevel === 'function',
     'the generator exposes rollEndlessCode and buildCodeLevel');
 
-  // The bundled composer must be a faithful copy of V7's, or a fix to
-  // V7 silently stops reaching V8.
   const bundled = fs.readFileSync(path.join(DIR, 'generator.js'), 'utf8');
   const v7src = fs.readFileSync(path.join(__dirname, '..', 'RhythmDrop', 'v7', 'RhythmDropV7', 'campaign.js'), 'utf8');
-  // The bundle must be V7's composer, not a fork of it — otherwise a
-  // fix to the campaign generator silently stops reaching V8. Compare
-  // the two with whitespace collapsed (the bundle adds a header banner
-  // and renames the export; neither changes behaviour).
-  const canon = t => t
+  const { stripJs } = require('./strip');
+  const canon = t => stripJs(t)
     .replace(/window\.RD_(Generator|Campaign) = \{/, 'EXPORT')
-    .replace(/^\/\/[^\n]*\n/gm, '')   // drop comment-only lines (the banner)
     .replace(/\s+/g, ' ').trim();
   ok(canon(bundled) === canon(v7src),
-    'the bundled composer is V7\'s, verbatim but for the banner and export name');
-  // And it is not accidentally the empty string matching the empty string.
+    'the bundled composer is V7\'s, identical but for comments and the export name');
   ok(canon(v7src).length > 20000, 'the compared body is the whole composer (' + canon(v7src).length + ' chars)');
 
   console.log('== a generated chart is real, playable and deterministic ==');
-  const code = 'MB4CB' + '1A2B3C4D'.slice(0, 4);   // a fixed, valid code
+  const code = 'MB4CB' + '1A2B3C4D'.slice(0, 4);
   let a, b;
   try { a = G.buildCodeLevel(G.rollEndlessCode(3, 6)); } catch (e) { a = null; }
   ok(a && a.grid && a.grid.length > 0, 'rollEndlessCode + buildCodeLevel yields a chart with a grid');
@@ -59,16 +45,13 @@ console.log('== the composer is bundled, and does not collide with the engine ==
     ok(n > 20, 'it has ' + n + ' notes');
     ok(a.laneFreqs && a.laneFreqs.length === 4, 'it carries four lane pitches');
     ok(a.grid.every(r => r.length === 4), 'every row is four lanes wide');
-    // per-note voices, the thing that makes areas sound different
     const withInst = a.grid.flat().filter(c => c && c.inst).length;
     ok(withInst > 0, 'its notes name their own voice (' + withInst + ' of them)');
   }
-  // Determinism: the same code builds the same chart every time.
   const fixed = G.rollEndlessCode(4, 4);
   const x = G.buildCodeLevel(fixed), y = G.buildCodeLevel(fixed);
   ok(JSON.stringify(x.grid) === JSON.stringify(y.grid), 'the same code composes the identical chart twice');
 
-  // Difficulty bands actually differ.
   const easy = [], hard = [];
   for (let i = 0; i < 8; i++) {
     let e = 0, h = 0;
@@ -143,9 +126,6 @@ console.log('== the composer is bundled, and does not collide with the engine ==
 
   console.log('== an Endless run keeps rolling a fresh song on Next ==');
   {
-    // The Endless tab UI is covered in v8creator; this drives the run
-    // mechanics: an endless run offers "Next" and rolls another chart
-    // rather than replaying, and never silently saves what it rolls.
     const r = await page.evaluate(() => {
       const lvl = generateLevel('4-7');
       lvl.endless = true; lvl._band = '4-7';
@@ -156,7 +136,7 @@ console.log('== the composer is bundled, and does not collide with the engine ==
       notesHit = notesTotal; score = 4000; endGame(true);
       out.btnLabel = document.getElementById('ov-btn').textContent;
       out.customsBeforeNext = store.load().length;
-      document.getElementById('ov-btn').click();   // Next song
+      document.getElementById('ov-btn').click();
       out.second = gameLevel.name;
       out.stillEndless = gameLevel.endless;
       out.customsAfterNext = store.load().length;

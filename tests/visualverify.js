@@ -1,10 +1,4 @@
-// Does what is drawn match what the code actually judges?
-// Every probe compares a rendered pixel position against the number
-// the engine uses, rather than trusting either on its own.
 const {chromium}=require('playwright');const path=require('path');const fs=require('fs');
-// Which Chromium to launch and which build to point at both live in
-// browser.js, so APP_DIR and PW_CHROME mean the same thing in every
-// suite instead of being re-derived per file.
 const {launchOpts,appDir}=require('./browser');
 const LAUNCH=launchOpts();
 const DIR=appDir();
@@ -35,7 +29,6 @@ for(const [w,h] of SIZES){
     await new Promise(r=>setTimeout(r,900));
     const lane=document.getElementById('lane0');
     const lr=lane.getBoundingClientRect();
-    // Padding-box origin: the coordinate space tiles are laid out in.
     const padTop = lr.top + lane.clientTop;
     const bar=lane.querySelector('.lane-hitbar').getBoundingClientRect();
     const zone=lane.querySelector('.lane-hitzone').getBoundingClientRect();
@@ -103,8 +96,6 @@ console.log('== a PERFECT hit really is visually on the line ==');
     launchLevel(lvl);
     document.getElementById('g-overlay').classList.remove('show');
     startGame(buildQueue(lvl));
-    // Wait until a tile's centre is within the PERFECT band (<20% of
-    // the window), then fire the tap and record where it was drawn.
     for(let i=0;i<600;i++){
       const t=activeTiles.find(t=>t.lane===0&&!t.done);
       if(t){
@@ -184,10 +175,6 @@ console.log('== the Width/Height settings actually resize the app ==');
     const s=document.getElementById('boot-splash');if(s)s.remove();
     localStorage.setItem('rd_tutorial','1');
     if(!profile.username){profile.username='P';saveProfile();}
-    // Width/Height deliberately only apply in a real extension popup —
-    // applying them to a served page strands the app in a corner of a
-    // much bigger viewport. Stub the protocol check so the popup path
-    // is exercised here.
     window.isExtensionPopup = () => true;
     document.documentElement.classList.add('as-popup');
     currentSettings.width=420; currentSettings.height=640; applySettingsToDOM();

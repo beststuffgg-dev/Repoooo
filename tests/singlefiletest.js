@@ -1,13 +1,3 @@
-// The single-file builds: does inlining change behaviour?
-//
-// RhythmDrop.html is generated from the source folder by
-// tools/build-single.js. It is the form most people will actually
-// open — a double-click, a phone browser, a static host — so "the
-// folder works" is not the same claim as "the file works". This boots
-// the generated files in real Chromium and checks the things inlining
-// could plausibly break: script order, module presence, zero network
-// requests, and the layout invariants the other suites establish
-// against the folder.
 const { chromium } = require('playwright');
 const path = require('path');
 const fs = require('fs');
@@ -39,7 +29,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       notes.push(file + ' inlines: ' + inlined.join(' -> '));
       const want = ['edge.js', 'lighting.js', 'campaign.js', 'codec.js', 'loading.js', 'audio.js', 'game.js'];
       ok(inlined.join() === want.join(), 'all seven modules inlined, in load order');
-      // Each one byte-for-byte what the folder holds.
       let same = 0;
       for (const f of inlined) {
         const body = html.slice(html.indexOf('<script data-from="' + f + '">') + ('<script data-from="' + f + '">').length);
@@ -49,7 +38,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       ok(same === inlined.length, `${same}/${inlined.length} inlined modules are byte-identical to the source folder`);
     }
 
-    // ── boot it for real ──
     const ctx = await b.newContext({ viewport: { width: 420, height: 700 } });
     const page = await ctx.newPage();
     const errors = [], external = [];
@@ -96,8 +84,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
     ok(state.levels === 150 && state.areas === 10, '10 areas x 15 levels');
     ok(state.coins === 150, 'the economy constants came through inlining');
 
-    // A campaign chart generated in the single file must match the
-    // one the folder generates — same seed, same chart, everywhere.
     const chart = await page.evaluate(() => {
       const l = RD_Campaign.buildCampaignLevel(3, 7);
       return { name: l.name, bpm: l.bpm, notes: RD_Campaign.countNotes(l), code: RD_Campaign.codeForCampaign(3, 7) };
@@ -108,7 +94,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
     await ctx.close();
   }
 
-  // The two single-file builds must agree on everything but the look.
   console.log('== the two single-file builds differ only in presentation ==');
   {
     const a = fs.readFileSync(path.join(V7, 'RhythmDrop.html'), 'utf8');

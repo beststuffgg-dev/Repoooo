@@ -1,8 +1,3 @@
-// V8 in a real browser: the two layout changes, and one whole run
-// through the campaign from the list to the results screen.
-//
-// Chromium rather than jsdom because both changes are layout: a panel
-// that widens the window, and a height that must refuse to move.
 const { chromium } = require('playwright');
 const path = require('path');
 const { launchOpts, v8Dir } = require('./browser');
@@ -48,8 +43,6 @@ const open = async (b, w, h) => {
 
   console.log('== both edges move; height goes up to 760 ==');
   {
-    // Viewport is 1000×820 here, so the 760 ceiling — not the viewport —
-    // is what caps the height.
     const r = await page.evaluate(() => {
       currentSettings.width = 640; currentSettings.height = 560; applySettingsToDOM();
       const set = { w: document.documentElement.offsetWidth, h: document.documentElement.offsetHeight };
@@ -167,8 +160,6 @@ const open = async (b, w, h) => {
 
   console.log('== panes are built when their tab is shown ==');
   {
-    // Themes, Settings and Shop sit behind tabs most visits never open, so
-    // they are built on show rather than on every return to the menu.
     const f = await open(b, 420, 640);
     const sizes = () => f.page.evaluate(() => ({
       themes: document.querySelectorAll('#themes-grid .theme-card').length,
@@ -191,20 +182,17 @@ const open = async (b, w, h) => {
     await tab('settings'); const g = await sizes();
     ok(g.settings > 0, 'opening Settings builds it (' + g.settings + ' blocks)');
 
-    // The pane in view is refreshed when the home screen is shown again,
-    // so what a run just earned is there on return.
     await tab('themes');
     const earned = await f.page.evaluate(() => {
       const before = document.querySelectorAll('#themes-grid .theme-card.locked').length;
-      for (let i = 0; i < 15; i++) progress.cleared['a1l' + i] = true;   // finish Farmstead
-      launchCampaignLevel(1, 14);                                        // play a song…
+      for (let i = 0; i < 15; i++) progress.cleared['a1l' + i] = true;
+      launchCampaignLevel(1, 14);
       document.getElementById('g-overlay').classList.remove('show'); startGame();
-      quitToMenu();                                                      // …and come back
+      quitToMenu();
       return { before, after: document.querySelectorAll('#themes-grid .theme-card.locked').length };
     });
     ok(earned.before === 10 && earned.after === 9, 'returning to the menu refreshes the pane in view: a theme just earned shows as unlocked (' + earned.before + ' → ' + earned.after + ' locked)');
 
-    // The profile-bar avatar jumps straight to the shop, built.
     await f.page.evaluate(() => { document.querySelector('.hnav[data-tab="levels"]').click(); document.getElementById('shop-avatar-grid').innerHTML = ''; });
     await f.page.evaluate(() => document.getElementById('pbar-avatar').click());
     const jump = await f.page.evaluate(() => ({ active: document.querySelector('.hnav.active').dataset.tab, cards: document.querySelectorAll('#shop-avatar-grid .avatar-card').length }));

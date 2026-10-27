@@ -1,9 +1,3 @@
-// Per-level best scores: every level keeps its own record, and a
-// record on level 7 survives fifty better runs elsewhere.
-//
-// The old build kept a single top-50 log, so a personal best was
-// evicted by unrelated runs. This checks the replacement, and the
-// one-time lift of the old log into it.
 const { boot } = require('./harness');
 const HOOK = `
 ;window.__t = {
@@ -32,8 +26,6 @@ probe('the old top-50 log was lifted into per-level records', () => {
 });
 
 probe('migration runs once, not on every boot', () => {
-  // The flag is what stops a later, worse run being overwritten by a
-  // stale row from the old log.
   if (window.localStorage.getItem('rd_bests_migrated') !== '1') throw new Error('flag not set');
 });
 
@@ -46,7 +38,6 @@ probe('a migrated record is readable through bestFor', () => {
 probe('every level keeps its own record — no top-N eviction', () => {
   const mine = lvl('Mine', 40);
   T().recordLevelBest(mine, 4242, 150);
-  // Fifty better runs on other levels.
   for (let i = 0; i < 50; i++) T().recordLevelBest(lvl('Other ' + i, 40), 90000 + i, 150);
   const got = T().bestFor(mine);
   notes.push('records held after 50 unrelated runs: ' + Object.keys(T().store.loadBests()).length);
@@ -85,7 +76,6 @@ probe('two customs with the same name but different lengths stay apart', () => {
 });
 
 probe('a level with no record reads as null, not zero', () => {
-  // Zero would render as a real personal best of nothing.
   if (T().bestFor(lvl('Never Played', 40)) !== null) throw new Error('an unplayed level reported a record');
 });
 

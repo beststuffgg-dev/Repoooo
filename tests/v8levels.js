@@ -1,10 +1,3 @@
-// The baked campaign: 150 songs that are now files rather than seeds.
-//
-// Baking trades one risk for another. A generated campaign can't go
-// stale but can silently rewrite itself; a baked one can't drift but
-// CAN fall out of step with the build that plays it — a voice removed
-// from audio.js, a level whose notes never made it through the flat
-// encoding. This suite is aimed squarely at that second failure.
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -15,8 +8,6 @@ const notes = [];
 let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, console.log('  FAIL: ' + m)); };
 
-// levels.js, campaign.js and audio.js are plain scripts hanging globals
-// off window and touching no DOM, so a bare context runs them.
 const sb = { window: {}, Math, Date, console, JSON,
   localStorage: { getItem: () => null, setItem: () => {} } };
 sb.window.window = sb.window;
@@ -71,9 +62,6 @@ console.log('== the flat encoding decodes back to real charts ==');
         if (lvl.grid[r].length !== 4) laneBad.push(lvl.id + ' row ' + r);
         for (const cell of lvl.grid[r]) {
           if (!cell) continue;
-          // A1 is 55Hz. Anything below that, or above the top of a
-          // piano plus an octave, would be a decode bug rather than a
-          // composed note.
           if (!(cell.freq >= 50 && cell.freq <= 8400)) outOfRange.push(lvl.id + ' ' + cell.freq);
           if (cell.type !== 'tap' && cell.type !== 'dtap') bad.push(lvl.id + ' type ' + cell.type);
           if (cell.freq > 4200) aboveTable.push(lvl.id + ' ' + cell.freq.toFixed(0) + 'Hz');
@@ -85,11 +73,6 @@ console.log('== the flat encoding decodes back to real charts ==');
   ok(laneBad.length === 0, 'every row is four lanes wide');
   ok(outOfRange.length === 0, outOfRange.length ? outOfRange.length + ' pitches decoded outside any sane range' : 'every pitch decodes to a real audible note');
 
-  // A handful of notes sit above C8, the top of the chromatic table.
-  // They come from the composer's melody walker running off the top in
-  // the two brass areas, not from the bake — the raw baked MIDI numbers
-  // carry them too. Left as composed rather than quietly transposed,
-  // but pinned so the count cannot grow unnoticed.
   const KNOWN_ABOVE_C8 = 11;
   notes.push(aboveTable.length + ' notes sit above C8 (composer quirk, areas 4 and 8): '
     + aboveTable.slice(0, 3).join(', '));
@@ -100,9 +83,6 @@ console.log('== the flat encoding decodes back to real charts ==');
 
 console.log('== the build can actually play what was baked ==');
 {
-  // The bake resolves each area's voice against the roster the build
-  // ships. Drop a voice from audio.js without re-baking and levels ask
-  // for something that no longer exists — the failure this catches.
   const roster = (sb.window.RD_INSTRUMENTS || []).map(i => i.id);
   const used = DATA.instruments.filter(Boolean);
   const missing = used.filter(i => !roster.includes(i));
@@ -115,9 +95,6 @@ console.log('== the build can actually play what was baked ==');
 
 console.log('== the songs are songs, not noise ==');
 {
-  // Notes sharing a beat should read as harmony. The composer stacks
-  // them in thirds; a minor second anywhere means the bake mangled
-  // something the composer would never have produced.
   const pc = n => ((n % 12) + 12) % 12;
   let stacks = 0, minor2 = 0, worst = null;
   for (const area of C.AREAS) {

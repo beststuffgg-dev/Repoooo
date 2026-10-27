@@ -1,10 +1,3 @@
-// Do the six base themes actually declare different materials, or is
-// each one a palette swap wearing a material's name?
-//
-// Real browser, because the answer lives in used values: --mat-* feed
-// color-mix() and calc() inside borders, gradients and shadows, and
-// only a rendering engine resolves those to the numbers a compositor
-// paints with. jsdom returns the unresolved text.
 const { chromium } = require('playwright');
 const { launchOpts, openApp } = require('./browser');
 
@@ -19,16 +12,7 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
 
   const read = async id => page.evaluate(t => {
     applyTheme(t);
-    // Theme classes land on <body>, and generated themes write their
-    // inline overrides onto <html>. Reading <html> alone therefore
-    // returns the :root fallbacks for every class-based theme — which
-    // is how this probe first reported all seven as identical.
     const root = getComputedStyle(document.body);
-    // A raised surface: the lit bevel, the gloss gradient and the
-    // shadow beneath are all driven off --mat-*.
-    // A genuinely raised surface. .lvl-row is a row inside a grouped
-    // list — flush, no bevel of its own — so it reports the same edge
-    // for every theme and makes this probe look vacuous.
     const card = document.querySelector('.theme-block') || document.querySelector('.level-card')
       || document.querySelector('.area-card');
     const cs = card ? getComputedStyle(card) : null;
@@ -40,9 +24,6 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       edge: cs ? (cs.borderTopColor + '|' + cs.backgroundColor) : '',
       face: cs ? cs.backgroundImage.slice(0, 120) : '',
       lift: cs ? cs.boxShadow.slice(0, 90) : '',
-      // body carries transition:background .3s, so backgroundColor read
-      // straight after the switch is still the value being animated
-      // away from. The token behind it is the honest reading.
       bg: root.getPropertyValue('--panel-deep').trim(),
       light: document.body.classList.contains('light'),
     };
@@ -73,13 +54,9 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
 
   console.log('== the edges and highlights actually render differently ==');
   {
-    // These are used values: color-mix and calc already resolved, so a
-    // difference here is a difference in painted pixels.
     const edges = new Set(THEMES.map(t => got[t].edge));
     const faces = new Set(THEMES.map(t => got[t].face));
     const lifts = new Set(THEMES.map(t => got[t].lift));
-    // Elevation is structure, not material — --lift-* is deliberately
-    // shared across themes — so it is reported, not asserted on.
     notes.push(`${edges.size} distinct lit edges, ${faces.size} distinct faces, ${lifts.size} distinct elevations (elevation is shared by design)`);
     ok(edges.size === THEMES.length, `all ${edges.size} themes paint a different lit edge`);
     ok(faces.size === THEMES.length, `all ${faces.size} themes paint a different raised face`);

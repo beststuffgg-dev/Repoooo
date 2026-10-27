@@ -1,18 +1,7 @@
-// The jsdom boot every non-browser suite needs: locate the build, stub
-// the parts of the platform jsdom doesn't have (Web Audio, rAF,
-// matchMedia, document.fonts), then eval the extension's scripts in
-// load order.
-//
-// This was copy-pasted into each suite before. Factored out so that a
-// platform stub gained in one place — the limiter's compressor node
-// was the last one — is gained everywhere at once.
 const { JSDOM } = require('jsdom');
 const path = require('path');
 const fs = require('fs');
 
-// Where the build under test lives is browser.js's job — it is the one
-// file that knows the repo layout, so a folder move is one edit rather
-// than eight copies of the same list going stale at different rates.
 const { appDir: findApp } = require('./browser');
 
 const LOAD_ORDER = ['edge.js', 'lighting.js', 'campaign.js', 'codec.js', 'loading.js', 'audio.js', 'game.js'];
@@ -55,8 +44,6 @@ function boot(opts = {}) {
   window.matchMedia = q => ({ matches: !!(opts.media && opts.media[q]), media: q,
     addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {} });
   if (!window.document.fonts) window.document.fonts = { ready: Promise.resolve() };
-  // jsdom has no layout engine, so these read 0 and any code that
-  // divides by them would produce Infinity rather than a wrong number.
   if (!window.ResizeObserver) window.ResizeObserver = function () {
     return { observe() {}, unobserve() {}, disconnect() {} };
   };
@@ -72,9 +59,6 @@ function boot(opts = {}) {
     if (!fs.existsSync(file)) continue;
     try {
       let code = fs.readFileSync(file, 'utf8');
-      // `let` and `const` bindings don't survive across separate eval
-      // calls, so anything module-scoped has to be exported through a
-      // hook appended to the file that declares it.
       if (f === 'game.js' && opts.hook) code += opts.hook;
       if (f === 'campaign.js' && opts.campaignHook) code += opts.campaignHook;
       window.eval(code);

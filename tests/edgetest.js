@@ -1,7 +1,3 @@
-// edge.js is a compatibility layer that must be completely inert
-// anywhere that isn't Edge — and low-power handling must not be, since
-// phones are the likeliest machines under the hardware floor and are
-// never Edge.
 const fs = require('fs');
 const path = require('path');
 const { boot } = require('./harness');
@@ -10,7 +6,6 @@ const { appDir } = require('./browser');
 const SRC = fs.readFileSync(path.join(appDir(), 'edge.js'), 'utf8');
 const GAME = fs.readFileSync(path.join(appDir(), 'game.js'), 'utf8');
 
-// ── Chrome: everything must stay off ──
 const chrome = boot();
 const { window, D, notes, probe, report } = chrome;
 
@@ -33,7 +28,6 @@ probe('Chrome pays one userAgent check and nothing more', () => {
   const bail = SRC.indexOf('if (!isEdge) return;');
   if (bail < 0) throw new Error('the early return is gone');
   const before = SRC.slice(0, bail);
-  // No listeners, no class writes, no timers before the bail-out.
   if (/addEventListener|setInterval|setTimeout|classList\.add/.test(before))
     throw new Error('edge.js does work before deciding it is not Edge');
 });
@@ -42,7 +36,6 @@ probe('detection prefers userAgentData and falls back to the UA string', () => {
   const fn = SRC.slice(SRC.indexOf('function detectEdge'), SRC.indexOf('const isEdge'));
   if (!/userAgentData/.test(fn)) throw new Error('no userAgentData check');
   if (!/Edg\\\//.test(fn) && !/Edg\//.test(fn)) throw new Error('no UA-string fallback');
-  // Edg/, not Edge/ — the latter is the old EdgeHTML browser.
   if (/[^g]Edge\\?\//.test(fn.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '')))
     throw new Error('detection matches the old EdgeHTML "Edge/" token');
 });
@@ -52,11 +45,8 @@ probe('detection survives a browser with no userAgentData', () => {
   if (!/try \{/.test(fn) || !/catch/.test(fn)) throw new Error('userAgentData access is unguarded');
 });
 
-// ── Edge: the shims must actually come on ──
 probe('on Edge the layer activates and names its shims', () => {
   const edge = boot({});
-  // Re-detect under an Edge user agent by re-running the module with
-  // navigator patched, which is the only input detection reads.
   const w = edge.window;
   Object.defineProperty(w.navigator, 'userAgent', {
     value: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36 Edg/126.0.0.0',
@@ -82,8 +72,6 @@ probe('the blur shim is gated on the hardware, not on Edge alone', () => {
 });
 
 probe('low-power is handled off Edge too, from the same floor', () => {
-  // The Edge-only check never covered phones, which are the likeliest
-  // machines under the floor.
   const g = GAME.slice(GAME.indexOf('const cores'), GAME.indexOf('low-power') + 30);
   if (!/cores <= 4 \|\| mem <= 4/.test(g)) throw new Error('game.js uses a different hardware floor than edge.js');
   if (!/classList\.add\('low-power'\)/.test(GAME)) throw new Error('nothing sets html.low-power');

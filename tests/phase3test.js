@@ -1,5 +1,3 @@
-// Phase 3 — Loading: real weighted work behind the card, and a
-// count-in derived from the wall clock rather than a timer chain.
 const fs = require('fs');
 const path = require('path');
 const { boot } = require('./harness');
@@ -8,10 +6,6 @@ const { window, D, notes, probe, report } = boot();
 
 const SRC = fs.readFileSync(path.join(appDir(), 'loading.js'), 'utf8');
 
-// Slice exactly one function body out, by matching braces — a fixed
-// character window runs past the end and picks up the next function's
-// code, which is how this suite first "found" a setTimeout in the
-// count-in that isn't there.
 function fnBody(src, name) {
   const at = src.indexOf('function ' + name);
   if (at < 0) throw new Error('no function ' + name);
@@ -22,10 +16,6 @@ function fnBody(src, name) {
   }
   throw new Error(name + ' is unterminated');
 }
-// Strip comments before checking for the constructs a probe forbids —
-// the count-in's own comment explains that it does *not* chain
-// setTimeouts, and a naive search reads that as the thing it warns
-// against.
 const decomment = t => t.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
 const COUNT_IN = decomment(fnBody(SRC, 'runCountIn'));
 
@@ -38,8 +28,6 @@ probe('the loading module exposes run, runCountIn and cancel', () => {
 });
 
 probe('the bar tracks real work, not a timer', () => {
-  // Each step is a named function that does something the first frame
-  // would otherwise pay for.
   const block = SRC.slice(SRC.indexOf('const tasks = ['), SRC.indexOf('const totalWeight'));
   const steps = [...block.matchAll(/\[\s*'([^']+)'\s*,\s*(\d+)\s*,/g)].map(m => [m[1], Number(m[2])]);
   notes.push('load steps: ' + steps.map(s => `${s[0]} (${s[1]})`).join(', '));
@@ -55,8 +43,6 @@ probe('progress is weight completed over total weight', () => {
 });
 
 probe('every step reports as it completes', () => {
-  // report() is called before the work (to paint the label) and after
-  // (to advance the bar).
   const loop = SRC.slice(SRC.indexOf('for (const [label, weight, fn] of tasks)'), SRC.indexOf("report('Ready')"));
   const reports = (loop.match(/report\(/g) || []).length;
   notes.push('report() calls inside the step loop: ' + reports);
@@ -95,8 +81,6 @@ probe('the count-in beat follows the song, within sane bounds', () => {
   const [lo, hi] = [Number(m[1]), Number(m[2])];
   notes.push(`count-in beat: 60000/bpm clamped to ${lo}-${hi}ms`);
   if (!(lo > 0 && hi > lo)) throw new Error('bad clamp ' + lo + '..' + hi);
-  // A 40bpm song would otherwise wait 1.5s per number; a 300bpm one
-  // would flash three numbers in 600ms.
   for (const bpm of [40, 120, 300]) {
     const beat = Math.max(lo, Math.min(hi, Math.round(60000 / bpm)));
     if (beat < lo || beat > hi) throw new Error('bpm ' + bpm + ' escaped the clamp');
@@ -104,8 +88,6 @@ probe('the count-in beat follows the song, within sane bounds', () => {
 });
 
 probe('the count-in actually runs and resolves', async () => {
-  // jsdom has no performance.now cliff; this just proves the loop
-  // terminates rather than spinning.
   const num = D.getElementById('count-num');
   if (!num) throw new Error('no count-in element in the document');
 });
