@@ -246,6 +246,7 @@ function importLevel() {
       lvl = JSON.parse(decodeURIComponent(escape(atob(encoded))));
     }
     if (!lvl || !lvl.name || !lvl.bpm || !lvl.grid) throw new Error('missing fields');
+    translateLevelVoices(lvl);
     lvl.id = 'c' + Date.now();
     const arr = store.load(); arr.push(lvl); store.save(arr);
     renderCustoms();
@@ -1309,7 +1310,7 @@ function buildSettingsAudio(panel) {
     const blurb = document.createElement('div');
     blurb.style.cssText = 'font-size:10px;color:var(--muted);margin-bottom:6px;';
     blurb.textContent = 'Campaign songs name their own instruments — Egypt is written for flute, '
-      + 'Greece for lyre. Turn this off to hear your own pick everywhere instead.';
+      + 'Greece for harp. Turn this off to hear your own pick everywhere instead.';
     panel.appendChild(blurb);
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;gap:6px;margin-bottom:4px;';
@@ -1335,9 +1336,6 @@ function buildSettingsAudio(panel) {
   const instruments = (window.RD_INSTRUMENTS) || [
     { id:'synth', label:'Synth', icon:'🎛️' },
     { id:'piano', label:'Piano', icon:'🎹' },
-    { id:'guitar', label:'Guitar', icon:'🎸' },
-    { id:'marimba', label:'Marimba', icon:'🪘' },
-    { id:'bell', label:'Bell', icon:'🔔' },
   ];
   const curInstr = currentSettings.instrument || 'synth';
   instruments.forEach(inst => {
@@ -1477,6 +1475,13 @@ function freshSettings() {
 
 let currentSettings = freshSettings();
 
+function migrateVoices() {
+  const arr = store.load();
+  let changed = false;
+  arr.forEach(l => { if (translateLevelVoices(l)) changed = true; });
+  if (changed) store.save(arr);
+}
+
 function loadAndApplySettings() {
   const saved = store.loadSettings();
   if (saved) {
@@ -1486,7 +1491,7 @@ function loadAndApplySettings() {
     if (saved.width)      currentSettings.width      = saved.width;
     if (saved.height)     currentSettings.height     = saved.height;
     if (saved.lives)      currentSettings.lives      = saved.lives;
-    if (saved.instrument) currentSettings.instrument = saved.instrument;
+    if (saved.instrument) currentSettings.instrument = window.RD_resolveInstrument ? window.RD_resolveInstrument(saved.instrument) : saved.instrument;
     if (saved.gfx)            currentSettings.gfx        = saved.gfx;
     if (typeof saved.songVoices === 'boolean') currentSettings.songVoices = saved.songVoices;
     if (saved.hitWindow)      currentSettings.hitWindow  = saved.hitWindow;
@@ -1495,6 +1500,7 @@ function loadAndApplySettings() {
     if (saved.musicVol  != null) currentSettings.musicVol  = saved.musicVol;
   }
   applySettingsToDOM();
+  migrateVoices();
   if (window.RD_saveInstrument)  window.RD_saveInstrument(currentSettings.instrument || 'synth');
   if (window.RD_setVolume)       window.RD_setVolume(currentSettings.masterVol);
   if (window.RD_setMusicVolume)  window.RD_setMusicVolume(currentSettings.musicVol);

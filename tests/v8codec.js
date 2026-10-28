@@ -10,7 +10,7 @@ let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, console.log('  FAIL: ' + m)); };
 
 const SAMPLE = {
-  name: 'My Chart', bpm: 140, diff: 'medium', instrument: 'guitar', bgMode: 'bass',
+  name: 'My Chart', bpm: 140, diff: 'medium', instrument: 'violin', bgMode: 'bass',
   laneFreqs: [220, 277.18, 329.63, 440],
   bassPattern: [65.41, 0, 65.41, 0, 87.31, 0, 73.42, 0],
   grid: Array.from({ length: 48 }, (_, i) => [
@@ -62,6 +62,25 @@ console.log('== the codec is loaded before the game ==');
     ok(r.newSize < r.oldSize * 0.2, `it is ${(100 * (1 - r.newSize / r.oldSize)).toFixed(0)}% smaller (${r.oldSize} → ${r.newSize})`);
     ok(r.name && r.bpm && r.diff && r.instrument && r.bg && r.laneFreqs, 'every field survives the round trip');
     ok(r.notes, 'all ' + r.noteCount + ' notes survive — type, pitch and sustain exact');
+  }
+
+  console.log('== old voices in a code become their replacements ==');
+  {
+    const r = await page.evaluate(sample => {
+      const legacy = JSON.parse(JSON.stringify(sample));
+      legacy.instrument = 'guitar';
+      legacy.grid[0][0] = { type: 'tap', freq: 261.63, sustain: 0, inst: 'strings' };
+      legacy.grid[2][2] = { type: 'tap', freq: 329.63, sustain: 0, inst: 'organ' };
+      const back = RD_Codec.decodeLevel(RD_Codec.encodeLevel(legacy));
+      const fresh = JSON.parse(JSON.stringify(sample));
+      fresh.grid[0][0] = { type: 'tap', freq: 261.63, sustain: 0, inst: 'cello' };
+      fresh.grid[2][2] = { type: 'tap', freq: 329.63, sustain: 0, inst: 'kazoo' };
+      const back2 = RD_Codec.decodeLevel(RD_Codec.encodeLevel(fresh));
+      return { level: back.instrument, cells: [back.grid[0][0].inst, back.grid[2][2].inst], fresh: [back2.grid[0][0].inst, back2.grid[2][2].inst] };
+    }, SAMPLE);
+    ok(r.level === 'harp', 'a chart whose voice was Guitar is exported as Harp (' + r.level + ')');
+    ok(r.cells.join() === 'violin,clarinet', 'and per-note Strings and Organ become Violin and Clarinet (' + r.cells + ')');
+    ok(r.fresh.join() === 'cello,kazoo', 'the new voices round-trip under their own names (' + r.fresh + ')');
   }
 
   console.log('== old base64-JSON codes still import ==');

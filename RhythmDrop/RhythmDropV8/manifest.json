@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "RhythmDrop",
   "version": "8.0",
-  "description": "A rhythm game with a 150-level campaign across ten historically themed areas, XP progression, daily rewards, twelve instruments, a level creator and a shop.",
+  "description": "A rhythm game with a 150-level campaign across ten historically themed areas, XP progression, daily rewards, eleven instruments, a level creator and a shop.",
   "action": {
     "default_popup": "popup.html",
     "default_title": "RhythmDrop",

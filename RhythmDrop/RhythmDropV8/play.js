@@ -43,6 +43,17 @@ const ovBtn   = document.getElementById('ov-btn');
 const lvlName = document.getElementById('g-lvlname');
 const spdBadge= document.getElementById('speed-badge');
 
+function translateLevelVoices(l) {
+  const R = window.RD_resolveInstrument;
+  if (!R || !l) return false;
+  let changed = false;
+  if (l.instrument && R(l.instrument) !== l.instrument) { l.instrument = R(l.instrument); changed = true; }
+  (l.grid || []).forEach(row => row.forEach(c => {
+    if (c && typeof c === 'object' && c.inst && R(c.inst) !== c.inst) { c.inst = R(c.inst); changed = true; }
+  }));
+  return changed;
+}
+
 function buildLanes(n) {
   n = window.RD_Lanes.clamp(n);
   const host = document.getElementById('g-lanes');
@@ -160,6 +171,7 @@ function launchCustom(lvl) { launchLevel(lvl); }
 const GEN = () => window.RD_Generator;
 
 function _prepGenerated(lvl, label) {
+  translateLevelVoices(lvl);
   lvl.campaign = false;
   lvl.generated = true;
   if (!lvl.name) lvl.name = label || 'Generated';

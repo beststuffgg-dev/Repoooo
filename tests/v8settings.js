@@ -112,9 +112,9 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       out.savedMaster = saved.masterVol; out.savedMusic = saved.musicVol;
 
       const btns = [...document.querySelectorAll('#tab-settings button')]
-        .filter(x => /Marimba|Organ|Kalimba/.test(x.textContent));
+        .filter(x => /Violin|Cello|Clarinet/.test(x.textContent));
       out.instButtons = document.querySelectorAll('#tab-settings button').length;
-      const organ = btns.find(x => /Organ/.test(x.textContent));
+      const organ = btns.find(x => /Cello/.test(x.textContent));
       if (organ) organ.click();
       out.instrument = window.RD_getInstrument ? window.RD_getInstrument() : null;
       out.savedInstrument = (JSON.parse(localStorage.getItem('rd_settings') || '{}')).instrument;
@@ -123,8 +123,8 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
     ok(Math.abs(r.master - 0.4) < 1e-6, 'the master slider sets the engine volume (' + r.master + ')');
     ok(Math.abs(r.music - 0.2) < 1e-6, 'the music slider sets the music bus (' + r.music + ')');
     ok(r.savedMaster === 0.4 && r.savedMusic === 0.2, 'both volumes persist');
-    ok(r.instrument === 'organ', 'picking an instrument reaches the audio engine (' + r.instrument + ')');
-    ok(r.savedInstrument === 'organ', 'and is persisted');
+    ok(r.instrument === 'cello', 'picking an instrument reaches the audio engine (' + r.instrument + ')');
+    ok(r.savedInstrument === 'cello', 'and is persisted');
     notes.push('instrument buttons offered: ' + r.instButtons);
     await page.evaluate(() => {
       currentSettings.masterVol = 1; currentSettings.musicVol = 1;
@@ -159,7 +159,7 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
     await page.evaluate(() => {
       Object.assign(currentSettings, {
         keys: ['KeyG', 'KeyH', 'KeyJ', 'KeyK'], gfx: 'classic', uiScale: 1.2,
-        width: 560, masterVol: 0.55, musicVol: 0.35, instrument: 'kalimba', lives: 5,
+        width: 560, masterVol: 0.55, musicVol: 0.35, instrument: 'horn', lives: 5,
       });
       store.saveSettings(currentSettings);
     });
@@ -187,8 +187,43 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
     ok(r.width === 560, 'window width restored');
     ok(Math.abs(r.master - 0.55) < 1e-6, 'master volume restored');
     ok(Math.abs(r.music - 0.35) < 1e-6, 'music volume restored');
-    ok(r.instrument === 'kalimba', 'instrument restored');
+    ok(r.instrument === 'horn', 'instrument restored');
     ok(r.lives === 5, 'lives restored');
+  }
+
+  console.log('== saves from before the new instruments still work ==');
+  {
+    await page.evaluate(() => {
+      localStorage.setItem('rd_settings', JSON.stringify({ instrument: 'kalimba', width: 420, height: 640 }));
+      localStorage.setItem('rd_instrument', 'organ');
+      const cell = (inst) => ({ type: 'tap', freq: 440, sustain: 0, inst });
+      localStorage.setItem('rd_levels', JSON.stringify([
+        { id: 'c1', name: 'Old one', bpm: 120, diff: 'easy', instrument: 'guitar', laneFreqs: [261.63, 329.63, 392, 523.25],
+          grid: [[cell('marimba'), null, null, null], [null, cell('strings'), null, cell('flute')]] },
+        { id: 'c2', name: 'Plain', bpm: 100, diff: 'easy', laneFreqs: [261.63, 329.63, 392, 523.25], grid: [[cell(undefined), null, null, null]] },
+      ]));
+    });
+    await page.reload({ waitUntil: 'load' });
+    await page.waitForTimeout(1200);
+    const r = await page.evaluate(() => {
+      const lv = store.load();
+      return {
+        setting: currentSettings.instrument,
+        engine: window.RD_getInstrument(),
+        stored: localStorage.getItem('rd_instrument'),
+        top: lv.map(l => l.instrument || null),
+        cells: lv[0].grid.flat().filter(Boolean).map(c => c.inst),
+        plainUntouched: lv[1].grid[0][0].inst === undefined,
+        nameKept: lv[0].name,
+        picker: [...document.querySelectorAll('#tab-settings button')].some(b => /Kalimba|Organ|Guitar/.test(b.textContent)),
+      };
+    });
+    ok(r.setting === 'harp', 'a saved Kalimba setting becomes Harp (' + r.setting + ')');
+    ok(r.engine === 'harp' && r.stored === 'harp', 'the engine and its separately stored copy follow the migrated setting, not the stale Organ (' + r.engine + ')');
+    ok(r.top.join() === 'harp,', 'a custom level\'s own instrument is translated (' + r.top + ')');
+    ok(r.cells.join() === 'piano,violin,flute', 'and so is each note\'s (' + r.cells + ')');
+    ok(r.plainUntouched && r.nameKept === 'Old one', 'levels without voices, and everything else about a level, are untouched');
+    await page.evaluate(() => { localStorage.removeItem('rd_levels'); localStorage.removeItem('rd_settings'); localStorage.removeItem('rd_instrument'); });
   }
 
   ok(errors.length === 0, 'no page errors through the whole audit (' + errors.join('; ') + ')');

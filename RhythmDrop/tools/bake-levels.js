@@ -8,6 +8,7 @@ const ROOT = path.join(__dirname, '..', '..');
 const GENERATOR = path.join(ROOT, 'RhythmDrop', 'v7', 'RhythmDropV7', 'campaign.js');
 const OUT = path.join(ROOT, 'RhythmDrop', 'RhythmDropV8', 'levels.js');
 const ROWTYPES = path.join(ROOT, 'RhythmDrop', 'RhythmDropV8', 'rowtypes.js');
+const AUDIO = path.join(ROOT, 'RhythmDrop', 'RhythmDropV8', 'audio.js');
 
 const ROSTER = ['synth', 'piano', 'guitar', 'marimba', 'bell', 'flute',
   'lyre', 'brass', 'organ', 'strings', 'chiptune', 'kalimba'];
@@ -40,6 +41,14 @@ function loadGenerator() {
   return C;
 }
 
+const AREA_VOICES = { 1: 'violin', 2: 'flute', 3: 'harp', 4: 'trumpet', 5: 'clarinet', 6: 'piano', 7: 'cello', 8: 'horn', 9: 'piano', 10: 'synth' };
+
+function loadVoiceAliases() {
+  const sandbox = { window: {}, localStorage: { getItem: () => null, setItem: () => {} } };
+  vm.runInContext(fs.readFileSync(AUDIO, 'utf8'), vm.createContext(sandbox));
+  return sandbox.window.RD_resolveInstrument;
+}
+
 function loadRowTypes() {
   const sandbox = { window: {} };
   vm.runInContext(fs.readFileSync(ROWTYPES, 'utf8'), vm.createContext(sandbox));
@@ -58,8 +67,9 @@ function main() {
     return i < 0 ? (instruments.push(id || ''), instruments.length - 1) : i;
   };
 
+  const resolveVoice = loadVoiceAliases();
   const areas = C.AREAS.map(a => ({
-    id: a.id, key: a.key, name: a.name, blurb: a.blurb, instrument: a.instrument,
+    id: a.id, key: a.key, name: a.name, blurb: a.blurb, instrument: AREA_VOICES[a.id] || resolveVoice(a.instrument),
   }));
 
   const levels = [];
@@ -98,7 +108,7 @@ function main() {
     v: 1,
     generated: 'RhythmDrop/tools/bake-levels.js',
     warning: 'GENERATED FILE - do not hand-edit the note data. Re-run RhythmDrop/tools/bake-levels.js to regenerate it.',
-    areas, instruments, levels,
+    areas, instruments: instruments.map(i => (i ? resolveVoice(i) : i)), levels,
   };
 
   const out = [

@@ -5,7 +5,7 @@
  "v2": "RD2:MnxHb2xkZW4ggMOAiXR1gQV8MTMzfGJhc3N8NjAsNjSBGjcsN4EAMzYsgRk0MYEkLDQzgSgzOIEkfHQuMzsuZC5UgSCBNIE3Njk7ZIE2Ljs7VDYygTs3dA",
  "expect": {
   "v2": {
-   "name": "Golden Étude",
+   "name": "Golden \u00c9tude",
    "bpm": 133,
    "bgMode": "bass",
    "diff": "custom",
@@ -20,7 +20,7 @@
    "grid": "tap:262:0:,-,-,-/-,dtap:330:0:,-,tap:523:0:/-,-,tap:440:0:,-/dtap:262:0:,dtap:330:0:,-,-/-,-,-,-/tap:294:0:,-,tap:392:0:,tap:523:0:"
   },
   "v3": {
-   "name": "Golden Étude",
+   "name": "Golden \u00c9tude",
    "bpm": 133,
    "bgMode": "bass",
    "diff": "medium",
@@ -32,10 +32,10 @@
     392,
     523.25
    ],
-   "grid": "tap:262:0:,-,-,-/-,dtap:330:0:,-,tap:523:0:/-,-,tap:440:0:guitar,-/dtap:262:0:guitar,dtap:330:0:guitar,-,-/-,-,-,-/tap:294:0:guitar,-,tap:392:0:flute,tap:523:0:flute"
+   "grid": "tap:262:0:,-,-,-/-,dtap:330:0:,-,tap:523:0:/-,-,tap:440:0:harp,-/dtap:262:0:harp,dtap:330:0:harp,-,-/-,-,-,-/tap:294:0:harp,-,tap:392:0:flute,tap:523:0:flute"
   },
   "v4": {
-   "name": "Golden Étude",
+   "name": "Golden \u00c9tude",
    "bpm": 133,
    "bgMode": "bass",
    "diff": "medium",
@@ -47,10 +47,10 @@
     392,
     523.25
    ],
-   "grid": "tap:262:0:,-,-,-/-,dtap:330:0:,-,tap:523:0:/-,-,tap:440:0:guitar,-/dtap:262:0:guitar,dtap:330:0:guitar,-,-/-,-,-,-/tap:294:0:guitar,-,tap:392:0:flute,tap:523:0:flute"
+   "grid": "tap:262:0:,-,-,-/-,dtap:330:0:,-,tap:523:0:/-,-,tap:440:0:harp,-/dtap:262:0:harp,dtap:330:0:harp,-,-/-,-,-,-/tap:294:0:harp,-,tap:392:0:flute,tap:523:0:flute"
   },
   "v5": {
-   "name": "Golden Étude",
+   "name": "Golden \u00c9tude",
    "bpm": 133,
    "bgMode": "bass",
    "diff": "medium",
@@ -62,7 +62,7 @@
     392,
     523.25
    ],
-   "grid": "tap:262:0:,-,-,-/-,dtap:330:1.5:,-,tap:523:0:/-,-,tap:440:0:guitar,-/dtap:262:0:guitar,dtap:330:0:guitar,-,-/-,-,-,-/tap:294:2:guitar,-,tap:392:0:flute,tap:523:0:flute"
+   "grid": "tap:262:0:,-,-,-/-,dtap:330:1.5:,-,tap:523:0:/-,-,tap:440:0:harp,-/dtap:262:0:harp,dtap:330:0:harp,-,-/-,-,-,-/tap:294:2:harp,-,tap:392:0:flute,tap:523:0:flute"
   }
  }
 }

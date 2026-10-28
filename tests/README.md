@@ -12,7 +12,7 @@ structurally cannot catch a layout bug.
 |---|---|
 | `v8levels.js` | The 150 baked songs against the build that plays them: the flat encoding decoding back to real charts, every voice the charts reference existing in `audio.js`, zero minor seconds across 8,658 chords, and the generator still being present to re-bake with |
 | `v8campaign.js` | Flat coins per clear, partial runs, the XP curve and its linearity in speed, the density cap, unlock chaining, and the seven-day daily including its lapse |
-| `v8audio.js` | Every instrument rendered through an OfflineAudioContext and measured, not just present |
+| `v8audio.js` | Every instrument rendered through an OfflineAudioContext and measured, not just present; held notes and release, sample-identical renders, the polyphony cap, legacy voice aliases, the drum kit's pitch map, fitted tables present |
 | `v8graphics.js` | The graphics layer is strictly additive; Classic and Modern really differ and each renders deterministically |
 | `v8codec.js` | The compact share codes, and every theme carrying a texture (a shared base grain, six distinct material grains) |
 | `v8settings.js` | Every setting driven and its effect measured. **Known intermittent failure** in its reload section, also present on the original build — see HANDOFF §8 |

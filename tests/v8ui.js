@@ -36,7 +36,7 @@ const open = async (b, w, h) => {
       active: document.querySelector('.screen.active').id,
     }));
     ok(r.levels === 150, r.levels + ' levels loaded');
-    ok(r.instruments === 12, r.instruments + ' instruments');
+    ok(r.instruments === 11, r.instruments + ' instruments');
     ok(r.active === 'home', 'lands on the home screen');
     ok(net.length === 0, 'zero network requests (' + net.slice(0, 2).join(', ') + ')');
   }

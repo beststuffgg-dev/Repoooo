@@ -87,7 +87,7 @@ console.log('== the build can actually play what was baked ==');
   const used = DATA.instruments.filter(Boolean);
   const missing = used.filter(i => !roster.includes(i));
   notes.push('roster: ' + roster.join(', '));
-  ok(roster.length === 12, 'audio.js ships ' + roster.length + ' instruments');
+  ok(roster.length === 11, 'audio.js ships ' + roster.length + ' instruments');
   ok(missing.length === 0, missing.length ? 'levels reference voices the build lacks: ' + missing.join(', ') : 'every voice the campaign asks for exists in audio.js (' + used.length + ' used)');
   const areaVoices = new Set(C.AREAS.map(a => a.instrument));
   ok(areaVoices.size >= 8, areaVoices.size + ' distinct area voices — each era sounds like itself');

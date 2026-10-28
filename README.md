@@ -38,7 +38,7 @@ Hit **A · S · D · F** as slabs cross the strike line (the creator also makes 
 - **Progression** — songs unlock in order and areas unlock behind them, XP is keyed off note count and tempo, every level keeps its own record, and a seven-day daily lapses if you miss a day. Clearing every song in an area also earns that area's own theme.
 - **Level creator** — a grid editor with per-lane default pitches, a per-note picker, sustain and a configurable drum/bass backing. Its advanced panel opens **sideways** and widens the window rather than covering the chart you're editing.
 - **Economy** — every level pays a flat coin reward, so grinding a long chart isn't better than clearing a short one. Every purchase is two clicks: the first previews (an avatar goes on your profile, an effect plays live on the board, a mystery box shows its real odds), only the second spends.
-- **12 instruments**, synthesized from oscillators — no samples, no network — plus avatars, note trails, mystery boxes and 20 themes — frosted glass, warm paper, arctic white, six textured materials — and ten more you earn: one per campaign area, each with its own texture (burlap, sandstone, marble, travertine, obsidian, carved jade, organ pipes, wool twill, poured concrete, a neon grid).
+- **11 instruments** — a synth, violin, cello, flute, clarinet, trumpet, French horn, harp, piano, a drum kit and a kazoo — all synthesized, none played back from recordings: each pitched voice is built from harmonic tables and decay times *measured from* CC0 recordings (VSCO 2 Community Edition), so there are still no samples and no network. Plus avatars, note trails, mystery boxes and 20 themes — frosted glass, warm paper, arctic white, six textured materials — and ten more you earn: one per campaign area, each with its own texture (burlap, sandstone, marble, travertine, obsidian, carved jade, organ pipes, wool twill, poured concrete, a neon grid).
 - **A Material-3-flavoured shell.** Both graphics styles share it: a rounded shape scale, tonal raised surfaces, state-layer hovers, a faint material grain on *every* theme and an expressive display type. It's a refresh over the original look, not a reskin of one theme — the existing palettes and their identities are untouched.
 - **Two graphics styles.** On top of that shell, *Modern* (default) adds real depth — lit tile edges, raised cards and a glowing strike line. *Classic* keeps the flat look, with no dimensional lighting. The whole depth layer is scoped under one class and stays strictly additive, so turning it off genuinely removes it; `v8graphics` proves the two render differently and that each renders deterministically.
 - **Settings** for key remapping, starting lives, UI scale, master and music volume, and instrument choice.
@@ -74,7 +74,8 @@ RhythmDrop/
     lanes.js                    lane counts 4/6/8: default pitches, default keys, helpers
     levels.js                   the 150 songs, baked — generated, not hand-edited
     rowtypes.js                 one kind of note per row; shared by the game and the baker
-    audio.js                    12 synthesized instruments, limiter, backing layer
+    audio.js                    the note engine (hold and release), 11 voices, limiter, backing layer
+    voices.js                   measured timbre tables for the eight pitched voices — generated
   v7/                         the previous game, kept whole and still working
   tools/
     bake-levels.js              composes the 150 songs into levels.js

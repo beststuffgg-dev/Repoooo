@@ -100,6 +100,13 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   header.appendChild(closeBtn);
   modal.appendChild(header);
 
+  const drumMode = typeof crInstrument !== 'undefined' && crInstrument === 'drums' && window.RD_drumLabel;
+  const pieceEl = document.createElement('div');
+  if (drumMode) {
+    pieceEl.style.cssText = 'font-size:11px;font-weight:700;color:var(--tap);font-family:var(--font-data);margin:-4px 0 8px;';
+    modal.appendChild(pieceEl);
+  }
+
   const grid = document.createElement('div');
   grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:stretch;';
 
@@ -136,6 +143,7 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
 
     const vA = validAccs();
     colABtns.forEach((btn, idx) => styleBtn(btn, ACCS[idx].v === selAcc, !vA.has(ACCS[idx].v)));
+    if (drumMode) pieceEl.textContent = 'Drum kit: ' + window.RD_drumLabel(noteToFreq(selLetter, selOctave, selAcc));
   }
 
   function makeCol(items, getLabel, onSelect, btnArr) {

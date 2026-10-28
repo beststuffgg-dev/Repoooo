@@ -2,6 +2,7 @@ function getNoteNames() {
   return window.RD_NOTE_NAMES || ['C4','D4','E4','G4','A4','C5'];
 }
 function freqToName(freq) {
+  if (crInstrument === 'drums' && window.RD_drumLabel) return window.RD_drumLabel(freq);
   if (window.RD_freqToName) return window.RD_freqToName(freq);
   return freq.toFixed(2) + ' Hz';
 }
@@ -16,6 +17,7 @@ let crTool     = 'tap';
 let crAdvOpen  = false;
 let crBgMode   = 'none';
 let crLanes = 4;
+let crInstrument = 'synth';
 let crLaneFreqs = [261.63,329.63,392.00,523.25];
 const crEmptyRow = () => window.RD_Lanes.emptyRow(crLanes);
 let crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
@@ -43,6 +45,7 @@ function openCreator(idx) {
     document.getElementById('cr-bpm').value  = l.bpm  || 120;
     document.getElementById('cr-diff').value = l.diff || 'medium';
     crLanes = window.RD_Lanes.laneCountOf(l);
+    crInstrument = window.RD_resolveInstrument(l.instrument || (window.RD_getInstrument && window.RD_getInstrument()));
     crGrid = l.grid.map(r => {
       const row = r.map(cell => {
         if (!cell) return null;
@@ -64,6 +67,7 @@ function openCreator(idx) {
     document.getElementById('cr-bpm').value  = 120;
     document.getElementById('cr-diff').value = 'medium';
     crLanes     = 4;
+    crInstrument = window.RD_resolveInstrument(window.RD_getInstrument && window.RD_getInstrument());
     crGrid      = Array.from({ length:16 }, () => crEmptyRow());
     crBgMode    = 'none';
     crLaneFreqs = window.RD_Lanes.defaultFreqs(4);
@@ -220,7 +224,7 @@ function handleCreatorKey(e, keyMap) {
     e.preventDefault();
     const lane = keyMap[e.code];
     typeNoteAtCursor(lane);
-    if (window.RD_playNote) window.RD_playNote(lane, false, crLaneFreqs[lane] || 261.63);
+    if (window.RD_playNote) window.RD_playNote(lane, false, crLaneFreqs[lane] || 261.63, 0, crInstrument);
     return true;
   }
   return false;
@@ -478,10 +482,7 @@ function generateIntoGrid(band) {
   const bpmEl  = document.getElementById('cr-bpm');
   if (nameEl && !nameEl.value) nameEl.value = lvl.name || 'Generated';
   if (bpmEl) bpmEl.value = lvl.bpm || 120;
-  if (lvl.instrument && window.RD_saveInstrument) {
-    currentSettings.instrument = lvl.instrument;
-    window.RD_saveInstrument(lvl.instrument);
-  }
+  if (lvl.instrument) crInstrument = window.RD_resolveInstrument(lvl.instrument);
   buildAdvPanel();
   buildGrid();
   showToast('Generated ' + crGrid.length + ' beats — edit or save');
@@ -527,6 +528,7 @@ document.getElementById('cr-save').addEventListener('click', () => {
   const lvl = {
     id: 'c' + Date.now(), name, bpm, diff,
     lanes:       crLanes,
+    instrument:  crInstrument,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
     laneFreqs:   [...crLaneFreqs],
@@ -552,6 +554,7 @@ function autoSave() {
   const lvl = {
     id: 'c' + Date.now(), name, bpm, diff,
     lanes:       crLanes,
+    instrument:  crInstrument,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
     laneFreqs:   [...crLaneFreqs],
@@ -619,11 +622,8 @@ function buildAdvInstrumentRow() {
   const instruments = window.RD_INSTRUMENTS || [
     { id:'synth', label:'Synth', icon:'🎛️' },
     { id:'piano', label:'Piano', icon:'🎹' },
-    { id:'guitar', label:'Guitar', icon:'🎸' },
-    { id:'marimba', label:'Marimba', icon:'🪘' },
-    { id:'bell', label:'Bell', icon:'🔔' },
   ];
-  const cur = (window.RD_getInstrument && window.RD_getInstrument()) || 'synth';
+  const cur = crInstrument;
   instruments.forEach(inst => {
     const btn = document.createElement('button');
     const active = cur === inst.id;
@@ -638,11 +638,10 @@ function buildAdvInstrumentRow() {
     ].join('');
     btn.innerHTML = `<span style="font-size:14px">${inst.icon}</span><span>${inst.label}</span>`;
     btn.addEventListener('click', () => {
-      if (window.RD_saveInstrument) window.RD_saveInstrument(inst.id);
-      currentSettings.instrument = inst.id;
-      store.saveSettings(currentSettings);
+      crInstrument = inst.id;
       buildAdvInstrumentRow();
-      if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0);
+      if (window.RD_playNoteFreq) window.RD_playNoteFreq(261.63, false, 0, inst.id);
+      if (editIdx !== null) autoSave();
     });
     row.appendChild(btn);
   });

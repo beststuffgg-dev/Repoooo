@@ -100,12 +100,19 @@
   }
 
   const INST_CHARS = {
-    synth:'y', piano:'p', guitar:'g', marimba:'m', bell:'b',
-    flute:'f', lyre:'l', brass:'r', organ:'o', strings:'s',
-    chiptune:'c', kalimba:'k',
+    synth:'y', piano:'p', flute:'f', violin:'v', cello:'e', clarinet:'a',
+    trumpet:'t', horn:'h', harp:'w', drums:'d', kazoo:'z',
+  };
+  const LEGACY_VOICES = {
+    chiptune:'synth', strings:'violin', brass:'trumpet', guitar:'harp', lyre:'harp',
+    kalimba:'harp', bell:'harp', marimba:'piano', organ:'clarinet',
+  };
+  const LEGACY_CHARS = {
+    c:'synth', s:'violin', r:'trumpet', g:'harp', l:'harp', k:'harp', b:'harp', m:'piano', o:'clarinet',
   };
   const CHAR_INST = Object.keys(INST_CHARS)
-    .reduce((o, k) => { o[INST_CHARS[k]] = k; return o; }, {});
+    .reduce((o, k) => { o[INST_CHARS[k]] = k; return o; }, Object.assign({}, LEGACY_CHARS));
+  const voiceId = id => (id && INST_CHARS[id] ? id : LEGACY_VOICES[id] || 'synth');
 
   const DEFAULT_FREQS = {
     4: [261.63, 329.63, 392.00, 523.25],
@@ -151,7 +158,7 @@
         const type    = typeof cell === 'string' ? cell : cell.type;
         const freq    = (typeof cell === 'object' && cell.freq) ? cell.freq : null;
         const sustain = (typeof cell === 'object' && cell.sustain) ? cell.sustain : 0;
-        const inst    = (typeof cell === 'object' && cell.inst) ? cell.inst : null;
+        const inst    = (typeof cell === 'object' && cell.inst) ? voiceId(cell.inst) : null;
         const midi    = freq ? freqToMidi(freq) : null;
         const isDefault = midi === null || midi === laneMidi[ci];
 
@@ -180,7 +187,7 @@
       laneMidi.join(','),
       bass,
       lvl.diff || 'custom',
-      lvl.instrument || 'synth',
+      voiceId(lvl.instrument),
       lvl.areaId || '',
       rowStrs.join(';'),
     ].join('|');
@@ -197,7 +204,7 @@
     const isV3 = ver === '3' || ver === '4' || ver === '5' || ver === '6';
     const isV5 = ver === '5' || ver === '6';
     const diff       = isV3 ? parts[6] : 'custom';
-    const instrument = isV3 ? parts[7] : 'synth';
+    const instrument = isV3 ? voiceId(parts[7]) : 'synth';
     const areaId     = isV5 && parts[8] ? parseInt(parts[8], 10) : null;
     const gridStr    = isV5 ? parts[9] : (isV3 ? parts[8] : parts[6]);
 
