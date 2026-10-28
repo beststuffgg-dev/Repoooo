@@ -210,6 +210,7 @@ const INIT = () => {
 
   console.log('== old four-key settings still load ==');
   {
+    await page.waitForTimeout(500);
     await page.evaluate(() => localStorage.setItem('rd_settings', JSON.stringify({ keys: ['KeyJ', 'KeyK', 'KeyL', 'Semicolon'], width: 420, height: 640 })));
     await page.reload({ waitUntil: 'load' });
     await page.waitForTimeout(1200);

@@ -11,7 +11,7 @@ V8 is built on the **v3.0** source — its look, its themes, its intro splash, i
 ```
 RhythmDropV8.zip          the game, zipped
 htmls/RhythmDrop.html     the game as one self-contained file (generated)
-tests/                    39 suites — 14 for V8, 25 for V7
+tests/                    40 suites — 15 for V8, 25 for V7
 RhythmDrop/
   RhythmDropV8/           the source — load this as an unpacked extension
     popup.html              markup, styling, the v3 theme system
@@ -180,6 +180,18 @@ Eleven voices: `synth`, `violin`, `cello`, `flute`, `clarinet`, `trumpet`, `horn
 
 **Old voices.** `RD_resolveInstrument` maps every removed id to a current one (strings -> violin, brass -> trumpet, guitar/lyre/kalimba/bell -> harp, marimba -> piano, organ -> clarinet, chiptune -> synth). It is applied to the saved setting, to every custom level on boot, to imports, to generated levels and to the share-code decoder (which keeps the old codec characters). The baker composes with the old twelve ids and translates after, so the 150 songs' notes are byte-identical and only the voice table and each area's default voice changed.
 
+## 5e. Hold notes
+
+A hold is a normal tap with a `hold: N` field (N rows below the head, 1 or more). It is not a new note type, so old builds read it as a plain tap, the one-type-per-row rule never sees it, and a double can't carry one. Campaign, Generate and Endless have none (the baked format is fixed and the composer is V7's); holds come from the creator.
+
+**In play.** `buildQueue` copies `hold`; the tile is `TILE_H + N * rowPx()` tall with the head on the bottom `TILE_H` (the judged point is `headPt(t)`, not the tile centre) and `tailPt(t)` the top. States: armed -> held -> done, or missed / dropped. A press inside the hit window on the head takes it (`held`, `down`), starts a sustained voice and scores like a tap (the only thing that grows the combo). While down, a tick every half beat adds points only; when the tail reaches the line it completes with a bonus. Letting go early starts a ~110 ms grace measured on game time (a re-press inside it takes the hold back, no second head is counted); when it runs out the hold is dropped: combo broken, one life, tile dimmed. A release within ~140 ms of the tail counts as finished. A head that slides past the window is missed explicitly (one life, tile dimmed) - the old rule only fired when the whole tile had left the screen - and a hold tile leaving the screen never costs anything more. Holding past the tail is harmless. A blur, a restart, quitting and the end of a run release everything; the voice is released by `release()` on the note handle.
+
+**Input.** M1's `pressLane`/`releaseLane` give each lane a set of active sources, so a key and a finger can't double-fire it and `onLaneRelease(lane)` fires only when the last source lets go. Chaos keys release by `keyup` on their letter (`onChaosRelease`).
+
+**Share codes.** `^N` after a note's token; the code becomes version 6 only when a level has a hold (or more than 4 lanes), so every other chart still encodes exactly as before. The decoder cuts a hold short where another note in its lane would overlap it and drops holds on doubles.
+
+**Creator.** The Hold tool (`▮ HOLD`): click an empty cell to place a two-row hold, or press and drag down to set the length in one gesture; the bottom cell of any hold has a grip you can drag in any tool (up to shorten, down to lengthen, past the last row to grow the grid). It stops at the next note in its lane. The grid still has one `.cr-cell` per cell (`data-r`/`data-c`), with `is-hold-head`/`-body`/`-tail` classes; erase, select and the editor on a body cell act on its head; the editor has a Hold row (off, 1-8) and making a note a double removes the hold; typing or placing a note into a body cuts the hold; copy/paste/move carry `hold` and `normalizeCrHolds()` shortens anything that now overlaps. Pointer handling is delegated on `#cr-grid` with pointer capture (the grid is rebuilt on every change, so per-cell listeners would die mid-drag), and a click that ends a gesture is ignored for 300 ms so finishing a drag doesn't open the editor. The cell editor's `write()` now keeps a note's other fields (it used to drop its instrument).
+
 ## 6. Architecture
 
 **Load order is fixed**: `levels.js → campaign.js → codec.js → audio.js → generator.js → game.js`. The baked data first, then the engine that reads it, then the codec, then audio, the live generator (endless), and the game that wires them together.
@@ -214,7 +226,7 @@ Eleven voices: `synth`, `violin`, `cello`, `flute`, `clarinet`, `trumpet`, `horn
 cd tests && npm install && node run-all.js
 ```
 
-39 suites. Fourteen cover V8:
+40 suites. Fifteen cover V8:
 
 | Suite | Covers |
 |---|---|
@@ -228,6 +240,7 @@ cd tests && npm install && node run-all.js
 | `v8themes.js` | The ten campaign themes: one per area in order, each with its own texture, the unlock following the whole area and only the area, locked cards inert, a saved unearned theme not worn on boot, the unlock announced by the clear that earns it and only once, and contrast floors in every theme |
 | `v8gameplay.js` | The hit window widens the tolerance in order and is applied to judging; the Double runs at half the beat, pays double, is offered only off a clear and never chains; tiles are drawn within a pixel of where they are judged, by transform, at two UI scales |
 | `v8ui.js` | Real Chromium: the pinned height, the side panel widening the window without moving the grid, the overlay fallback, hidden panes built on show and the visible one refreshed on return, and one whole run from the campaign list to the results screen |
+| `v8holds.js` | Hold notes end to end: geometry, head/tick/tail scoring, early release and the re-grab grace, missed heads, blur, mouse/touch/chaos input, the sustained voice, codes, and the creator's Hold tool |
 | `v8lanes.js` | 4/6/8 lanes: the board per count, whole-lane pointer input (mouse, touch, chords, key-source guard, blur release), the window widening for 8 lanes without ever saving it as the player's width, keys per lane count, share codes, the creator's lane switch |
 
 The remaining 25 are V7's, unchanged, running against `RhythmDrop/v7/`. `APP_DIR` selects which V7 build they test; `V8_DIR` overrides the V8 one.

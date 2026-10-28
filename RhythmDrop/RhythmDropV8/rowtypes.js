@@ -26,7 +26,7 @@ window.RD_RowTypes = (function () {
              : n.dtap < n.tap ? false
              : (placed ? placedDoubles / placed : 0) < want;
         const type = dtap ? 'dtap' : 'tap';
-        for (const c of row) if (c) c.type = type;
+        for (const c of row) if (c) { c.type = type; if (dtap) delete c.hold; }
       }
       placed += size;
       if (dtap) placedDoubles += size;

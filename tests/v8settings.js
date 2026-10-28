@@ -193,6 +193,7 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
 
   console.log('== saves from before the new instruments still work ==');
   {
+    await page.waitForTimeout(500);
     await page.evaluate(() => {
       localStorage.setItem('rd_settings', JSON.stringify({ instrument: 'kalimba', width: 420, height: 640 }));
       localStorage.setItem('rd_instrument', 'organ');

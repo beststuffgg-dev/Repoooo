@@ -63,6 +63,13 @@ console.log('== the rule ==');
   const again = JSON.stringify(a); uniformRowTypes(a);
   ok(JSON.stringify(a) === again, 'running it twice changes nothing');
 
+  const withHold = (type, hold) => cell(type, hold ? { hold } : {});
+  const hg = [[withHold(T, 3), withHold(T), withHold(D), null], [withHold(D), withHold(D), withHold(T, 2), null], [withHold(T, 2), null, null, null]];
+  uniformRowTypes(hg);
+  ok(hg[0][0].type === T && hg[0][0].hold === 3, 'a hold head in a row that resolves to taps keeps its hold');
+  ok(hg[1][2].type === D && hg[1][2].hold === undefined, 'a hold head turned into a double loses its hold, so a double never carries one');
+  ok(hg[2][0].hold === 2, 'a lone hold head is left alone');
+
   ok(uniformRowTypes([]).length === 0, 'an empty grid is fine');
   ok(isUniform(uniformRowTypes([row(), row(T, T), row()])), 'rows with no notes are skipped');
 }

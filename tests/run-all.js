@@ -17,6 +17,7 @@ const SUITES = [
   ['v8editor.js',   'V8 creator tools — keyboard entry, multi-select, vertical resize'],
   ['v8ui.js',       'V8 layout — the side panel, resizable both ways, one whole run'],
   ['v8lanes.js',    'V8 lanes — 4, 6 and 8 lanes: board, input, keys, codes, creator'],
+  ['v8holds.js',    'V8 holds — hold notes in play, in codes and in the creator'],
   ['smoke.js',        'UI — boot, tabs, campaign, shop, editor, themes'],
   ['smoke2.js',       'Gameplay — scoring, lives, tile pool, migration'],
   ['progression.js',  'Progression — generation, XP, codes, dailies, economy'],
@@ -46,7 +47,7 @@ const SUITES = [
 
 const APP = process.env.APP_DIR || '';
 const SKIP = /Redesign/.test(APP)
-  ? new Set(['redesigntest.js', 'singlefiletest.js', 'v8levels.js', 'v8campaign.js', 'v8audio.js', 'v8graphics.js', 'v8settings.js', 'v8generate.js', 'v8rowtypes.js', 'v8themes.js', 'v8gameplay.js', 'v8editor.js', 'v8ui.js', 'v8lanes.js'])
+  ? new Set(['redesigntest.js', 'singlefiletest.js', 'v8levels.js', 'v8campaign.js', 'v8audio.js', 'v8graphics.js', 'v8settings.js', 'v8generate.js', 'v8rowtypes.js', 'v8themes.js', 'v8gameplay.js', 'v8editor.js', 'v8ui.js', 'v8lanes.js', 'v8holds.js'])
   : new Set();
 
 let failed = [], ran = 0;

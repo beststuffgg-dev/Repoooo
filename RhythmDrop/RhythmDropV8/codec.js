@@ -139,6 +139,8 @@
       });
     }
     rows = rows || [];
+    const holdOf = cell => (cell && typeof cell === 'object' && cell.type !== 'dtap' && cell.hold > 0 ? Math.floor(cell.hold) : 0);
+    const hasHold = rows.some(row => row.some(c => holdOf(c) > 0));
     let curInst = null;
 
     const rowStrs = rows.map(row => {
@@ -170,6 +172,8 @@
         if (isDefault) out += (type === 'dtap' ? 'd' : 't');
         else           out += (type === 'dtap' ? 'D' : 'T') + midi;
 
+        const hold = holdOf(cell);
+        if (hold > 0) out += '^' + hold;
         if (sustain > 0) out += '~' + Math.round(sustain * 2);
       }
       flush();
@@ -180,7 +184,7 @@
       .map(f => (f > 0 ? freqToMidi(f) : '0')).join(',');
 
     const packed = [
-      n > 4 ? '6' : '5',
+      (n > 4 || hasHold) ? '6' : '5',
       (lvl.name || 'untitled').replace(/\|/g, '/'),
       lvl.bpm || 120,
       lvl.bgMode || 'none',
@@ -254,6 +258,14 @@
           midi = parseInt(num, 10);
         } else { i++; continue; }
 
+        let hold = 0;
+        if (rowStr[i] === '^') {
+          i++;
+          let num = '';
+          while (i < rowStr.length && /\d/.test(rowStr[i])) num += rowStr[i++];
+          hold = type === 'tap' ? parseInt(num, 10) || 0 : 0;
+        }
+
         let sustain = 0;
         if (rowStr[i] === '~') {
           i++;
@@ -268,10 +280,21 @@
           sustain,
         };
         if (curInst) row[ci].inst = curInst;
+        if (hold > 0) row[ci].hold = hold;
         ci++;
       }
       return row;
     });
+
+    for (let c = 0; c < n; c++) {
+      for (let r = 0; r < grid.length; r++) {
+        const cell = grid[r][c];
+        if (!cell || !cell.hold) continue;
+        let len = 0;
+        while (len < cell.hold && grid[r + len + 1] && !grid[r + len + 1][c]) len++;
+        if (len > 0) cell.hold = len; else delete cell.hold;
+      }
+    }
 
     const bassSteps = bassPattern.map(f => ({
       active: f > 0,

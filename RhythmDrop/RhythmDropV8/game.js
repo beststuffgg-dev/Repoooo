@@ -1628,6 +1628,7 @@ document.addEventListener('keydown', e => {
 });
 
 document.addEventListener('keyup', e => {
+  if (running && chaosMode && /^Key[A-Z]$/.test(e.code)) onChaosRelease(e.code);
   const map = buildKeyMap();
   if (e.code in map) releaseLane(map[e.code], 'k' + e.code);
 });

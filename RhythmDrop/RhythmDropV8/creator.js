@@ -62,6 +62,7 @@ function openCreator(idx) {
       ? l.bassSteps.map(s => ({ ...s }))
       : [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
     while (crGrid.length < 8) crGrid.push(crEmptyRow());
+    normalizeCrHolds();
   } else {
     document.getElementById('cr-name').value = '';
     document.getElementById('cr-bpm').value  = 120;
@@ -95,15 +96,17 @@ function openCreator(idx) {
   showScreen('creator');
 }
 
-const TOOL_CLASS = { tap:' at', dtap:' ad', erase:' ae', select:' as' };
+const TOOL_CLASS = { tap:' at', dtap:' ad', hold:' ah', erase:' ae', select:' as' };
 function setTool(t) {
   crTool = t;
-  ['tap','dtap','erase','select'].forEach(x => {
+  ['tap','dtap','hold','erase','select'].forEach(x => {
     const b = document.getElementById('t-' + x);
     if (b) b.className = 'tool-btn' + (x === t ? TOOL_CLASS[x] : '');
   });
   const bar = document.getElementById('cr-selbar');
   if (bar) bar.classList.toggle('show', t === 'select');
+  const wrap = document.querySelector('.cr-grid-wrap');
+  if (wrap) wrap.classList.toggle('hold-tool', t === 'hold');
   if (t !== 'select' && crSel.size) crSel.clear();
   if (document.getElementById('cr-grid')) buildGrid();
 }
@@ -114,14 +117,65 @@ function moveCursor(d) {
   while (crCursor >= crGrid.length) crGrid.push(crEmptyRow());
   buildGrid();
 }
+const DEFAULT_HOLD = 2;
+
+function cellHold(cell) {
+  return cell && typeof cell === 'object' && cell.type !== 'dtap' && cell.hold > 0 ? Math.floor(cell.hold) : 0;
+}
+
+function holdSpace(r, c) {
+  let n = 0;
+  while (crGrid[r + n + 1] && !crGrid[r + n + 1][c]) n++;
+  return n;
+}
+
+function holdHeadRow(r, c) {
+  if (crGrid[r] && crGrid[r][c]) return -1;
+  let rr = r - 1;
+  while (rr >= 0 && !(crGrid[rr] && crGrid[rr][c])) rr--;
+  if (rr < 0) return -1;
+  return cellHold(crGrid[rr][c]) >= r - rr ? rr : -1;
+}
+
+function normalizeCrHolds() {
+  for (let r = 0; r < crGrid.length; r++) {
+    for (let c = 0; c < crLanes; c++) {
+      const cell = crGrid[r][c];
+      if (!cell || typeof cell !== 'object' || cell.hold === undefined) continue;
+      const n = Math.min(cellHold(cell), holdSpace(r, c));
+      if (n > 0) cell.hold = n; else delete cell.hold;
+    }
+  }
+}
+
+function placeCell(r, c, cell) {
+  while (r >= crGrid.length) crGrid.push(crEmptyRow());
+  const own = holdHeadRow(r, c);
+  if (own >= 0) {
+    const head = crGrid[own][c];
+    head.hold = r - own - 1;
+    if (head.hold < 1) delete head.hold;
+  }
+  if (cell && cell.hold) {
+    const n = Math.min(cell.hold, holdSpace(r, c));
+    if (n > 0) cell.hold = n; else delete cell.hold;
+  }
+  crGrid[r][c] = cell;
+}
+
+function newCellFor(lane) {
+  const cell = { type: crTool === 'dtap' ? 'dtap' : 'tap', freq: crLaneFreqs[lane], sustain: crDefaultSustain };
+  if (crTool === 'hold') cell.hold = DEFAULT_HOLD;
+  return cell;
+}
+
 function typeNoteAtCursor(lane) {
   if (lane < 0 || lane >= crLanes) return;
   while (crCursor >= crGrid.length) crGrid.push(crEmptyRow());
   if (cellType(crGrid[crCursor][lane])) {
     crGrid[crCursor][lane] = null;
   } else {
-    crGrid[crCursor][lane] = { type: crTool === 'dtap' ? 'dtap' : 'tap',
-                               freq: crLaneFreqs[lane], sustain: crDefaultSustain };
+    placeCell(crCursor, lane, newCellFor(lane));
   }
   buildGrid();
   if (editIdx !== null) autoSave();
@@ -170,6 +224,7 @@ function selPaste() {
     crGrid[r][c] = { ...it.cell };
     next.add(selKey(r, c));
   });
+  normalizeCrHolds();
   crSel = next;
   buildGrid();
   if (editIdx !== null) autoSave();
@@ -194,6 +249,7 @@ function selMove(dr, dc) {
     crGrid[p.nr][p.nc] = p.cell;
     next.add(selKey(p.nr, p.nc));
   });
+  normalizeCrHolds();
   crSel = next;
   crCursor = Math.max(0, Math.min(crGrid.length - 1, crCursor + dr));
   buildGrid();
@@ -309,6 +365,12 @@ function buildGrid() {
     h.textContent = k; g.appendChild(h);
   });
 
+  const bodyOf = new Map();
+  crGrid.forEach((row, ri) => row.forEach((cell, ci) => {
+    const n = cellHold(cell);
+    for (let k = 1; k <= n; k++) bodyOf.set((ri + k) + ',' + ci, { head: ri, tail: k === n });
+  }));
+
   crGrid.forEach((row, ri) => {
     const lbl = document.createElement('div');
     lbl.className = 'cr-row-num' + (ri === crCursor ? ' cur' : '');
@@ -316,11 +378,17 @@ function buildGrid() {
 
     row.forEach((cell, ci) => {
       const type = cellType(cell);
+      const body = bodyOf.get(ri + ',' + ci);
+      const holdN = cellHold(cell);
 
       const el = document.createElement('div');
       el.className = 'cr-cell' + (type ? ' is-' + type : '')
+        + (holdN ? ' is-hold-head' : '')
+        + (body ? ' is-hold-body' + (body.tail ? ' is-hold-tail' : '') : '')
         + (ri === crCursor ? ' cur' : '')
-        + (crSel.has(selKey(ri, ci)) ? ' cr-cell-sel' : '');
+        + (crSel.has(selKey(body ? body.head : ri, ci)) ? ' cr-cell-sel' : '');
+      el.dataset.r = ri;
+      el.dataset.c = ci;
       if (type && crAdvOpen) {
         el.classList.add('cr-cell-named');
         const name = document.createElement('span');
@@ -335,27 +403,90 @@ function buildGrid() {
         }
       }
       el.addEventListener('click', () => {
+        if (performance.now() - crGestureEnd < 300) return;
         crCursor = ri;
+        const tr = body ? body.head : ri;
         if (crTool === 'select') {
-          const k = selKey(ri, ci);
+          const k = selKey(tr, ci);
           if (crSel.has(k)) crSel.delete(k); else crSel.add(k);
           buildGrid();
           return;
         }
-        const cur = cellType(crGrid[ri][ci]);
-        if (crTool === 'erase') { crGrid[ri][ci] = null; buildGrid(); return; }
+        if (crTool === 'erase') { crGrid[tr][ci] = null; buildGrid(); return; }
+        const cur = cellType(crGrid[tr][ci]);
         if (!cur) {
-          crGrid[ri][ci] = { type: crTool === 'dtap' ? 'dtap' : 'tap',
-                             freq: crLaneFreqs[ci], sustain: crDefaultSustain };
+          placeCell(ri, ci, newCellFor(ci));
           buildGrid();
         } else {
-          openCellEditor(el, ri, ci);
+          openCellEditor(body ? g.querySelector('.cr-cell[data-r="' + tr + '"][data-c="' + ci + '"]') || el : el, tr, ci);
         }
       });
       g.appendChild(el);
     });
   });
 }
+
+let crGestureEnd = 0;
+let crDrag = null;
+
+function crRowAt(ev) {
+  const g = document.getElementById('cr-grid');
+  const hit = document.elementFromPoint(ev.clientX, ev.clientY);
+  const cell = hit && hit.closest ? hit.closest('.cr-cell') : null;
+  if (cell && cell.dataset.r !== undefined) return +cell.dataset.r;
+  const last = g.querySelector('.cr-cell:last-child');
+  if (last && ev.clientY > last.getBoundingClientRect().bottom) return crGrid.length;
+  return null;
+}
+
+function setHoldLength(head, lane, want) {
+  const cell = crGrid[head] && crGrid[head][lane];
+  if (!cell) return false;
+  while (want > holdSpace(head, lane) && want < 512 && crGrid.length < head + want + 1) crGrid.push(crEmptyRow());
+  const n = Math.max(1, Math.min(want, holdSpace(head, lane)));
+  if (cellHold(cell) === n) return false;
+  cell.hold = n;
+  return true;
+}
+
+(function wireHoldDrag() {
+  const g = document.getElementById('cr-grid');
+  g.addEventListener('pointerdown', ev => {
+    const el = ev.target.closest ? ev.target.closest('.cr-cell') : null;
+    if (!el || el.dataset.r === undefined) return;
+    const r = +el.dataset.r, c = +el.dataset.c;
+    let head = -1, placed = false;
+    if (el.classList.contains('is-hold-tail')) head = holdHeadRow(r, c);
+    else if (crTool === 'hold' && !crGrid[r][c] && holdHeadRow(r, c) < 0) {
+      placeCell(r, c, newCellFor(c));
+      head = r;
+      placed = true;
+      buildGrid();
+      if (editIdx !== null) autoSave();
+    }
+    if (head < 0) return;
+    ev.preventDefault();
+    try { g.setPointerCapture(ev.pointerId); } catch (_) {}
+    crDrag = { head, lane: c, id: ev.pointerId, moved: false, placed };
+  });
+  g.addEventListener('pointermove', ev => {
+    if (!crDrag || ev.pointerId !== crDrag.id) return;
+    const row = crRowAt(ev);
+    if (row === null) return;
+    if (setHoldLength(crDrag.head, crDrag.lane, row - crDrag.head)) {
+      crDrag.moved = true;
+      buildGrid();
+    }
+  });
+  const end = ev => {
+    if (!crDrag || ev.pointerId !== crDrag.id) return;
+    if (crDrag.moved || crDrag.placed) crGestureEnd = performance.now();
+    crDrag = null;
+    if (editIdx !== null) autoSave();
+  };
+  g.addEventListener('pointerup', end);
+  g.addEventListener('pointercancel', end);
+})();
 
 function openCellEditor(anchorEl, ri, ci) {
   document.querySelectorAll('.cr-cell-editor').forEach(e => e.remove());
@@ -366,11 +497,18 @@ function openCellEditor(anchorEl, ri, ci) {
   pop.className = 'cr-cell-editor';
 
   const write = patch => {
-    crGrid[ri][ci] = Object.assign({
-      type: cellType(crGrid[ri][ci]) || 'tap',
-      freq: cellFreq(crGrid[ri][ci], ci),
-      sustain: cellSustain(crGrid[ri][ci]),
-    }, patch);
+    const cur = crGrid[ri][ci];
+    const next = Object.assign({
+      type: cellType(cur) || 'tap',
+      freq: cellFreq(cur, ci),
+      sustain: cellSustain(cur),
+    }, typeof cur === 'object' ? cur : {}, patch);
+    if (next.type === 'dtap' || !(next.hold > 0)) delete next.hold;
+    else {
+      const n = Math.min(Math.floor(next.hold), holdSpace(ri, ci));
+      if (n > 0) next.hold = n; else delete next.hold;
+    }
+    crGrid[ri][ci] = next;
     buildGrid();
     render();
   };
@@ -403,6 +541,25 @@ function openCellEditor(anchorEl, ri, ci) {
       openNotePickerModal(pitchBtn, cellFreq(crGrid[ri][ci], ci), f => write({ freq: f }));
     });
     pop.appendChild(pitchBtn);
+
+    if (cellType(c) !== 'dtap') {
+      const holdLabel = document.createElement('div');
+      holdLabel.className = 'cce-sublabel';
+      holdLabel.textContent = 'Hold (rows)';
+      pop.appendChild(holdLabel);
+      const holdRow = document.createElement('div');
+      holdRow.className = 'cce-sus';
+      const room = holdSpace(ri, ci);
+      [[0, 'off'], [1, '1'], [2, '2'], [3, '3'], [4, '4'], [6, '6'], [8, '8']].forEach(([v, label]) => {
+        const btn = document.createElement('button');
+        btn.className = 'cce-schip' + (cellHold(c) === v ? ' on' : '');
+        btn.textContent = label;
+        if (v > room) { btn.disabled = true; btn.style.opacity = '.35'; }
+        btn.addEventListener('click', () => write({ hold: v }));
+        holdRow.appendChild(btn);
+      });
+      pop.appendChild(holdRow);
+    }
 
     const susLabel = document.createElement('div');
     susLabel.className = 'cce-sublabel';

@@ -6,6 +6,10 @@ function hitTol() {
   return TILE_H * 1.8 * mult;
 }
 const DTAP_MS    = 320;
+const HOLD_GRACE_MS = 110;
+const HOLD_TAIL_MS  = 140;
+const HOLD_TICK_PTS = 25;
+const HOLD_DONE_PTS = 120;
 const SPEED_INC  = 0.10 / 60;
 
 let gameLevel   = null;
@@ -94,7 +98,8 @@ function buildQueue(lvl) {
       const freq    = (typeof cell === 'object' && cell.freq) ? cell.freq : fallbackFreqs[ci];
       const sustain = (typeof cell === 'object' && cell.sustain) ? cell.sustain : 0;
       const inst    = (typeof cell === 'object' && cell.inst) ? cell.inst : songInst;
-      q.push({ beatIdx:ri, lane:ci, type, freq, sustain, inst });
+      const hold    = (type === 'tap' && typeof cell === 'object' && cell.hold > 0) ? Math.floor(cell.hold) : 0;
+      q.push({ beatIdx:ri, lane:ci, type, freq, sustain, inst, hold });
     }));
     return q.sort((a, b) => a.beatIdx - b.beatIdx);
   }
@@ -103,6 +108,7 @@ function buildQueue(lvl) {
     freq: n.freq || fallbackFreqs[n.l],
     sustain: n.sustain || 0,
     inst: n.inst || songInst,
+    hold: (n.t === 'tap' && n.hold > 0) ? Math.floor(n.hold) : 0,
   }));
 }
 
@@ -115,10 +121,21 @@ function totalBeats(lvl) {
   return lvl.grid ? lvl.grid.length : (lvl.beats || lvl.notes.length);
 }
 
+function rowPx() { return laneH() / 4; }
+
+function headPt(t) {
+  return t.y + (t.hold ? t.h - TILE_H / 2 : (t.h || TILE_H) / 2);
+}
+
+function tailPt(t) {
+  return t.y + TILE_H / 2;
+}
+
 function spawnTile(note) {
   const el = document.createElement('div');
-  el.className = 'tile tile-' + note.type;
-  const h = note.type === 'dtap' ? Math.round(TILE_H * 1.5) : TILE_H;
+  el.className = 'tile tile-' + note.type + (note.hold ? ' tile-hold' : '');
+  const h = note.hold ? Math.round(TILE_H + note.hold * rowPx())
+          : note.type === 'dtap' ? Math.round(TILE_H * 1.5) : TILE_H;
   if (note.sustain > 0) {
     el.style.boxShadow = '0 0 12px rgba(245,158,11,0.7)';
     el.style.borderTop = '2px solid var(--perfect)';
@@ -136,7 +153,9 @@ function spawnTile(note) {
   }
 
   laneEls[note.lane].appendChild(el);
-  return { el, lane:note.lane, chaosCode, y:-h, type:note.type, h, freq:note.freq||null, sustain:note.sustain||0, firstTapped:false, done:false };
+  return { el, lane:note.lane, chaosCode, y:-h, type:note.type, h, freq:note.freq||null, sustain:note.sustain||0, inst:note.inst||null,
+           hold:note.hold||0, held:false, down:false, releasedAt:0, tickAcc:0, voice:null, missed:false, dropped:false,
+           firstTapped:false, done:false };
 }
 
 function launchLevel(lvl, asDouble) {
@@ -219,6 +238,7 @@ function saveGenerated(lvl) {
 
 function startGame() {
   if (typeof releaseAllLanes === 'function') releaseAllLanes();
+  releaseHeldVoices();
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   maxLives = currentSettings.lives || 3;
   lifeScoreMult = maxLives < 3 ? 1 + 0.20 * (3 - maxLives)
@@ -284,6 +304,25 @@ function loop(now) {
     const t = activeTiles[i];
     if (t.done) { t.el.remove(); activeTiles.splice(i,1); continue; }
     t.y += spd * dt; t.el.style.transform = 'translateY(' + t.y + 'px)';
+    if (t.hold) {
+      if (!t.held && !t.missed && !t.dropped) {
+        if (headPt(t) - hitY() > hitTol()) {
+          t.missed = true; t.el.classList.add('missed');
+          damage(t.lane); if (!running) return;
+        }
+      } else if (t.held) {
+        if (t.down) {
+          t.tickAcc += dt;
+          const iv = currentBeatMs / 2;
+          while (t.tickAcc >= iv) { t.tickAcc -= iv; holdTick(t); }
+        } else if (gameTimeMs - t.releasedAt > HOLD_GRACE_MS) {
+          dropHold(t); if (!running) return;
+        }
+        if (t.held && tailPt(t) >= hitY()) completeHold(t);
+      }
+      if (t.y > th + t.h) { endVoice(t); t.el.remove(); activeTiles.splice(i,1); }
+      continue;
+    }
     if (t.y > th + (t.h || TILE_H)) {
       t.el.remove(); activeTiles.splice(i,1);
       damage(t.lane); if (!running) return;
@@ -296,13 +335,63 @@ function loop(now) {
   raf = requestAnimationFrame(loop);
 }
 
+function endVoice(t) {
+  if (t.voice) { t.voice.release(); t.voice = null; }
+}
+
+function holdTick(t) {
+  score += Math.round(HOLD_TICK_PTS * lifeScoreMult);
+  scoreEl.textContent = score;
+}
+
+function completeHold(t) {
+  t.held = false; t.down = false; t.done = true;
+  t.el.classList.remove('held');
+  endVoice(t);
+  score += Math.round(HOLD_DONE_PTS * lifeScoreMult);
+  scoreEl.textContent = score;
+  showFb(t.lane, 'HOLD', 'var(--perfect)');
+  spawnTapPulse(t.lane);
+}
+
+function dropHold(t) {
+  t.held = false; t.down = false; t.dropped = true;
+  t.el.classList.remove('held');
+  t.el.classList.add('dropped');
+  endVoice(t);
+  damage(t.lane);
+}
+
+function releaseHold(t) {
+  t.down = false;
+  const remain = (hitY() - tailPt(t)) / (laneH() / (currentBeatMs * 4));
+  if (remain <= HOLD_TAIL_MS) completeHold(t);
+  else t.releasedAt = gameTimeMs;
+}
+
+function onLaneRelease(lane) {
+  if (!running) return;
+  for (const t of activeTiles) if (t.hold && t.held && t.down && t.lane === lane) releaseHold(t);
+}
+
+function onChaosRelease(code) {
+  if (!running) return;
+  for (const t of activeTiles) if (t.hold && t.held && t.down && t.chaosCode === code) releaseHold(t);
+}
+
+function releaseHeldVoices() {
+  activeTiles.forEach(endVoice);
+}
+
 function tapLane(keyIdx) {
   if (!running) return;
+  const regrab = activeTiles.find(t => t.hold && t.held && !t.down && t.lane === keyIdx);
+  if (regrab) { regrab.down = true; return; }
   let best = null, bestDist = Infinity;
   const hl = hitY();
   for (const t of activeTiles) {
-    if (t.done || t.lane !== keyIdx) continue;
-    const d = Math.abs((t.y + (t.h || TILE_H) / 2) - hl);
+    if (t.done || t.lane !== keyIdx || t.held || t.missed || t.dropped) continue;
+    const d = Math.abs(headPt(t) - hl);
     if (d < bestDist) { bestDist = d; best = t; }
   }
   processTap(best, bestDist, keyIdx);
@@ -310,14 +399,16 @@ function tapLane(keyIdx) {
 
 function tapChaos(code) {
   if (!running) return;
+  const regrab = activeTiles.find(t => t.hold && t.held && !t.down && t.chaosCode === code);
+  if (regrab) { regrab.down = true; return; }
   let best = null, bestDist = Infinity;
   const hl = hitY();
   for (const t of activeTiles) {
-    if (t.done || t.chaosCode !== code) continue;
-    const d = Math.abs((t.y + (t.h || TILE_H) / 2) - hl);
+    if (t.done || t.chaosCode !== code || t.held || t.missed || t.dropped) continue;
+    const d = Math.abs(headPt(t) - hl);
     if (d < bestDist) { bestDist = d; best = t; }
   }
-  if (!best && !activeTiles.some(t => !t.done && t.chaosCode === code)) return;
+  if (!best && !activeTiles.some(t => !t.done && !t.held && t.chaosCode === code)) return;
   processTap(best, bestDist, best ? best.lane : null);
 }
 
@@ -330,7 +421,12 @@ function processTap(best, bestDist, glowLane) {
 
   if (best && bestDist < hitTol()) {
     const tLane = best.lane;
-    if (best.type === 'tap') {
+    if (best.hold) {
+      best.held = true; best.down = true; best.tickAcc = 0; lastTapT[tLane] = 0;
+      best.el.classList.add('held');
+      if (window.RD_noteOn) best.voice = window.RD_noteOn(best.freq, { inst: voiceFor(best) || undefined, vel: 0.6 });
+      hit(tLane, bestDist);
+    } else if (best.type === 'tap') {
       best.done = true; lastTapT[tLane] = 0;
       if (window.RD_playNote) window.RD_playNote(tLane, false, best.freq, best.sustain || 0, voiceFor(best));
       hit(tLane, bestDist);
@@ -429,6 +525,7 @@ function showFb(lane, text, color) {
 
 function endGame(won) {
   if (typeof releaseAllLanes === 'function') releaseAllLanes();
+  releaseHeldVoices();
   running = false; cancelAnimationFrame(raf);
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   if (window.RD_stopBg) window.RD_stopBg();
@@ -562,6 +659,7 @@ function syncGeneratedKeepBtn(show) {
 
 function quitToMenu() {
   if (typeof releaseAllLanes === 'function') releaseAllLanes();
+  releaseHeldVoices();
   running = false; cancelAnimationFrame(raf);
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   if (window.RD_stopBg) window.RD_stopBg();
