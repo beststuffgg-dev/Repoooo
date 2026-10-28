@@ -67,15 +67,15 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   modal.style.cssText = [
     'position:fixed;z-index:9999;',
     'background:var(--bg2);border:1px solid var(--border2);',
-    'border-radius:14px;padding:12px;gap:0;',
+    'border-radius:12px;padding:8px;gap:0;',
     'box-shadow:0 8px 32px rgba(0,0,0,.85);',
-    'width:288px;',
+    'width:210px;',
     'font-family:var(--font-body);',
   ].join('');
 
   const rect = anchorEl.getBoundingClientRect();
-  modal.style.top  = Math.min(rect.bottom + 4, window.innerHeight - 380) + 'px';
-  modal.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 296)) + 'px';
+  modal.style.top  = Math.min(rect.bottom + 4, window.innerHeight - 250) + 'px';
+  modal.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 218)) + 'px';
 
   const header = document.createElement('div');
   header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;';
@@ -111,10 +111,10 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:stretch;';
 
   const BTN = [
-    'width:100%;padding:8px 4px;border-radius:8px;',
+    'width:100%;padding:4px 2px;border-radius:7px;',
     'border:1px solid var(--border2);',
     'background:var(--bg3);color:var(--text);',
-    'font-size:13px;font-weight:600;cursor:pointer;',
+    'font-size:11px;font-weight:600;cursor:pointer;',
     'font-family:var(--font-body);',
     'transition:background .1s,border-color .1s,color .1s,opacity .1s;',
     'display:block;box-sizing:border-box;',
@@ -170,7 +170,7 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   const colO = makeCol(OCTAVES, o=>String(o), o=>{selOctave=o;}, colOBtns);
   const colA = makeCol(ACCS,    a=>a.label,   a=>{selAcc=a.v;},  colABtns);
   colA.style.height = '100%';
-  colA.querySelectorAll('button').forEach(b => { b.style.flex='1'; b.style.minHeight='54px'; });
+  colA.querySelectorAll('button').forEach(b => { b.style.flex='1'; b.style.minHeight='30px'; });
 
   refreshAllCols();
 

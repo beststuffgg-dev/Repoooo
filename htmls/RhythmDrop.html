@@ -549,6 +549,12 @@ button, .hnav, .area-chip, .song-row, .level-card, .avatar-card,
   font-family:var(--font-body); cursor:pointer; transition:border-color .15s,color .15s;
 }
 #new-lvl-btn:hover { border-color:var(--dtap); color:var(--dtap); }
+#studio-btn {
+  width:100%; padding:11px; border-radius:12px; background:none; border:1px dashed var(--border2);
+  color:var(--muted); font-size:13px; font-weight:600; font-family:var(--font-body); cursor:pointer; margin-bottom:6px;
+  transition:border-color .15s,color .15s;
+}
+#studio-btn:hover { border-color:var(--tap); color:var(--tap); }
 
 .themes-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:14px; }
 .theme-card {
@@ -1130,7 +1136,7 @@ body.gfx-modern.theme-concrete .lane::after {
 }
 
 .cr-cell-editor {
-  position:fixed; z-index:120; width:172px;
+  position:fixed; z-index:120; width:176px;
   background:var(--bg2); border:1px solid var(--border2); border-radius:11px;
   box-shadow:0 14px 34px -10px rgba(0,0,0,.7); padding:10px; display:flex; flex-direction:column; gap:7px;
 }
@@ -1253,6 +1259,55 @@ body.adv-overlay #adv-panel.open {
   transition:color .3s;
 }
 .hud-lives { font-size:15px; letter-spacing:4px; }
+
+
+#studio { flex-direction:column; }
+.st-head { display:flex; align-items:center; gap:10px; padding:10px 14px; border-bottom:1px solid var(--border); }
+.st-title { flex:1; font-size:15px; font-weight:800; letter-spacing:-.3px; }
+.st-body { flex:1; overflow-y:auto; padding:12px 14px 24px; display:flex; flex-direction:column; gap:10px; }
+.st-drop { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding:14px; border:1px dashed var(--border2); border-radius:14px; background:var(--bg2); }
+.st-drop.over { border-color:var(--tap); background:color-mix(in srgb,var(--tap) 8%,var(--bg2)); }
+.st-drop-hint { font-size:11px; color:var(--muted); flex:1; min-width:180px; }
+.st-pick, .st-btn, .st-speeds button {
+  font:inherit; font-size:12px; font-weight:700; padding:7px 12px; border-radius:9px; cursor:pointer;
+  border:1px solid var(--border2); background:var(--bg3); color:var(--text);
+}
+.st-pick { border-color:var(--tap); color:var(--tap); }
+.st-btn.go, .st-speeds button.on, .st-btn.on { border-color:var(--tap); color:var(--tap); background:color-mix(in srgb,var(--tap) 10%,transparent); }
+.st-btn:disabled { opacity:.4; cursor:default; }
+.st-status { font-size:12px; color:var(--muted); min-height:16px; }
+.st-status.err { color:var(--miss); }
+.st-panel { display:flex; flex-direction:column; gap:10px; }
+#st-wave { width:100%; height:120px; border-radius:12px; background:var(--bg2); border:1px solid var(--border); cursor:pointer; touch-action:none; display:block; }
+.st-row { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.st-time { font-size:13px; font-weight:700; min-width:74px; }
+.st-speeds { display:flex; gap:4px; margin-left:auto; }
+.st-speeds button { padding:6px 9px; }
+.st-field { display:flex; align-items:center; gap:6px; font-size:11px; color:var(--muted); }
+.st-field input[type=number], .st-field select { font:inherit; font-size:12px; padding:5px 6px; border-radius:7px; border:1px solid var(--border2); background:var(--bg3); color:var(--text); width:auto; }
+.st-field input[type=number] { width:68px; }
+.st-tapzone { display:flex; gap:12px; align-items:stretch; flex-wrap:wrap; }
+.st-pad {
+  flex:0 0 150px; min-height:96px; border-radius:16px; border:2px solid var(--tap); background:color-mix(in srgb,var(--tap) 12%,var(--bg2));
+  color:var(--tap); font:inherit; font-size:22px; font-weight:900; letter-spacing:2px; cursor:pointer; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:4px;
+  user-select:none; touch-action:none;
+}
+.st-pad small { font-size:9px; letter-spacing:.5px; font-weight:600; color:var(--muted); text-transform:none; }
+.st-pad.down { background:var(--tap); color:#fff; }
+.st-tapinfo { flex:1; min-width:200px; display:flex; flex-direction:column; gap:8px; justify-content:center; }
+.st-hint { font-size:11px; color:var(--muted); }
+.st-count { font-size:12px; color:var(--text); }
+.st-opts { display:flex; align-items:center; gap:8px 12px; flex-wrap:wrap; padding:10px 12px; border:1px solid var(--border); border-radius:12px; background:var(--bg2); }
+.st-list { display:flex; flex-direction:column; gap:4px; }
+.st-item { display:flex; align-items:center; gap:8px; padding:5px 8px; border:1px solid var(--border); border-radius:9px; background:var(--bg2); font-size:12px; }
+.st-item.low { border-color:var(--perfect); }
+.st-item .n { color:var(--muted); width:30px; text-align:right; }
+.st-item .t { width:72px; }
+.st-item .notes { flex:1; display:flex; gap:4px; flex-wrap:wrap; }
+.st-item .pill { padding:2px 7px; border-radius:99px; background:var(--bg3); border:1px solid var(--border2); font-weight:700; }
+.st-item .pill.hold { border-color:var(--perfect); color:var(--perfect); }
+.st-item button { font:inherit; font-size:11px; padding:3px 7px; border-radius:7px; border:1px solid var(--border2); background:none; color:var(--muted); cursor:pointer; }
+.st-item button:hover { color:var(--tap); border-color:var(--tap); }
 
 #g-lanes { flex:1; display:flex; gap:6px; padding:0 12px; touch-action:none; user-select:none; -webkit-user-select:none; }
 #g-lanes[data-lanes="6"] { gap:5px; }
@@ -1710,6 +1765,7 @@ body.adv-overlay #adv-panel.open {
 
   <div class="tab-pane" id="tab-custom">
     <button id="new-lvl-btn">+ Create new level</button>
+    <button id="studio-btn" type="button">🎧 Song Studio — make a level from an MP3</button>
     <div class="gen-hint" style="margin-bottom:4px;">Tip: open a new level, hit <b>Advanced → Generate</b> to fill the grid with a composed chart, then edit and save it.</div>
     <div id="custom-list"></div>
   </div>
@@ -1925,6 +1981,72 @@ body.adv-overlay #adv-panel.open {
     <button class="chaos-toggle" id="ov-chaos-toggle">🎲 Chaos Keys: OFF</button>
     <button class="ov-play-btn" id="ov-btn">Play</button>
     <div class="ov-hint">R = restart · Q = menu</div>
+  </div>
+</div>
+
+<div class="screen" id="studio">
+  <div class="st-head">
+    <button class="cr-back" id="st-back" type="button" aria-label="Back to menu">←</button>
+    <div class="st-title">Song Studio</div>
+    <button class="cr-save-btn" id="st-make" type="button" disabled>Make level</button>
+  </div>
+  <div class="st-body">
+    <div class="st-drop" id="st-drop">
+      <input type="file" id="st-file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac" hidden>
+      <button type="button" class="st-pick" id="st-pick">Choose an audio file</button>
+      <span class="st-drop-hint" id="st-drop-hint">or drop an MP3 here. It stays on this computer; only the chart you make is saved.</span>
+    </div>
+    <div class="st-status" id="st-status" role="status"></div>
+    <div class="st-panel" id="st-main" hidden>
+      <canvas id="st-wave" height="120"></canvas>
+      <div class="st-row">
+        <button type="button" class="st-btn go" id="st-play">▶ Play</button>
+        <span class="st-time mono" id="st-time">0:00.00</span>
+        <div class="st-speeds" id="st-speeds">
+          <button type="button" data-rate="0.25">0.25×</button>
+          <button type="button" data-rate="0.5">0.5×</button>
+          <button type="button" data-rate="0.75">0.75×</button>
+          <button type="button" data-rate="1" class="on">1×</button>
+          <button type="button" data-rate="1.25">1.25×</button>
+        </div>
+      </div>
+      <div class="st-row">
+        <button type="button" class="st-btn" id="st-a">Set A</button>
+        <button type="button" class="st-btn" id="st-b">Set B</button>
+        <button type="button" class="st-btn" id="st-loop">Loop off</button>
+        <button type="button" class="st-btn" id="st-zoom-out" title="Zoom out">−</button>
+        <button type="button" class="st-btn" id="st-zoom-in" title="Zoom in">+</button>
+        <label class="st-field">Latency <input type="range" id="st-lat" min="0" max="250" step="5" value="60"><span class="mono" id="st-lat-v">60 ms</span></label>
+      </div>
+      <div class="st-tapzone">
+        <button type="button" class="st-pad" id="st-pad">TAP<small>Space · hold for a hold note</small></button>
+        <div class="st-tapinfo">
+          <div class="st-hint">Play the song and tap every note you want. Slow it down if it is fast. Backspace removes the last tap.</div>
+          <div class="st-row">
+            <button type="button" class="st-btn" id="st-undo">Undo tap</button>
+            <button type="button" class="st-btn" id="st-clear">Clear taps</button>
+            <span class="st-count mono" id="st-count">0 taps</span>
+          </div>
+        </div>
+      </div>
+      <div class="st-opts">
+        <label class="st-field">BPM <input type="number" id="st-bpm" min="40" max="260" step="0.1" value="120"></label>
+        <button type="button" class="st-btn" id="st-detect">Detect</button>
+        <button type="button" class="st-btn" id="st-half">½</button>
+        <button type="button" class="st-btn" id="st-double">2×</button>
+        <button type="button" class="st-btn" id="st-tempo">Tap tempo</button>
+        <label class="st-field">Beat offset <input type="number" id="st-off" step="0.01" value="0"> s</label>
+        <label class="st-field">Rows per beat
+          <select id="st-res"><option value="1">1</option><option value="2">2</option><option value="4">4</option></select></label>
+        <label class="st-field">Lanes
+          <select id="st-lanes"><option value="4">4</option><option value="6">6</option><option value="8">8</option></select></label>
+        <label class="st-field">Chord size
+          <select id="st-chord"><option value="1">1 note</option><option value="2">up to 2</option><option value="3" selected>up to 3</option></select></label>
+        <label class="st-field"><input type="checkbox" id="st-snap" checked> Snap taps to the music</label>
+        <label class="st-field">Plays as <select id="st-inst"></select></label>
+      </div>
+      <div class="st-list" id="st-list"></div>
+    </div>
   </div>
 </div>
 
@@ -2418,6 +2540,7 @@ window.RD_Campaign = (function () {
     rows = rows || [];
     const holdOf = cell => (cell && typeof cell === 'object' && cell.type !== 'dtap' && cell.hold > 0 ? Math.floor(cell.hold) : 0);
     const hasHold = rows.some(row => row.some(c => holdOf(c) > 0));
+    const scrollRows = lvl.scrollRows > 0 && lvl.scrollRows !== 4 ? Math.round(lvl.scrollRows) : 0;
     let curInst = null;
 
     const rowStrs = rows.map(row => {
@@ -2461,7 +2584,7 @@ window.RD_Campaign = (function () {
       .map(f => (f > 0 ? freqToMidi(f) : '0')).join(',');
 
     const packed = [
-      (n > 4 || hasHold) ? '6' : '5',
+      (n > 4 || hasHold || scrollRows) ? '6' : '5',
       (lvl.name || 'untitled').replace(/\|/g, '/'),
       lvl.bpm || 120,
       lvl.bgMode || 'none',
@@ -2471,7 +2594,7 @@ window.RD_Campaign = (function () {
       voiceId(lvl.instrument),
       lvl.areaId || '',
       rowStrs.join(';'),
-    ].join('|');
+    ].concat(scrollRows ? [String(scrollRows)] : []).join('|');
 
     return 'RD2:' + pack(packed);
   }
@@ -2580,6 +2703,7 @@ window.RD_Campaign = (function () {
 
     const out = { name, bpm, bgMode, laneFreqs, bassPattern, bassSteps,
                   diff, instrument, grid, lanes: n };
+    if (ver === '6' && parts[10] && parseInt(parts[10], 10) > 0) out.scrollRows = parseInt(parts[10], 10);
     if (areaId) out.areaId = areaId;
     return out;
   }
@@ -4808,15 +4932,15 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   modal.style.cssText = [
     'position:fixed;z-index:9999;',
     'background:var(--bg2);border:1px solid var(--border2);',
-    'border-radius:14px;padding:12px;gap:0;',
+    'border-radius:12px;padding:8px;gap:0;',
     'box-shadow:0 8px 32px rgba(0,0,0,.85);',
-    'width:288px;',
+    'width:210px;',
     'font-family:var(--font-body);',
   ].join('');
 
   const rect = anchorEl.getBoundingClientRect();
-  modal.style.top  = Math.min(rect.bottom + 4, window.innerHeight - 380) + 'px';
-  modal.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 296)) + 'px';
+  modal.style.top  = Math.min(rect.bottom + 4, window.innerHeight - 250) + 'px';
+  modal.style.left = Math.max(4, Math.min(rect.left, window.innerWidth - 218)) + 'px';
 
   const header = document.createElement('div');
   header.style.cssText = 'display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;';
@@ -4852,10 +4976,10 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   grid.style.cssText = 'display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;align-items:stretch;';
 
   const BTN = [
-    'width:100%;padding:8px 4px;border-radius:8px;',
+    'width:100%;padding:4px 2px;border-radius:7px;',
     'border:1px solid var(--border2);',
     'background:var(--bg3);color:var(--text);',
-    'font-size:13px;font-weight:600;cursor:pointer;',
+    'font-size:11px;font-weight:600;cursor:pointer;',
     'font-family:var(--font-body);',
     'transition:background .1s,border-color .1s,color .1s,opacity .1s;',
     'display:block;box-sizing:border-box;',
@@ -4911,7 +5035,7 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   const colO = makeCol(OCTAVES, o=>String(o), o=>{selOctave=o;}, colOBtns);
   const colA = makeCol(ACCS,    a=>a.label,   a=>{selAcc=a.v;},  colABtns);
   colA.style.height = '100%';
-  colA.querySelectorAll('button').forEach(b => { b.style.flex='1'; b.style.minHeight='54px'; });
+  colA.querySelectorAll('button').forEach(b => { b.style.flex='1'; b.style.minHeight='30px'; });
 
   refreshAllCols();
 
@@ -4931,6 +5055,365 @@ function openNotePickerModal(anchorEl, currentFreq, onConfirm) {
   }
   setTimeout(() => document.addEventListener('click', outsideClick), 0);
 }
+
+</script>
+<script data-from="studio-dsp.js">
+window.RD_StudioDSP = (function () {
+  'use strict';
+
+  const ANALYSIS_RATE = 22050;
+  const FRAME = 1024;
+  const HOP = 256;
+
+  function fft(re, im) {
+    const n = re.length;
+    for (let i = 1, j = 0; i < n; i++) {
+      let bit = n >> 1;
+      for (; j & bit; bit >>= 1) j ^= bit;
+      j ^= bit;
+      if (i < j) {
+        let t = re[i]; re[i] = re[j]; re[j] = t;
+        t = im[i]; im[i] = im[j]; im[j] = t;
+      }
+    }
+    for (let len = 2; len <= n; len <<= 1) {
+      const half = len >> 1;
+      const ang = -2 * Math.PI / len;
+      const wr = Math.cos(ang), wi = Math.sin(ang);
+      for (let i = 0; i < n; i += len) {
+        let cr = 1, ci = 0;
+        for (let k = 0; k < half; k++) {
+          const a = i + k, b = a + half;
+          const vr = re[b] * cr - im[b] * ci;
+          const vi = re[b] * ci + im[b] * cr;
+          re[b] = re[a] - vr; im[b] = im[a] - vi;
+          re[a] += vr; im[a] += vi;
+          const nr = cr * wr - ci * wi;
+          ci = cr * wi + ci * wr; cr = nr;
+        }
+      }
+    }
+  }
+
+  const windows = {};
+  function hann(n) {
+    if (!windows[n]) {
+      const w = new Float64Array(n);
+      for (let i = 0; i < n; i++) w[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (n - 1));
+      windows[n] = w;
+    }
+    return windows[n];
+  }
+
+  function toMono(buffer) {
+    const ch = buffer.numberOfChannels;
+    const n = buffer.length;
+    const out = new Float32Array(n);
+    for (let c = 0; c < ch; c++) {
+      const d = buffer.getChannelData(c);
+      for (let i = 0; i < n; i++) out[i] += d[i] / ch;
+    }
+    return out;
+  }
+
+  const tick = () => new Promise(r => setTimeout(r, 0));
+
+  async function onsetCurve(x, sr, progress) {
+    const frames = Math.max(0, Math.floor((x.length - FRAME) / HOP));
+    const flux = new Float32Array(frames);
+    const re = new Float64Array(FRAME), im = new Float64Array(FRAME);
+    const w = hann(FRAME);
+    const bins = Math.min(FRAME / 2 - 1, Math.floor(7000 / (sr / FRAME)));
+    let prev = new Float64Array(bins), cur = new Float64Array(bins);
+    for (let f = 0; f < frames; f++) {
+      const s = f * HOP;
+      for (let i = 0; i < FRAME; i++) { re[i] = x[s + i] * w[i]; im[i] = 0; }
+      fft(re, im);
+      let sum = 0;
+      for (let k = 1; k <= bins; k++) cur[k - 1] = Math.log(1 + 240 * Math.hypot(re[k], im[k]) / FRAME);
+      for (let k = 0; k < bins; k++) {
+        const a = prev[k > 1 ? k - 2 : 0], b = prev[k > 0 ? k - 1 : 0], c = prev[k], d1 = prev[k + 1 < bins ? k + 1 : k], e = prev[k + 2 < bins ? k + 2 : k];
+        const ref = Math.max(a, b, c, d1, e);
+        const d = cur[k] - ref;
+        if (d > 0) sum += d;
+      }
+      flux[f] = f ? sum : 0;
+      const t = prev; prev = cur; cur = t;
+      if (progress && f % 400 === 399) { progress(f / frames); await tick(); }
+    }
+    return { flux, hop: HOP, frame: FRAME, sr };
+  }
+
+  function pickOnsets(curve, opts) {
+    opts = opts || {};
+    const flux = curve.flux, n = flux.length;
+    if (!n) return [];
+    const sm = new Float32Array(n);
+    for (let i = 0; i < n; i++) sm[i] = (flux[Math.max(0, i - 1)] + 2 * flux[i] + flux[Math.min(n - 1, i + 1)]) / 4;
+    const w = 18;
+    const prefix = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) prefix[i + 1] = prefix[i] + sm[i];
+    const sorted = Array.from(sm).sort((a, b) => a - b);
+    const top = sorted[Math.floor(n * 0.98)] || 1;
+    const minGap = Math.round((opts.minGapSec || 0.06) * curve.sr / curve.hop);
+    const sens = opts.sensitivity || 1;
+    const picks = [];
+    for (let i = 2; i < n - 2; i++) {
+      const lo = Math.max(0, i - w), hi = Math.min(n, i + w + 1);
+      const mean = (prefix[hi] - prefix[lo]) / (hi - lo);
+      const thr = mean * (1.25 / sens) + 0.06 * top;
+      if (sm[i] < thr) continue;
+      if (sm[i] < sm[i - 1] || sm[i] < sm[i + 1] || sm[i] < sm[i - 2] || sm[i] < sm[i + 2]) continue;
+      picks.push(i);
+    }
+    const out = [];
+    for (const i of picks) {
+      const last = out[out.length - 1];
+      if (last !== undefined && i - last < minGap) {
+        if (sm[i] > sm[last]) out[out.length - 1] = i;
+      } else out.push(i);
+    }
+    const after = Math.round((opts.echoSec || 0.14) * curve.sr / curve.hop);
+    const kept = out.filter((i, idx) => {
+      for (let j = idx - 1; j >= 0 && i - out[j] <= after; j--) if (sm[out[j]] >= 0.7 * sm[i]) return false;
+      return true;
+    });
+    const bias = opts.biasSec === undefined ? 0.0115 : opts.biasSec;
+    return kept.map(i => ({ t: Math.max(0, (i * curve.hop + curve.frame * 0.4) / curve.sr - bias), strength: sm[i] / top }));
+  }
+
+  function estimateTempo(curve, onsetsList) {
+    const flux = curve.flux, n = flux.length;
+    if (n < 200) return { bpm: 120, offset: 0, confidence: 0 };
+    let mean = 0;
+    for (let i = 0; i < n; i++) mean += flux[i];
+    mean /= n;
+    const e = new Float32Array(n);
+    for (let i = 0; i < n; i++) e[i] = Math.max(0, flux[i] - mean * 0.9);
+    const fps = curve.sr / curve.hop;
+    const lagMin = Math.floor(fps * 60 / 200), lagMax = Math.ceil(fps * 60 / 55);
+    const ac = new Float64Array(lagMax * 4 + 2);
+    for (let lag = 1; lag < ac.length; lag++) {
+      let s = 0;
+      for (let i = 0; i + lag < n; i++) s += e[i] * e[i + lag];
+      ac[lag] = s / (n - lag);
+    }
+    let best = 0, bestLag = lagMin, second = 0;
+    for (let lag = lagMin; lag <= lagMax; lag++) {
+      const bpm = fps * 60 / lag;
+      let score = ac[lag] + 0.5 * (ac[lag * 2] || 0) + 0.25 * (ac[lag * 3] || 0);
+      const prior = Math.exp(-0.5 * Math.pow(Math.log2(bpm / 115) / 0.9, 2));
+      score *= 0.55 + 0.45 * prior;
+      if (score > best) { second = best; best = score; bestLag = lag; }
+      else if (score > second) second = score;
+    }
+    let refined = bestLag;
+    const a = ac[bestLag - 1], b = ac[bestLag], c = ac[bestLag + 1];
+    const den = a - 2 * b + c;
+    if (den !== 0) refined = bestLag + 0.5 * (a - c) / den;
+    while (fps * 60 / refined < 80) refined /= 2;
+    while (fps * 60 / refined > 170) refined *= 2;
+    const bpm = fps * 60 / refined;
+    const period = refined;
+    const phaseBins = 48;
+    const acc = new Float64Array(phaseBins);
+    for (let i = 0; i < n; i++) {
+      const ph = ((i % period) / period);
+      acc[Math.min(phaseBins - 1, Math.floor(ph * phaseBins))] += e[i];
+    }
+    let bp = 0;
+    for (let p = 0; p < phaseBins; p++) if (acc[p] > acc[bp]) bp = p;
+    let offsetFrames = (bp + 0.5) / phaseBins * period;
+    let offset = offsetFrames * curve.hop / curve.sr;
+    if (onsetsList && onsetsList.length) {
+      const beat = 60 / bpm;
+      let bestO = offset, bestFit = -1;
+      for (let d = -0.04; d <= 0.04; d += 0.005) {
+        const o = offset + d;
+        let fit = 0;
+        for (const on of onsetsList) {
+          const ph = ((on.t - o) / beat) % 1;
+          const dist = Math.min(Math.abs(ph), 1 - Math.abs(ph));
+          fit += on.strength * Math.exp(-Math.pow(dist * beat / 0.02, 2));
+        }
+        if (fit > bestFit) { bestFit = fit; bestO = o; }
+      }
+      offset = bestO;
+    }
+    const beatSec = 60 / bpm;
+    offset = ((offset % beatSec) + beatSec) % beatSec;
+    return { bpm: Math.round(bpm * 10) / 10, offset, confidence: best > 0 ? Math.min(1, (best - second) / best + 0.3) : 0 };
+  }
+
+  const FRACS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+
+  function pitchesAt(x, sr, t, opts) {
+    opts = opts || {};
+    const maxNotes = opts.maxNotes || 3;
+    const len = Math.max(0.09, Math.min(opts.len || 0.3, 0.45));
+    const start = Math.max(0, Math.round((t + (opts.skip === undefined ? 0.025 : opts.skip)) * sr));
+    const n = Math.min(Math.round(len * sr), x.length - start);
+    if (n < 512) return [];
+    const nfft = 16384;
+    const re = new Float64Array(nfft), im = new Float64Array(nfft);
+    const w = hann(n);
+    let energy = 0;
+    for (let i = 0; i < n; i++) { const v = x[start + i] * w[i]; re[i] = v; energy += v * v; }
+    if (energy / n < 1e-9) return [];
+    fft(re, im);
+    const half = nfft / 2;
+    const binHz = sr / nfft;
+    const mag = new Float64Array(half);
+    for (let k = 0; k < half; k++) mag[k] = Math.hypot(re[k], im[k]);
+
+    const fresh = new Float64Array(mag);
+    const bStart = Math.round(t * sr) - n - Math.round(0.012 * sr);
+    if (bStart >= 0 && opts.novelty !== false) {
+      const bre = new Float64Array(nfft), bim = new Float64Array(nfft);
+      for (let i = 0; i < n; i++) bre[i] = x[bStart + i] * w[i];
+      fft(bre, bim);
+      for (let k = 0; k < half; k++) fresh[k] = Math.max(0, mag[k] - 1.2 * Math.hypot(bre[k], bim[k]));
+    }
+
+    const white = new Float64Array(half);
+    let top = 0;
+    for (let k = 1; k < half; k++) if (fresh[k] > top) top = fresh[k];
+    const gate = opts.gate === undefined ? 0.02 : opts.gate;
+    for (let k = 1; k < half; k++) {
+      const r = fresh[k] / (top + 1e-12);
+      white[k] = r > gate ? Math.pow(r, opts.comp === undefined ? 0.5 : opts.comp) : 0;
+    }
+
+    const lowMidi = opts.lowMidi || 36, highMidi = opts.highMidi || 96;
+    const nCand = highMidi - lowMidi + 1;
+    const peakAt = (f, tolFrac) => {
+      const c = f / binHz;
+      const r = Math.max(1, Math.ceil(c * tolFrac));
+      const lo = Math.max(1, Math.floor(c - r)), hi = Math.min(half - 2, Math.ceil(c + r));
+      let m = 0;
+      for (let k = lo; k <= hi; k++) if (white[k] > m) m = white[k];
+      return m;
+    };
+    const salience = m => {
+      const f0 = 440 * Math.pow(2, (m - 69) / 12);
+      let s = 0, present = 0;
+      for (let h = 1; h <= 10; h++) {
+        const f = f0 * h;
+        if (f > sr * 0.45) break;
+        const p = peakAt(f, 0.022);
+        if (p > 0) { s += p / Math.pow(h, opts.hexp === undefined ? 0.9 : opts.hexp); if (h <= 6) present++; }
+      }
+      if (present < 2) return 0;
+      const p1 = peakAt(f0, 0.022);
+      let pmax = p1;
+      for (let h = 2; h <= 4; h++) pmax = Math.max(pmax, peakAt(f0 * h, 0.022));
+      if (p1 < 0.06 * pmax) return 0;
+      if (p1 < 0.15 * pmax) s *= 0.4;
+      return s;
+    };
+    const clearHarmonics = m => {
+      const f0 = 440 * Math.pow(2, (m - 69) / 12);
+      for (let h = 1; h <= 14; h++) {
+        const c = f0 * h / binHz;
+        const r = Math.max(2, Math.ceil(c * 0.03));
+        for (let k = Math.max(1, Math.floor(c - r)); k <= Math.min(half - 1, Math.ceil(c + r)); k++) white[k] = 0;
+      }
+    };
+
+    const found = [];
+    let firstScore = 0;
+    for (let round = 0; round < maxNotes; round++) {
+      let best = -1, bs = 0;
+      for (let i = 0; i < nCand; i++) {
+        if (found.some(f => Math.abs(f.midi - (lowMidi + i)) <= 1)) continue;
+        const s = salience(lowMidi + i);
+        if (s > bs) { bs = s; best = lowMidi + i; }
+      }
+      if (best < 0 || bs <= 0) break;
+      if (round === 0) firstScore = bs;
+      else if (bs < firstScore * (opts.minRatio || 0.32)) break;
+      let pick = best;
+      for (let d = 12; d <= 24 && pick - 12 >= lowMidi; d += 12) {
+        const lower = pick - 12;
+        const sl = salience(lower);
+        const fund = peakAt(440 * Math.pow(2, (lower - 69) / 12), 0.02);
+        if (sl >= bs * 0.72 && fund > 0.5) { pick = lower; bs = Math.max(bs, sl); } else break;
+      }
+      found.push({ midi: pick, freq: 440 * Math.pow(2, (pick - 69) / 12), score: bs, conf: Math.min(1, bs / Math.max(firstScore, 1e-9)) * (round === 0 ? 1 : 0.9) });
+      clearHarmonics(pick);
+    }
+    const strong = found.length ? found[0].score : 0;
+    found.forEach(f => { f.conf = Math.min(1, 0.35 + 0.65 * Math.min(1, strong / 6) ) * (f === found[0] ? 1 : f.score / strong); });
+    return found.sort((a, b) => a.midi - b.midi);
+  }
+
+  function quantile(sorted, q) {
+    if (!sorted.length) return 0;
+    return sorted[Math.min(sorted.length - 1, Math.floor(q * sorted.length))];
+  }
+
+  function assignLanes(events, lanes) {
+    const all = [];
+    events.forEach(ev => ev.notes.forEach(n => all.push(n.midi)));
+    all.sort((a, b) => a - b);
+    if (!all.length) return events.map(() => []);
+    const cuts = [];
+    for (let i = 1; i < lanes; i++) cuts.push(quantile(all, i / lanes));
+    const laneOf = m => { let l = 0; while (l < cuts.length && m >= cuts[l] + 0.0001 && m > cuts[l]) l++; return Math.min(lanes - 1, l); };
+    return events.map(ev => {
+      const used = new Set();
+      const out = [];
+      ev.notes.slice().sort((a, b) => a.midi - b.midi).forEach(n => {
+        let l = laneOf(n.midi);
+        while (used.has(l) && l < lanes - 1) l++;
+        while (used.has(l) && l > 0) l--;
+        if (used.has(l)) return;
+        used.add(l);
+        out.push({ lane: l, midi: n.midi, freq: n.freq });
+      });
+      return out;
+    });
+  }
+
+  function buildGrid(events, opts) {
+    const lanes = opts.lanes || 4;
+    const res = opts.res || 1;
+    const rowSec = 60 / opts.bpm / res;
+    const laneNotes = assignLanes(events, lanes);
+    const placed = [];
+    events.forEach((ev, i) => {
+      let row = Math.round((ev.t - opts.offset) / rowSec);
+      if (row < 0) row = 0;
+      placed.push({ row, ev, notes: laneNotes[i] });
+    });
+    placed.sort((a, b) => a.row - b.row || a.ev.t - b.ev.t);
+    const rows = [];
+    const ensure = r => { while (rows.length <= r) rows.push(new Array(lanes).fill(null)); };
+    const laneBusyUntil = new Array(lanes).fill(-1);
+    placed.forEach(p => {
+      let row = p.row;
+      const need = p.notes.map(n => n.lane);
+      let guard = 0;
+      while (guard++ < 64) {
+        ensure(row);
+        if (need.every(l => !rows[row][l] && laneBusyUntil[l] < row)) break;
+        row++;
+      }
+      ensure(row);
+      const holdRows = p.ev.hold ? Math.max(1, Math.round(p.ev.hold / rowSec)) : 0;
+      if (holdRows) ensure(row + holdRows);
+      p.notes.forEach(n => {
+        const cell = { type: 'tap', freq: n.freq, sustain: 0 };
+        if (holdRows) { cell.hold = holdRows; laneBusyUntil[n.lane] = row + holdRows; }
+        rows[row][n.lane] = cell;
+      });
+    });
+    ensure(rows.length + 1);
+    return rows;
+  }
+
+  return { ANALYSIS_RATE, toMono, fft, onsetCurve, pickOnsets, estimateTempo, pitchesAt, assignLanes, buildGrid };
+})();
 
 </script>
 <script data-from="creator.js">
@@ -4955,6 +5438,7 @@ let crBgMode   = 'none';
 let crLanes = 4;
 let crInstrument = 'synth';
 let crNoteInst = null;
+let crScrollRows = 0;
 let crLaneFreqs = [261.63,329.63,392.00,523.25];
 const crEmptyRow = () => window.RD_Lanes.emptyRow(crLanes);
 let crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
@@ -4984,6 +5468,7 @@ function openCreator(idx) {
     document.getElementById('cr-bpm').value  = l.bpm  || 120;
     document.getElementById('cr-diff').value = l.diff || 'medium';
     crLanes = window.RD_Lanes.laneCountOf(l);
+    crScrollRows = l.scrollRows > 0 ? l.scrollRows : 0;
     crInstrument = window.RD_resolveInstrument(l.instrument || (window.RD_getInstrument && window.RD_getInstrument()));
     crGrid = l.grid.map(r => {
       const row = r.map(cell => {
@@ -5007,6 +5492,7 @@ function openCreator(idx) {
     document.getElementById('cr-bpm').value  = 120;
     document.getElementById('cr-diff').value = 'medium';
     crLanes     = 4;
+    crScrollRows = 0;
     crInstrument = window.RD_resolveInstrument(window.RD_getInstrument && window.RD_getInstrument());
     crGrid      = Array.from({ length:16 }, () => crEmptyRow());
     crBgMode    = 'none';
@@ -5657,13 +6143,36 @@ function openCellEditor(anchorEl, ri, ci) {
     });
     pop.appendChild(typeRow);
 
-    const pitchBtn = document.createElement('button');
-    pitchBtn.className = 'cce-pitch';
-    pitchBtn.textContent = '♪ ' + freqToName(cellFreq(c, ci));
-    pitchBtn.addEventListener('click', () => {
-      openNotePickerModal(pitchBtn, cellFreq(crGrid[ri][ci], ci), f => write({ freq: f }));
-    });
-    pop.appendChild(pitchBtn);
+    const SEMI = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+    const midi0 = Math.round(69 + 12 * Math.log2(cellFreq(c, ci) / 440));
+    const oct0 = Math.floor(midi0 / 12) - 1;
+    const pc = ((midi0 % 12) + 12) % 12;
+    const flat = !Object.values(SEMI).includes(pc);
+    const letter0 = Object.keys(SEMI).find(k => SEMI[k] === pc) || Object.keys(SEMI).find(k => SEMI[k] === pc - 1);
+    const setPitch = (letter, acc, oct) => {
+      const m = (oct + 1) * 12 + SEMI[letter] + acc;
+      write({ freq: parseFloat((440 * Math.pow(2, (m - 69) / 12)).toFixed(2)) });
+    };
+    const pitchHead = document.createElement('div');
+    pitchHead.className = 'cce-pitch';
+    pitchHead.textContent = '♪ ' + freqToName(cellFreq(c, ci));
+    pop.appendChild(pitchHead);
+    const chipRow = (items, isOn, onPick) => {
+      const row = document.createElement('div');
+      row.className = 'cce-sus cce-pick';
+      items.forEach(it => {
+        const btn = document.createElement('button');
+        btn.className = 'cce-schip' + (isOn(it) ? ' on' : '');
+        btn.textContent = it.label;
+        btn.addEventListener('click', () => onPick(it));
+        row.appendChild(btn);
+      });
+      pop.appendChild(row);
+    };
+    const acc0 = flat ? 1 : 0;
+    chipRow(['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(l => ({ label: l, v: l })), it => it.v === letter0, it => setPitch(it.v, acc0, oct0));
+    chipRow([{ label: '♮', v: 0 }, { label: '♯', v: 1 }, { label: '♭', v: -1 }], it => (flat ? it.v === 1 : it.v === 0), it => setPitch(it.v === -1 && SEMI[letter0] !== undefined ? letter0 : letter0, it.v, oct0));
+    chipRow([2, 3, 4, 5, 6, 7].map(o => ({ label: String(o), v: o })), it => it.v === oct0, it => setPitch(letter0, acc0, it.v));
 
     if (cellType(c) !== 'dtap') {
       const holdLabel = document.createElement('div');
@@ -5825,6 +6334,7 @@ document.getElementById('cr-save').addEventListener('click', () => {
     id: 'c' + Date.now(), name, bpm, diff,
     lanes:       crLanes,
     instrument:  crInstrument,
+    scrollRows:  crScrollRows || undefined,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
     laneFreqs:   [...crLaneFreqs],
@@ -5851,6 +6361,7 @@ function autoSave() {
     id: 'c' + Date.now(), name, bpm, diff,
     lanes:       crLanes,
     instrument:  crInstrument,
+    scrollRows:  crScrollRows || undefined,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
     laneFreqs:   [...crLaneFreqs],
@@ -6236,7 +6747,9 @@ function totalBeats(lvl) {
   return lvl.grid ? lvl.grid.length : (lvl.beats || lvl.notes.length);
 }
 
-function rowPx() { return laneH() / 4; }
+function scrollRows() { return (gameLevel && gameLevel.scrollRows > 0) ? gameLevel.scrollRows : 4; }
+
+function rowPx() { return laneH() / scrollRows(); }
 
 function headPt(t) {
   return t.y + (t.hold ? t.h - TILE_H / 2 : (t.h || TILE_H) / 2);
@@ -6402,7 +6915,7 @@ function loop(now) {
   }
 
   const th  = laneH();
-  const spd = th / (currentBeatMs * 4);
+  const spd = th / (currentBeatMs * scrollRows());
 
   beatAccum += dt;
   if (beatAccum >= currentBeatMs) {
@@ -6479,7 +6992,7 @@ function dropHold(t) {
 
 function releaseHold(t) {
   t.down = false;
-  const remain = (hitY() - tailPt(t)) / (laneH() / (currentBeatMs * 4));
+  const remain = (hitY() - tailPt(t)) / (laneH() / (currentBeatMs * scrollRows()));
   if (remain <= HOLD_TAIL_MS) completeHold(t);
   else t.releasedAt = gameTimeMs;
 }
@@ -7085,7 +7598,7 @@ function showToast(msg, isErr) {
 
 function syncLaneExpansion(id) {
   const n = id === 'game' ? laneCount : id === 'creator' ? crLanes : 4;
-  const want = Math.min(window.RD_Lanes.minWidth(n), getMaxDims().maxW);
+  const want = Math.min(id === 'studio' ? 780 : window.RD_Lanes.minWidth(n), getMaxDims().maxW);
   const next = Math.max(0, want - currentSettings.width);
   if (next === laneExpansion) return;
   laneExpansion = next;
@@ -7841,6 +8354,18 @@ function renderHighScores() {
 
 document.getElementById('new-lvl-btn').addEventListener('click', () => openCreator(null));
 
+const STUDIO_TAB = location.hash === '#studio';
+
+function openStudio() {
+  if (!STUDIO_TAB && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create && chrome.runtime && chrome.runtime.getURL) {
+    chrome.tabs.create({ url: chrome.runtime.getURL('popup.html') + '#studio' });
+    return;
+  }
+  window.RD_Studio.open();
+}
+
+document.getElementById('studio-btn').addEventListener('click', openStudio);
+
 function ensureImportBtn() {
   if (!document.getElementById('import-lvl-btn')) {
     const btn = document.createElement('button');
@@ -7985,6 +8510,7 @@ const POPUP_MAX_W = 800;
 const POPUP_MAX_H = 760;
 
 function isExtensionPopup() {
+  if (location.hash === '#studio') return false;
   return location.protocol === 'chrome-extension:'
       || location.protocol === 'moz-extension:'
       || location.protocol === 'ms-browser-extension:';
@@ -8411,6 +8937,7 @@ function releaseAllLanes() {
 
 document.addEventListener('keydown', e => {
   if (e.repeat) return;
+  if (window.RD_Studio && window.RD_Studio.active()) return;
 
   const tag = e.target && e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
@@ -8504,6 +9031,571 @@ if (!profile.username) {
   showScreen('home');
   renderHome();
 }
+
+</script>
+<script data-from="studio.js">
+(function () {
+  'use strict';
+
+  const DSP = () => window.RD_StudioDSP;
+  const $ = id => document.getElementById(id);
+  const MAX_SECONDS = 15 * 60;
+  const RATES = [0.25, 0.5, 0.75, 1, 1.25];
+
+  const St = {
+    name: '', pcm: null, sr: 22050, dur: 0, url: null,
+    curve: null, onsets: [], peaks: null,
+    bpm: 120, offset: 0, res: 1, lanes: 4, chord: 3, snap: true, latencyMs: 60, inst: 'piano',
+    taps: [], rate: 1, loopA: null, loopB: null, loop: false,
+    view: { start: 0, span: 30 }, busy: false,
+  };
+
+  const audio = new Audio();
+  audio.preload = 'auto';
+  audio.preservesPitch = true;
+  audio.webkitPreservesPitch = true;
+
+  let clockMedia = 0, clockPerf = 0, lastMedia = -1;
+  function mediaNow() {
+    const m = audio.currentTime;
+    if (audio.paused) { lastMedia = m; clockMedia = m; clockPerf = performance.now(); return m; }
+    if (m !== lastMedia) { lastMedia = m; clockMedia = m; clockPerf = performance.now(); return m; }
+    return clockMedia + (performance.now() - clockPerf) / 1000 * audio.playbackRate;
+  }
+
+  const fmtTime = t => {
+    const m = Math.floor(t / 60), s = t - m * 60;
+    return m + ':' + (s < 10 ? '0' : '') + s.toFixed(2);
+  };
+  const NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+  const noteName = m => NAMES[((m % 12) + 12) % 12] + (Math.floor(m / 12) - 1);
+
+  function status(msg, err) {
+    const el = $('st-status');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.classList.toggle('err', !!err);
+  }
+
+  function active() {
+    const el = $('studio');
+    return !!(el && el.classList.contains('active'));
+  }
+
+  function buildOverview() {
+    const cols = 4096;
+    const n = St.pcm.length;
+    const peaks = new Float32Array(cols * 2);
+    for (let c = 0; c < cols; c++) {
+      const a = Math.floor(c / cols * n), b = Math.max(a + 1, Math.floor((c + 1) / cols * n));
+      let lo = 0, hi = 0;
+      for (let i = a; i < b; i++) { const v = St.pcm[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+      peaks[c * 2] = lo; peaks[c * 2 + 1] = hi;
+    }
+    St.peaks = peaks;
+  }
+
+  let drawQueued = false;
+  function redraw() {
+    if (drawQueued) return;
+    drawQueued = true;
+    requestAnimationFrame(() => { drawQueued = false; draw(); });
+  }
+
+  function viewBounds() {
+    const span = Math.min(St.view.span, St.dur || 1);
+    const start = Math.max(0, Math.min(St.view.start, Math.max(0, (St.dur || 0) - span)));
+    return { start, span };
+  }
+
+  function draw() {
+    const cv = $('st-wave');
+    if (!cv || !St.pcm) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = Math.max(100, Math.floor(cv.clientWidth * dpr)), h = Math.floor(120 * dpr);
+    if (cv.width !== w) cv.width = w;
+    if (cv.height !== h) cv.height = h;
+    const g = cv.getContext('2d');
+    const css = getComputedStyle(document.body);
+    const col = n => css.getPropertyValue(n).trim() || '#888';
+    g.clearRect(0, 0, w, h);
+    const { start, span } = viewBounds();
+    const t2x = t => (t - start) / span * w;
+    const mid = h / 2;
+
+    g.fillStyle = col('--tap');
+    const samplesPerPx = span * St.sr / w;
+    for (let x = 0; x < w; x++) {
+      const t0 = start + x / w * span, t1 = start + (x + 1) / w * span;
+      let lo = 0, hi = 0;
+      if (samplesPerPx > St.pcm.length / 4096) {
+        const c0 = Math.max(0, Math.floor(t0 / St.dur * 4096)), c1 = Math.min(4095, Math.max(c0, Math.floor(t1 / St.dur * 4096)));
+        for (let c = c0; c <= c1; c++) { if (St.peaks[c * 2] < lo) lo = St.peaks[c * 2]; if (St.peaks[c * 2 + 1] > hi) hi = St.peaks[c * 2 + 1]; }
+      } else {
+        const a = Math.floor(t0 * St.sr), b = Math.min(St.pcm.length, Math.max(a + 1, Math.floor(t1 * St.sr)));
+        for (let i = a; i < b; i++) { const v = St.pcm[i]; if (v < lo) lo = v; if (v > hi) hi = v; }
+      }
+      const amp = 1.6;
+      g.fillRect(x, mid - Math.min(1, hi * amp) * mid * 0.92, 1, Math.max(1, (Math.min(1, hi * amp) + Math.min(1, -lo * amp)) * mid * 0.92));
+    }
+
+    const beat = 60 / St.bpm;
+    if (span / beat < 90) {
+      g.fillStyle = col('--border2');
+      for (let b = Math.floor((start - St.offset) / beat); ; b++) {
+        const t = St.offset + b * beat;
+        if (t > start + span) break;
+        if (t >= start) g.fillRect(Math.round(t2x(t)), 0, 1, h);
+      }
+    }
+
+    g.fillStyle = col('--muted');
+    for (const o of St.onsets) {
+      if (o.t < start || o.t > start + span) continue;
+      g.fillRect(Math.round(t2x(o.t)), h - 8 * dpr, 1, 8 * dpr);
+    }
+
+    if (St.loopA !== null || St.loopB !== null) {
+      g.fillStyle = 'rgba(255,255,255,.08)';
+      const a = St.loopA === null ? start : St.loopA, b = St.loopB === null ? start + span : St.loopB;
+      g.fillRect(t2x(a), 0, Math.max(1, t2x(b) - t2x(a)), h);
+      g.fillStyle = col('--perfect');
+      if (St.loopA !== null) g.fillRect(t2x(St.loopA), 0, 2, h);
+      if (St.loopB !== null) g.fillRect(t2x(St.loopB), 0, 2, h);
+    }
+
+    for (const tp of St.taps) {
+      if (tp.t > start + span || tp.t + tp.hold < start) continue;
+      g.fillStyle = tp.hold ? col('--perfect') : col('--dtap');
+      if (tp.hold) { g.globalAlpha = 0.25; g.fillRect(t2x(tp.t), 0, Math.max(2, t2x(tp.t + tp.hold) - t2x(tp.t)), h); g.globalAlpha = 1; }
+      g.fillRect(Math.round(t2x(tp.t)) - 1, 0, 2, h);
+    }
+
+    const ph = mediaNow();
+    g.fillStyle = col('--text');
+    g.fillRect(Math.round(t2x(ph)), 0, 2, h);
+  }
+
+  function seek(t) {
+    audio.currentTime = Math.max(0, Math.min(St.dur, t));
+    lastMedia = -1;
+    updateTime();
+    redraw();
+  }
+
+  function updateTime() {
+    const el = $('st-time');
+    if (el) el.textContent = fmtTime(mediaNow());
+  }
+
+  let rafId = 0;
+  function frame() {
+    rafId = 0;
+    if (!active()) return;
+    if (St.loop && St.loopA !== null && St.loopB !== null && St.loopB > St.loopA && audio.currentTime >= St.loopB) {
+      audio.currentTime = St.loopA;
+      lastMedia = -1;
+    }
+    if (!audio.paused) {
+      const { start, span } = viewBounds();
+      const t = mediaNow();
+      if (t > start + span * 0.9 || t < start) St.view.start = Math.max(0, t - span * 0.1);
+      updateTime();
+      redraw();
+    }
+    rafId = requestAnimationFrame(frame);
+  }
+  function ensureFrame() { if (!rafId) rafId = requestAnimationFrame(frame); }
+
+  function setPlayLabel() {
+    const b = $('st-play');
+    if (b) b.textContent = audio.paused ? '▶ Play' : '❚❚ Pause';
+  }
+
+  function togglePlay() {
+    if (!St.pcm) return;
+    if (audio.paused) {
+      const p = audio.play();
+      if (p && p.catch) p.catch(() => status('The browser would not start playback.', true));
+    } else audio.pause();
+    setPlayLabel();
+    ensureFrame();
+  }
+  audio.addEventListener('play', () => { setPlayLabel(); ensureFrame(); });
+  audio.addEventListener('pause', () => { setPlayLabel(); redraw(); });
+  audio.addEventListener('ended', () => { setPlayLabel(); redraw(); });
+
+  function setRate(r) {
+    St.rate = r;
+    audio.playbackRate = r;
+    audio.preservesPitch = true;
+    audio.webkitPreservesPitch = true;
+    document.querySelectorAll('#st-speeds button').forEach(b => b.classList.toggle('on', +b.dataset.rate === r));
+  }
+
+  function snapOnset(t) {
+    const win = Math.max(0.03, Math.min(0.12, 0.1 * St.rate));
+    let best = null, bs = 0;
+    for (const o of St.onsets) {
+      const d = Math.abs(o.t - t);
+      if (d > win) { if (o.t > t + win) break; continue; }
+      const score = (0.3 + Math.min(1.5, o.strength)) / (0.03 + d);
+      if (score > bs) { bs = score; best = o; }
+    }
+    return best ? best.t : t;
+  }
+
+  function nextBoundary(t) {
+    let n = Infinity;
+    for (const o of St.onsets) if (o.t > t + 0.06) { n = o.t; break; }
+    for (const tp of St.taps) if (tp.t > t + 0.06 && tp.t < n) n = tp.t;
+    return n;
+  }
+
+  function analyseTap(tap) {
+    const next = nextBoundary(tap.t);
+    const len = isFinite(next) ? Math.max(0.12, Math.min(0.32, next - tap.t - 0.02)) : 0.3;
+    const found = DSP().pitchesAt(St.pcm, St.sr, tap.t, { maxNotes: St.chord, len });
+    tap.notes = found;
+    tap.flagged = !found.length || found[0].conf < 0.55;
+  }
+
+  function insertTap(tap) {
+    let i = St.taps.length;
+    while (i > 0 && St.taps[i - 1].t > tap.t) i--;
+    St.taps.splice(i, 0, tap);
+  }
+
+  function addTap(rawT) {
+    const tap = { raw: rawT, t: St.snap ? snapOnset(rawT) : rawT, hold: 0, notes: [], flagged: false };
+    insertTap(tap);
+    analyseTap(tap);
+    renderList();
+    redraw();
+    return tap;
+  }
+
+  let down = null;
+  function tapDown() {
+    if (!St.pcm || down) return;
+    const t = mediaNow() - (St.latencyMs / 1000) * audio.playbackRate;
+    const startMedia = mediaNow();
+    down = { tap: addTap(Math.max(0, t)), startMedia };
+    $('st-pad').classList.add('down');
+  }
+  function tapUp() {
+    if (!down) return;
+    const d = down;
+    down = null;
+    $('st-pad').classList.remove('down');
+    const held = mediaNow() - d.startMedia;
+    const beat = 60 / St.bpm;
+    if (held >= Math.max(0.25, 0.7 * beat / St.res)) {
+      d.tap.hold = held;
+      renderList();
+      redraw();
+    }
+  }
+
+  function removeTap(i) {
+    St.taps.splice(i, 1);
+    renderList();
+    redraw();
+  }
+
+  function nudge(i, ms) {
+    const tap = St.taps[i];
+    if (!tap) return;
+    tap.t = Math.max(0, tap.t + ms / 1000);
+    St.taps.sort((a, b) => a.t - b.t);
+    analyseTap(tap);
+    renderList();
+    redraw();
+  }
+
+  function compare(i) {
+    const tap = St.taps[i];
+    if (!tap || !window.RD_getContext) return;
+    const c = window.RD_getContext();
+    const t0 = Math.max(0, tap.t - 0.03);
+    const a = Math.floor(t0 * St.sr);
+    const n = Math.min(St.pcm.length - a, Math.floor(0.8 * St.sr));
+    if (n <= 0) return;
+    const buf = c.createBuffer(1, n, St.sr);
+    buf.copyToChannel(St.pcm.subarray(a, a + n), 0);
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    const g = c.createGain();
+    g.gain.value = 0.9;
+    src.connect(g);
+    g.connect(c.destination);
+    const at = c.currentTime + 0.03;
+    src.start(at);
+    const notes = tap.notes.length ? tap.notes : [];
+    notes.forEach(nn => window.RD_noteOn(nn.freq, { inst: St.inst, vel: 0.6, when: at + 0.95, dur: 0.7 }));
+  }
+
+  function renderList() {
+    const host = $('st-list');
+    const count = $('st-count');
+    if (count) count.textContent = St.taps.length + (St.taps.length === 1 ? ' tap' : ' taps');
+    const make = $('st-make');
+    if (make) make.disabled = !St.taps.length;
+    if (!host) return;
+    host.innerHTML = '';
+    St.taps.forEach((tp, i) => {
+      const row = document.createElement('div');
+      row.className = 'st-item' + (tp.flagged ? ' low' : '');
+      const notes = tp.notes.length
+        ? tp.notes.map(n => '<span class="pill">' + noteName(n.midi) + '</span>').join('')
+        : '<span class="pill">no pitch found</span>';
+      row.innerHTML = '<span class="n mono">' + (i + 1) + '</span><span class="t mono">' + fmtTime(tp.t) + '</span>'
+        + '<span class="notes">' + notes + (tp.hold ? '<span class="pill hold">hold ' + tp.hold.toFixed(2) + 's</span>' : '') + '</span>';
+      const mk = (label, title, fn) => {
+        const b = document.createElement('button');
+        b.type = 'button'; b.textContent = label; b.title = title;
+        b.addEventListener('click', fn);
+        row.appendChild(b);
+      };
+      mk('▶', 'Hear the original, then the notes found', () => compare(i));
+      mk('◀', 'Nudge 10 ms earlier', () => nudge(i, -10));
+      mk('▶|', 'Nudge 10 ms later', () => nudge(i, 10));
+      mk('✕', 'Delete', () => removeTap(i));
+      host.appendChild(row);
+    });
+  }
+
+  function syncInputs() {
+    $('st-bpm').value = St.bpm;
+    $('st-off').value = St.offset.toFixed(3);
+  }
+
+  function setLoopButton() {
+    const b = $('st-loop');
+    if (!b) return;
+    b.textContent = St.loop ? 'Loop on' : 'Loop off';
+    b.classList.toggle('on', St.loop);
+  }
+
+  let tempoTaps = [];
+  function tapTempo() {
+    const now = performance.now();
+    if (tempoTaps.length && now - tempoTaps[tempoTaps.length - 1] > 2000) tempoTaps = [];
+    tempoTaps.push(now);
+    tempoTaps = tempoTaps.slice(-9);
+    if (tempoTaps.length >= 3) {
+      const gaps = [];
+      for (let i = 1; i < tempoTaps.length; i++) gaps.push(tempoTaps[i] - tempoTaps[i - 1]);
+      const avg = gaps.reduce((a, b) => a + b, 0) / gaps.length;
+      St.bpm = Math.round(60000 / avg * 10) / 10;
+      syncInputs();
+      redraw();
+    }
+  }
+
+  async function analyse() {
+    St.busy = true;
+    status('Listening for the beat… 0%');
+    const curve = await DSP().onsetCurve(St.pcm, St.sr, p => status('Listening for the beat… ' + Math.round(p * 100) + '%'));
+    St.curve = curve;
+    St.onsets = DSP().pickOnsets(curve);
+    const tempo = DSP().estimateTempo(curve, St.onsets);
+    St.bpm = tempo.bpm;
+    St.offset = tempo.offset;
+    syncInputs();
+    St.busy = false;
+    status(St.onsets.length + ' note starts found, about ' + Math.round(St.bpm) + ' BPM. Press play and tap the notes you want.');
+    St.taps.forEach(analyseTap);
+    renderList();
+    redraw();
+  }
+
+  async function loadFile(file) {
+    if (!file) return;
+    if (St.busy) return;
+    audio.pause();
+    status('Reading ' + file.name + '…');
+    let buf;
+    try {
+      const data = await file.arrayBuffer();
+      const ctx = new OfflineAudioContext(1, 1, DSP().ANALYSIS_RATE);
+      buf = await ctx.decodeAudioData(data);
+    } catch (e) {
+      status('That file could not be read as audio.', true);
+      return;
+    }
+    if (buf.duration > MAX_SECONDS) { status('That track is longer than 15 minutes.', true); return; }
+    St.name = file.name.replace(/\.[^.]+$/, '');
+    St.pcm = DSP().toMono(buf);
+    St.sr = buf.sampleRate;
+    St.dur = buf.duration;
+    St.taps = [];
+    St.onsets = [];
+    St.loopA = St.loopB = null;
+    St.loop = false;
+    St.view = { start: 0, span: Math.min(30, St.dur) };
+    if (St.url) URL.revokeObjectURL(St.url);
+    St.url = URL.createObjectURL(file);
+    audio.src = St.url;
+    audio.load();
+    setRate(St.rate);
+    buildOverview();
+    $('st-main').hidden = false;
+    setLoopButton();
+    renderList();
+    redraw();
+    ensureFrame();
+    await analyse();
+  }
+
+  function zoom(factor, anchor) {
+    const { start, span } = viewBounds();
+    const a = anchor === undefined ? mediaNow() : anchor;
+    const next = Math.max(2, Math.min(St.dur, span * factor));
+    St.view.span = next;
+    St.view.start = Math.max(0, Math.min(St.dur - next, a - (a - start) / span * next));
+    redraw();
+  }
+
+  function guessDifficulty(rows) {
+    const secs = rows.length * 60 / Math.max(1, St.bpm * St.res);
+    const per = St.taps.length / Math.max(1, secs);
+    return per < 1.6 ? 'easy' : per < 3 ? 'medium' : 'hard';
+  }
+
+  function makeLevel() {
+    if (!St.taps.length) return null;
+    const detected = St.taps.flatMap(t => t.notes.map(n => n.midi)).sort((a, b) => a - b);
+    const median = detected.length ? detected[Math.floor(detected.length / 2)] : 60;
+    const fallback = { midi: median, freq: 440 * Math.pow(2, (median - 69) / 12) };
+    const events = St.taps.map(tp => ({
+      t: tp.t, hold: tp.hold,
+      notes: tp.notes.length ? tp.notes.map(n => ({ midi: n.midi, freq: n.freq })) : [fallback],
+    }));
+    const rows = DSP().buildGrid(events, { bpm: St.bpm, offset: St.offset, res: St.res, lanes: St.lanes });
+    const lvl = {
+      id: 'c' + Date.now(),
+      name: (St.name || 'Studio level').slice(0, 28),
+      bpm: Math.max(40, Math.min(260, Math.round(St.bpm * St.res))),
+      diff: guessDifficulty(rows),
+      lanes: St.lanes,
+      instrument: St.inst,
+      grid: rows,
+      bgMode: 'none',
+      laneFreqs: window.RD_Lanes.defaultFreqs(St.lanes),
+      bassSteps: [0, 1, 2, 3, 4, 5, 6, 7].map(() => ({ active: false, freq: 65.41 })),
+      bassPattern: [],
+    };
+    if (St.res > 1) lvl.scrollRows = 4 * St.res;
+    return lvl;
+  }
+
+  function make() {
+    const lvl = makeLevel();
+    if (!lvl) return null;
+    audio.pause();
+    const arr = store.load();
+    arr.push(lvl);
+    store.save(arr);
+    openCreator(arr.length - 1);
+    showToast('Level made from ' + St.taps.length + ' taps. Check it over and press Save when it looks right.');
+    return lvl;
+  }
+
+  function open() {
+    showScreen('studio');
+    ensureFrame();
+    redraw();
+  }
+
+  function fillInstruments() {
+    const sel = $('st-inst');
+    if (!sel || sel.options.length) return;
+    (window.RD_INSTRUMENTS || []).forEach(i => {
+      const o = document.createElement('option');
+      o.value = i.id; o.textContent = i.label;
+      if (i.id === St.inst) o.selected = true;
+      sel.appendChild(o);
+    });
+  }
+
+  function wire() {
+    fillInstruments();
+    $('st-pick').addEventListener('click', () => $('st-file').click());
+    $('st-file').addEventListener('change', e => { const f = e.target.files && e.target.files[0]; if (f) loadFile(f); e.target.value = ''; });
+    const drop = $('st-drop');
+    ['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+    ['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+    drop.addEventListener('drop', e => { const f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0]; if (f) loadFile(f); });
+    $('st-back').addEventListener('click', () => { audio.pause(); showScreen('home'); renderHome(); });
+    $('st-make').addEventListener('click', make);
+    $('st-play').addEventListener('click', togglePlay);
+    document.querySelectorAll('#st-speeds button').forEach(b => b.addEventListener('click', () => setRate(+b.dataset.rate)));
+    $('st-a').addEventListener('click', () => { St.loopA = mediaNow(); if (St.loopB !== null && St.loopB <= St.loopA) St.loopB = null; redraw(); });
+    $('st-b').addEventListener('click', () => { const t = mediaNow(); if (St.loopA !== null && t > St.loopA) { St.loopB = t; St.loop = true; setLoopButton(); redraw(); } });
+    $('st-loop').addEventListener('click', () => { St.loop = !St.loop; setLoopButton(); });
+    $('st-zoom-in').addEventListener('click', () => zoom(0.5));
+    $('st-zoom-out').addEventListener('click', () => zoom(2));
+    $('st-lat').addEventListener('input', e => { St.latencyMs = +e.target.value; $('st-lat-v').textContent = St.latencyMs + ' ms'; });
+    $('st-undo').addEventListener('click', () => { St.taps.pop(); renderList(); redraw(); });
+    $('st-clear').addEventListener('click', () => { St.taps = []; renderList(); redraw(); });
+    $('st-bpm').addEventListener('input', e => { St.bpm = Math.max(40, Math.min(260, +e.target.value || 120)); redraw(); });
+    $('st-off').addEventListener('input', e => { St.offset = +e.target.value || 0; redraw(); });
+    $('st-detect').addEventListener('click', () => {
+      if (!St.curve) return;
+      const t = DSP().estimateTempo(St.curve, St.onsets);
+      St.bpm = t.bpm; St.offset = t.offset; syncInputs(); redraw();
+    });
+    $('st-half').addEventListener('click', () => { St.bpm = Math.max(40, Math.round(St.bpm / 2 * 10) / 10); syncInputs(); redraw(); });
+    $('st-double').addEventListener('click', () => { St.bpm = Math.min(260, Math.round(St.bpm * 2 * 10) / 10); syncInputs(); redraw(); });
+    $('st-tempo').addEventListener('click', tapTempo);
+    $('st-res').addEventListener('change', e => { St.res = +e.target.value; });
+    $('st-lanes').addEventListener('change', e => { St.lanes = +e.target.value; });
+    $('st-chord').addEventListener('change', e => { St.chord = +e.target.value; St.taps.forEach(analyseTap); renderList(); });
+    $('st-snap').addEventListener('change', e => { St.snap = e.target.checked; });
+    $('st-inst').addEventListener('change', e => { St.inst = e.target.value; });
+
+    const pad = $('st-pad');
+    pad.addEventListener('pointerdown', e => { e.preventDefault(); try { pad.setPointerCapture(e.pointerId); } catch (_) {} tapDown(); });
+    pad.addEventListener('pointerup', tapUp);
+    pad.addEventListener('pointercancel', tapUp);
+
+    const cv = $('st-wave');
+    let scrub = false;
+    const timeAt = e => { const r = cv.getBoundingClientRect(); const { start, span } = viewBounds(); return start + (e.clientX - r.left) / r.width * span; };
+    cv.addEventListener('pointerdown', e => { scrub = true; try { cv.setPointerCapture(e.pointerId); } catch (_) {} seek(timeAt(e)); });
+    cv.addEventListener('pointermove', e => { if (scrub) seek(timeAt(e)); });
+    cv.addEventListener('pointerup', () => { scrub = false; });
+    cv.addEventListener('pointercancel', () => { scrub = false; });
+    cv.addEventListener('wheel', e => { e.preventDefault(); zoom(e.deltaY < 0 ? 0.8 : 1.25, timeAt(e)); }, { passive: false });
+    window.addEventListener('resize', redraw);
+
+    document.addEventListener('keydown', e => {
+      if (!active()) return;
+      const tag = e.target && e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
+      if (e.code === 'Space') { e.preventDefault(); if (!e.repeat) tapDown(); return; }
+      if (e.repeat) return;
+      if (e.code === 'KeyP') { e.preventDefault(); togglePlay(); }
+      else if (e.code === 'Backspace') { e.preventDefault(); St.taps.pop(); renderList(); redraw(); }
+      else if (e.code === 'ArrowLeft') { e.preventDefault(); seek(mediaNow() - 2); }
+      else if (e.code === 'ArrowRight') { e.preventDefault(); seek(mediaNow() + 2); }
+      else if (/^Digit[1-5]$/.test(e.code)) setRate(RATES[+e.code.slice(5) - 1]);
+    });
+    document.addEventListener('keyup', e => {
+      if (active() && e.code === 'Space') { e.preventDefault(); tapUp(); }
+    });
+  }
+
+  wire();
+
+  if (location.hash === '#studio' && typeof profile !== 'undefined' && profile.username) setTimeout(open, 0);
+
+  window.RD_Studio = {
+    state: St, audio, open, loadFile, addTap, tapDown, tapUp, make, makeLevel, mediaNow, setRate, seek,
+    analyseTap, snapOnset, compare, active, nudge, removeTap,
+  };
+})();
 
 </script>
 </body>

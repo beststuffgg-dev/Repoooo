@@ -121,7 +121,9 @@ function totalBeats(lvl) {
   return lvl.grid ? lvl.grid.length : (lvl.beats || lvl.notes.length);
 }
 
-function rowPx() { return laneH() / 4; }
+function scrollRows() { return (gameLevel && gameLevel.scrollRows > 0) ? gameLevel.scrollRows : 4; }
+
+function rowPx() { return laneH() / scrollRows(); }
 
 function headPt(t) {
   return t.y + (t.hold ? t.h - TILE_H / 2 : (t.h || TILE_H) / 2);
@@ -287,7 +289,7 @@ function loop(now) {
   }
 
   const th  = laneH();
-  const spd = th / (currentBeatMs * 4);
+  const spd = th / (currentBeatMs * scrollRows());
 
   beatAccum += dt;
   if (beatAccum >= currentBeatMs) {
@@ -364,7 +366,7 @@ function dropHold(t) {
 
 function releaseHold(t) {
   t.down = false;
-  const remain = (hitY() - tailPt(t)) / (laneH() / (currentBeatMs * 4));
+  const remain = (hitY() - tailPt(t)) / (laneH() / (currentBeatMs * scrollRows()));
   if (remain <= HOLD_TAIL_MS) completeHold(t);
   else t.releasedAt = gameTimeMs;
 }

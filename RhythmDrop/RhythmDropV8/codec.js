@@ -141,6 +141,7 @@
     rows = rows || [];
     const holdOf = cell => (cell && typeof cell === 'object' && cell.type !== 'dtap' && cell.hold > 0 ? Math.floor(cell.hold) : 0);
     const hasHold = rows.some(row => row.some(c => holdOf(c) > 0));
+    const scrollRows = lvl.scrollRows > 0 && lvl.scrollRows !== 4 ? Math.round(lvl.scrollRows) : 0;
     let curInst = null;
 
     const rowStrs = rows.map(row => {
@@ -184,7 +185,7 @@
       .map(f => (f > 0 ? freqToMidi(f) : '0')).join(',');
 
     const packed = [
-      (n > 4 || hasHold) ? '6' : '5',
+      (n > 4 || hasHold || scrollRows) ? '6' : '5',
       (lvl.name || 'untitled').replace(/\|/g, '/'),
       lvl.bpm || 120,
       lvl.bgMode || 'none',
@@ -194,7 +195,7 @@
       voiceId(lvl.instrument),
       lvl.areaId || '',
       rowStrs.join(';'),
-    ].join('|');
+    ].concat(scrollRows ? [String(scrollRows)] : []).join('|');
 
     return 'RD2:' + pack(packed);
   }
@@ -303,6 +304,7 @@
 
     const out = { name, bpm, bgMode, laneFreqs, bassPattern, bassSteps,
                   diff, instrument, grid, lanes: n };
+    if (ver === '6' && parts[10] && parseInt(parts[10], 10) > 0) out.scrollRows = parseInt(parts[10], 10);
     if (areaId) out.areaId = areaId;
     return out;
   }

@@ -298,7 +298,7 @@ function showToast(msg, isErr) {
 
 function syncLaneExpansion(id) {
   const n = id === 'game' ? laneCount : id === 'creator' ? crLanes : 4;
-  const want = Math.min(window.RD_Lanes.minWidth(n), getMaxDims().maxW);
+  const want = Math.min(id === 'studio' ? 780 : window.RD_Lanes.minWidth(n), getMaxDims().maxW);
   const next = Math.max(0, want - currentSettings.width);
   if (next === laneExpansion) return;
   laneExpansion = next;
@@ -1054,6 +1054,18 @@ function renderHighScores() {
 
 document.getElementById('new-lvl-btn').addEventListener('click', () => openCreator(null));
 
+const STUDIO_TAB = location.hash === '#studio';
+
+function openStudio() {
+  if (!STUDIO_TAB && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create && chrome.runtime && chrome.runtime.getURL) {
+    chrome.tabs.create({ url: chrome.runtime.getURL('popup.html') + '#studio' });
+    return;
+  }
+  window.RD_Studio.open();
+}
+
+document.getElementById('studio-btn').addEventListener('click', openStudio);
+
 function ensureImportBtn() {
   if (!document.getElementById('import-lvl-btn')) {
     const btn = document.createElement('button');
@@ -1198,6 +1210,7 @@ const POPUP_MAX_W = 800;
 const POPUP_MAX_H = 760;
 
 function isExtensionPopup() {
+  if (location.hash === '#studio') return false;
   return location.protocol === 'chrome-extension:'
       || location.protocol === 'moz-extension:'
       || location.protocol === 'ms-browser-extension:';
@@ -1624,6 +1637,7 @@ function releaseAllLanes() {
 
 document.addEventListener('keydown', e => {
   if (e.repeat) return;
+  if (window.RD_Studio && window.RD_Studio.active()) return;
 
   const tag = e.target && e.target.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;

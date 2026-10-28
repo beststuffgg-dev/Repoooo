@@ -11,7 +11,7 @@ V8 is built on the **v3.0** source — its look, its themes, its intro splash, i
 ```
 RhythmDropV8.zip          the game, zipped
 htmls/RhythmDrop.html     the game as one self-contained file (generated)
-tests/                    41 suites — 16 for V8, 25 for V7
+tests/                    42 suites — 17 for V8, 25 for V7
 RhythmDrop/
   RhythmDropV8/           the source — load this as an unpacked extension
     popup.html              markup, styling, the v3 theme system
@@ -200,6 +200,18 @@ A hold is a normal tap with a `hold: N` field (N rows below the head, 1 or more)
 - **Voices.** A creator level stores its own voice (`instrument`); the Advanced panel's *Note Sound* picks it, and no longer changes the player's global instrument. *Per-note Instrument* picks a voice for the notes you place next, and applies it to the selected notes (or clears it with *Level*); the cell editor has the same row for one note. A note with its own voice shows a dot, a short tag and a tooltip, and plays it in preference to the level's (unless the player has chosen "Always mine" in Settings).
 - **Fixes found on the way.** The cell editor's `write()` kept only type, pitch and sustain (it dropped `inst`); a stale picker or editor could write a note into a cell that had since gone (after an undo); `importLevel` stored whatever it decoded (rows of any width, unknown note types) and now sanitises it; and the share codec let a note's voice leak onto the notes after it that had none (a reset marker is now written, which older builds also read correctly).
 
+## 5g. Song Studio
+
+Custom tab -> *Song Studio*. In the extension the button opens `popup.html#studio` in a browser tab (`chrome.tabs.create`; a popup may close when a file picker opens, which I could not verify, so nothing depends on it); anywhere else it shows the screen in place. The window widens to 780 px.
+
+**Flow.** Load a file (chooser or drop) -> `decodeAudioData` at 22.05 kHz, mono (15 minute cap, nothing uploaded or stored) -> an `<audio>` element (not routed through Web Audio) plays it with `preservesPitch` at 0.25/0.5/0.75/1/1.25x, with a waveform (click to seek, wheel or +/- to zoom), an A-B loop and a latency slider. Tap with the pad or Space: the tap is stamped in *song* time (the player's clock interpolated between its coarse updates, minus latency scaled by the speed), so slowing down changes nothing about where a tap lands; holding the pad records a hold. Taps are snapped to the nearest detected note start within a window scaled by the speed (toggle), each tap is analysed for its notes, and the list lets you hear original-then-detected (*compare*), nudge by 10 ms or delete. *Make level* places taps on a grid from the BPM, beat offset and rows per beat, assigns lanes, saves the level and opens it in the normal creator.
+
+**Analysis (`studio-dsp.js`, no dependencies, main thread).** Note starts: SuperFlux-style spectral flux (log magnitude, previous frame max-filtered over 5 bins so vibrato is not an onset), adaptive threshold peak picking, echo suppression. Tempo: autocorrelation of the novelty curve with a mild prior, folded into 80-170 BPM, then beat phase. Notes at a tap: a Hann window after the onset, minus 1.2x the spectrum just before it (so only *new* energy counts and the previous note's ring is ignored), sqrt-compressed harmonic summation over MIDI 36-96 with the fundamental required, iterative picking with harmonic clearing, up to three notes. Lanes: pitch quantiles across the whole piece, so higher is further right and a chord spans adjacent lanes.
+
+**Measured** (`v8studio.js`, music rendered with the game's own voices, 21 events incl. chords): note starts 21/21 for most voices (cello 19) within ~4-8 ms, but 4-18 extra starts a voice (sustained voices ring or vibrate enough to look like attacks; they only matter as snap targets); single notes named exactly 15-16/16; notes inside three-note chords 11-14/15, occasionally one wrong or missing, and at most three notes are ever reported; tempo within 0.1% at 90/120/150 BPM on regular music. Real recordings, dense orchestration, drums and vocals will be worse: this is a suggestion engine for you to review, not a transcriber.
+
+**Rows per beat.** Rows per beat of 2 or 4 multiply the level's BPM and set `scrollRows` (rows on screen, default 4) to 8 or 16, so the fall time is unchanged. `scrollRows` is in the level, the creator, and the share code (version 6, appended after the grid).
+
 ## 6. Architecture
 
 **Load order is fixed**: `levels.js → campaign.js → codec.js → audio.js → generator.js → game.js`. The baked data first, then the engine that reads it, then the codec, then audio, the live generator (endless), and the game that wires them together.
@@ -234,7 +246,7 @@ A hold is a normal tap with a `hold: N` field (N rows below the head, 1 or more)
 cd tests && npm install && node run-all.js
 ```
 
-41 suites. Sixteen cover V8:
+42 suites. Seventeen cover V8:
 
 | Suite | Covers |
 |---|---|
@@ -248,6 +260,7 @@ cd tests && npm install && node run-all.js
 | `v8themes.js` | The ten campaign themes: one per area in order, each with its own texture, the unlock following the whole area and only the area, locked cards inert, a saved unearned theme not worn on boot, the unlock announced by the clear that earns it and only once, and contrast floors in every theme |
 | `v8gameplay.js` | The hit window widens the tolerance in order and is applied to judging; the Double runs at half the beat, pays double, is offered only off a clear and never chains; tiles are drawn within a pixel of where they are judged, by transform, at two UI scales |
 | `v8ui.js` | Real Chromium: the pinned height, the side panel widening the window without moving the grid, the overlay fallback, hidden panes built on show and the visible one refreshed on return, and one whole run from the campaign list to the results screen |
+| `v8studio.js` | The Song Studio: DSP accuracy on synthetic music, the screen end to end |
 | `v8move.js` | The creator's Move tool, refused drops, the sound on every edit, undo/redo, per-note instruments, the import sanitiser |
 | `v8holds.js` | Hold notes end to end: geometry, head/tick/tail scoring, early release and the re-grab grace, missed heads, blur, mouse/touch/chaos input, the sustained voice, codes, and the creator's Hold tool |
 | `v8lanes.js` | 4/6/8 lanes: the board per count, whole-lane pointer input (mouse, touch, chords, key-source guard, blur release), the window widening for 8 lanes without ever saving it as the player's width, keys per lane count, share codes, the creator's lane switch |

@@ -19,6 +19,7 @@ let crBgMode   = 'none';
 let crLanes = 4;
 let crInstrument = 'synth';
 let crNoteInst = null;
+let crScrollRows = 0;
 let crLaneFreqs = [261.63,329.63,392.00,523.25];
 const crEmptyRow = () => window.RD_Lanes.emptyRow(crLanes);
 let crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
@@ -48,6 +49,7 @@ function openCreator(idx) {
     document.getElementById('cr-bpm').value  = l.bpm  || 120;
     document.getElementById('cr-diff').value = l.diff || 'medium';
     crLanes = window.RD_Lanes.laneCountOf(l);
+    crScrollRows = l.scrollRows > 0 ? l.scrollRows : 0;
     crInstrument = window.RD_resolveInstrument(l.instrument || (window.RD_getInstrument && window.RD_getInstrument()));
     crGrid = l.grid.map(r => {
       const row = r.map(cell => {
@@ -71,6 +73,7 @@ function openCreator(idx) {
     document.getElementById('cr-bpm').value  = 120;
     document.getElementById('cr-diff').value = 'medium';
     crLanes     = 4;
+    crScrollRows = 0;
     crInstrument = window.RD_resolveInstrument(window.RD_getInstrument && window.RD_getInstrument());
     crGrid      = Array.from({ length:16 }, () => crEmptyRow());
     crBgMode    = 'none';
@@ -721,13 +724,36 @@ function openCellEditor(anchorEl, ri, ci) {
     });
     pop.appendChild(typeRow);
 
-    const pitchBtn = document.createElement('button');
-    pitchBtn.className = 'cce-pitch';
-    pitchBtn.textContent = '♪ ' + freqToName(cellFreq(c, ci));
-    pitchBtn.addEventListener('click', () => {
-      openNotePickerModal(pitchBtn, cellFreq(crGrid[ri][ci], ci), f => write({ freq: f }));
-    });
-    pop.appendChild(pitchBtn);
+    const SEMI = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
+    const midi0 = Math.round(69 + 12 * Math.log2(cellFreq(c, ci) / 440));
+    const oct0 = Math.floor(midi0 / 12) - 1;
+    const pc = ((midi0 % 12) + 12) % 12;
+    const flat = !Object.values(SEMI).includes(pc);
+    const letter0 = Object.keys(SEMI).find(k => SEMI[k] === pc) || Object.keys(SEMI).find(k => SEMI[k] === pc - 1);
+    const setPitch = (letter, acc, oct) => {
+      const m = (oct + 1) * 12 + SEMI[letter] + acc;
+      write({ freq: parseFloat((440 * Math.pow(2, (m - 69) / 12)).toFixed(2)) });
+    };
+    const pitchHead = document.createElement('div');
+    pitchHead.className = 'cce-pitch';
+    pitchHead.textContent = '♪ ' + freqToName(cellFreq(c, ci));
+    pop.appendChild(pitchHead);
+    const chipRow = (items, isOn, onPick) => {
+      const row = document.createElement('div');
+      row.className = 'cce-sus cce-pick';
+      items.forEach(it => {
+        const btn = document.createElement('button');
+        btn.className = 'cce-schip' + (isOn(it) ? ' on' : '');
+        btn.textContent = it.label;
+        btn.addEventListener('click', () => onPick(it));
+        row.appendChild(btn);
+      });
+      pop.appendChild(row);
+    };
+    const acc0 = flat ? 1 : 0;
+    chipRow(['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(l => ({ label: l, v: l })), it => it.v === letter0, it => setPitch(it.v, acc0, oct0));
+    chipRow([{ label: '♮', v: 0 }, { label: '♯', v: 1 }, { label: '♭', v: -1 }], it => (flat ? it.v === 1 : it.v === 0), it => setPitch(it.v === -1 && SEMI[letter0] !== undefined ? letter0 : letter0, it.v, oct0));
+    chipRow([2, 3, 4, 5, 6, 7].map(o => ({ label: String(o), v: o })), it => it.v === oct0, it => setPitch(letter0, acc0, it.v));
 
     if (cellType(c) !== 'dtap') {
       const holdLabel = document.createElement('div');
@@ -889,6 +915,7 @@ document.getElementById('cr-save').addEventListener('click', () => {
     id: 'c' + Date.now(), name, bpm, diff,
     lanes:       crLanes,
     instrument:  crInstrument,
+    scrollRows:  crScrollRows || undefined,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
     laneFreqs:   [...crLaneFreqs],
@@ -915,6 +942,7 @@ function autoSave() {
     id: 'c' + Date.now(), name, bpm, diff,
     lanes:       crLanes,
     instrument:  crInstrument,
+    scrollRows:  crScrollRows || undefined,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
     laneFreqs:   [...crLaneFreqs],

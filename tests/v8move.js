@@ -176,12 +176,8 @@ const INIT = () => {
       const first = __plays.length ? __plays[__plays.length - 1] : null;
       await new Promise(r => setTimeout(r, 100));
       __plays.length = 0;
-      const pitchBtn = document.querySelector('.cr-cell-editor .cce-pitch');
-      pitchBtn.click();
-      await new Promise(r => setTimeout(r, 50));
-      const letters = [...document.querySelectorAll('#note-picker-modal button')];
-      const a = letters.find(b => b.textContent === 'A');
-      a.click();
+      const a = [...document.querySelectorAll('.cr-cell-editor .cce-pick')][0];
+      [...a.children].find(b => b.textContent === 'A').click();
       return { first, afterPick: __plays.slice(), freq: crGrid[4][3].freq };
     });
     ok(r.first && r.first.d === true, 'switching a note to a double in the editor plays it');
