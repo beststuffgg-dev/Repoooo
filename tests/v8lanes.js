@@ -210,17 +210,19 @@ const INIT = () => {
 
   console.log('== old four-key settings still load ==');
   {
-    await page.waitForTimeout(500);
-    await page.evaluate(() => localStorage.setItem('rd_settings', JSON.stringify({ keys: ['KeyJ', 'KeyK', 'KeyL', 'Semicolon'], width: 420, height: 640 })));
-    await page.reload({ waitUntil: 'load' });
-    await page.waitForTimeout(1200);
-    const r = await page.evaluate(() => ({ k4: keysFor(4).join(), k6: keysFor(6).join(), cap: document.querySelector('#btn3 .lane-key').textContent.trim() }));
+    const p2 = await ctx.newPage();
+    await p2.addInitScript(() => {
+      localStorage.setItem('rd_tutorial', '1');
+      localStorage.setItem('rd_profile', JSON.stringify({ username: 'P', coins: 5000 }));
+      localStorage.setItem('rd_settings', JSON.stringify({ keys: ['KeyJ', 'KeyK', 'KeyL', 'Semicolon'], width: 420, height: 640 }));
+    });
+    await p2.goto('file://' + APP, { waitUntil: 'load' });
+    await p2.waitForTimeout(1200);
+    const r = await p2.evaluate(() => ({ k4: keysFor(4).join(), k6: keysFor(6).join(), cap: document.querySelector('#btn3 .lane-key').textContent.trim() }));
     ok(r.k4 === 'KeyJ,KeyK,KeyL,Semicolon', 'a saved four-key layout is kept');
     ok(r.k6 === 'KeyA,KeyS,KeyD,KeyF,KeyG,KeyH', 'and 6 lanes fall back to the defaults');
     ok(r.cap === ';', 'punctuation keys read as the symbol (' + r.cap + ')');
-    await page.evaluate(() => localStorage.removeItem('rd_settings'));
-    await page.reload({ waitUntil: 'load' });
-    await page.waitForTimeout(1200);
+    await p2.close();
   }
 
   console.log('== codec: old codes decode the same, wide levels get version 6 ==');
