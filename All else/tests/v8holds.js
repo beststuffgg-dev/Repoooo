@@ -128,10 +128,11 @@ const INIT = () => {
       key('KeyA', true);
       await new Promise(r => setTimeout(r, 120));
       const livesBefore = lives;
+      const scoreBefore = score;
       key('KeyA', false);
       const out = { stillHeld: t.held };
       await waitFor(() => t.dropped, 1000);
-      out.dropped = t.dropped; out.combo = combo; out.lostLife = livesBefore - lives; out.cls = t.el.classList.contains('dropped');
+      out.gained = score - scoreBefore; out.dropped = t.dropped; out.combo = combo; out.lostLife = livesBefore - lives; out.cls = t.el.classList.contains('dropped');
       out.released = __spy.released;
       await new Promise(r => setTimeout(r, 1500));
       out.livesLater = livesBefore - lives;
@@ -140,8 +141,9 @@ const INIT = () => {
     });
     ok(r.stillHeld, 'letting go does not drop it at once (a grace of ~110ms)');
     ok(r.dropped && r.cls, 'then it is dropped and dimmed');
-    ok(r.combo === 0 && r.lostLife === 1, 'the combo breaks and one life goes (' + r.lostLife + ')');
-    ok(r.livesLater === 1, 'and the falling tile never costs a second life (' + r.livesLater + ')');
+    ok(r.combo === 1 && r.lostLife === 0, 'no life is lost and the combo is kept (' + r.lostLife + ')');
+    ok(r.gained === 0, 'but the hold pays nothing beyond its head (' + r.gained + ')');
+    ok(r.livesLater === 0, 'and the falling tile costs nothing (' + r.livesLater + ')');
   }
 
   console.log('== a quick re-grab keeps it ==');
@@ -315,6 +317,60 @@ const INIT = () => {
     });
     ok(r.first.length === 1 && Math.abs(r.first[0][0] - 261.63) < 0.01, 'the head starts the note at its own pitch (' + r.first.map(a => a[0]) + ')');
     ok(r.released >= 1, 'quitting mid-hold lets the voice go (' + r.released + ')');
+  }
+
+  console.log('== several holds at once, with taps on top ==');
+  {
+    const r = await page.evaluate(async () => {
+      const lvl = holdLevel(60, 0, g => {
+        for (let c = 0; c < 4; c++) g[2][c] = null;
+        g[2][0] = { type: 'tap', freq: 261.63, sustain: 0, hold: 8 };
+        g[2][1] = { type: 'tap', freq: 329.63, sustain: 0, hold: 8 };
+        g[2][2] = { type: 'tap', freq: 392, sustain: 0, hold: 8 };
+        [4, 6, 8].forEach(r => { g[r][3] = { type: 'tap', freq: 523.25, sustain: 0 }; });
+      });
+      __spy.on = [];
+      startHold(lvl, 9);
+      await waitFor(() => activeTiles.filter(t => t.hold).length === 3 && activeTiles.filter(t => t.hold).every(t => Math.abs(headPt(t) - hitY()) < 9), 6000);
+      ['KeyA', 'KeyS', 'KeyD'].forEach(k => key(k, true));
+      const held = activeTiles.filter(t => t.hold && t.held).length;
+      let tapped = 0;
+      for (let i = 0; i < 3; i++) {
+        const t = await waitFor(() => activeTiles.find(x => !x.hold && !x.done && x.lane === 3 && Math.abs(headPt(x) - hitY()) < 7), 4000);
+        if (!t) break;
+        key('KeyF', true); key('KeyF', false);
+        tapped += t.done ? 1 : 0;
+      }
+      const stillHeld = activeTiles.filter(t => t.hold && t.held && t.down).length;
+      await waitFor(() => activeTiles.filter(t => t.hold && t.done).length === 3, 6000);
+      const out = { held, tapped, stillHeld, done: activeTiles.filter(t => t.hold && t.done).length + 0, combo, lives, voices: __spy.on.length };
+      ['KeyA', 'KeyS', 'KeyD'].forEach(k => key(k, false));
+      quitToMenu();
+      return out;
+    });
+    ok(r.held === 3, 'three keys held down hold three notes at once (' + r.held + ')');
+    ok(r.tapped === 3 && r.stillHeld === 3, 'and taps on a fourth lane in the meantime hit without dropping any (' + r.tapped + ' taps, ' + r.stillHeld + ' still held)');
+    ok(r.lives === 9, 'no life lost');
+    const e = await page.evaluate(async () => {
+      const grid = Array.from({ length: 40 }, () => new Array(8).fill(null));
+      for (let c = 0; c < 8; c++) grid[2][c] = { type: 'tap', freq: 261.63 * Math.pow(2, c / 12), sustain: 0, hold: 6 };
+      currentSettings.lives = 9;
+      launchLevel({ name: 'eight', bpm: 120, diff: 'easy', bgMode: 'none', lanes: 8, grid });
+      document.getElementById('g-overlay').classList.remove('show');
+      startGame();
+      await waitFor(() => activeTiles.filter(t => t.hold).length === 8 && activeTiles.every(t => Math.abs(headPt(t) - hitY()) < 9), 6000);
+      const codes = keysFor(8);
+      codes.forEach(k => key(k, true));
+      const held = activeTiles.filter(t => t.held && t.down).length;
+      await waitFor(() => activeTiles.every(t => t.done), 6000);
+      const done = activeTiles.filter(t => t.done).length;
+      codes.forEach(k => key(k, false));
+      const out = { held, done, lives, voices: RD_voiceCount() };
+      quitToMenu();
+      return out;
+    });
+    ok(e.held === 8, 'all eight lanes can be held at once (' + e.held + ')');
+    ok(e.done === 8 && e.lives === 9, 'and all eight finish (' + e.done + ' done, ' + e.lives + ' lives)');
   }
 
   console.log('== codes carry holds ==');

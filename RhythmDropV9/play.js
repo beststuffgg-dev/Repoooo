@@ -156,7 +156,7 @@ function spawnTile(note) {
 
   laneEls[note.lane].appendChild(el);
   return { el, lane:note.lane, chaosCode, y:-h, type:note.type, h, freq:note.freq||null, sustain:note.sustain||0, inst:note.inst||null,
-           hold:note.hold||0, held:false, down:false, releasedAt:0, tickAcc:0, voice:null, missed:false, dropped:false,
+           hold:note.hold||0, pending:0, held:false, down:false, releasedAt:0, tickAcc:0, voice:null, missed:false, dropped:false,
            firstTapped:false, done:false };
 }
 
@@ -318,7 +318,7 @@ function loop(now) {
           const iv = currentBeatMs / 2;
           while (t.tickAcc >= iv) { t.tickAcc -= iv; holdTick(t); }
         } else if (gameTimeMs - t.releasedAt > HOLD_GRACE_MS) {
-          dropHold(t); if (!running) return;
+          dropHold(t);
         }
         if (t.held && tailPt(t) >= hitY()) completeHold(t);
       }
@@ -342,15 +342,15 @@ function endVoice(t) {
 }
 
 function holdTick(t) {
-  score += Math.round(HOLD_TICK_PTS * lifeScoreMult);
-  scoreEl.textContent = score;
+  t.pending += Math.round(HOLD_TICK_PTS * lifeScoreMult);
 }
 
 function completeHold(t) {
   t.held = false; t.down = false; t.done = true;
   t.el.classList.remove('held');
   endVoice(t);
-  score += Math.round(HOLD_DONE_PTS * lifeScoreMult);
+  score += t.pending + Math.round(HOLD_DONE_PTS * lifeScoreMult);
+  t.pending = 0;
   scoreEl.textContent = score;
   showFb(t.lane, 'HOLD', 'var(--perfect)');
   spawnTapPulse(t.lane);
@@ -360,8 +360,9 @@ function dropHold(t) {
   t.held = false; t.down = false; t.dropped = true;
   t.el.classList.remove('held');
   t.el.classList.add('dropped');
+  t.pending = 0;
   endVoice(t);
-  damage(t.lane);
+  showFb(t.lane, 'NO HOLD', 'var(--muted)');
 }
 
 function releaseHold(t) {
