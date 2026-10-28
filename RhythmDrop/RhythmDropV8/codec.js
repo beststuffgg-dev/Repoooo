@@ -107,14 +107,22 @@
   const CHAR_INST = Object.keys(INST_CHARS)
     .reduce((o, k) => { o[INST_CHARS[k]] = k; return o; }, {});
 
+  const DEFAULT_FREQS = {
+    4: [261.63, 329.63, 392.00, 523.25],
+    6: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25],
+    8: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25],
+  };
+  const laneN = v => { v = v | 0; return v > 6 ? 8 : v > 4 ? 6 : 4; };
+
   function encodeLevel(lvl) {
-    const laneFreqs = lvl.laneFreqs || [261.63, 329.63, 392.00, 523.25];
+    const laneFreqs = lvl.laneFreqs || DEFAULT_FREQS[laneN(lvl.lanes)];
     const laneMidi  = laneFreqs.map(freqToMidi);
+    const n         = laneN(laneFreqs.length);
 
     let rows = lvl.grid;
     if (!rows && lvl.notes) {
       const beats = lvl.beats || (Math.max(...lvl.notes.map(n => n.b)) + 1);
-      rows = Array.from({ length: beats }, () => [null, null, null, null]);
+      rows = Array.from({ length: beats }, () => new Array(n).fill(null));
       lvl.notes.forEach(n => {
         rows[n.b][n.l] = {
           type:    n.t,
@@ -135,7 +143,7 @@
         rest = 0;
       };
 
-      for (let ci = 0; ci < 4; ci++) {
+      for (let ci = 0; ci < n; ci++) {
         const cell = row[ci];
         if (!cell) { rest++; continue; }
         flush();
@@ -165,7 +173,7 @@
       .map(f => (f > 0 ? freqToMidi(f) : '0')).join(',');
 
     const packed = [
-      '5',
+      n > 4 ? '6' : '5',
       (lvl.name || 'untitled').replace(/\|/g, '/'),
       lvl.bpm || 120,
       lvl.bgMode || 'none',
@@ -184,10 +192,10 @@
     const packed = unpack(code.slice(4).trim());
     const parts  = packed.split('|');
     const ver    = parts[0];
-    if (['2','3','4','5'].indexOf(ver) < 0) throw new Error('bad version');
+    if (['2','3','4','5','6'].indexOf(ver) < 0) throw new Error('bad version');
 
-    const isV3 = ver === '3' || ver === '4' || ver === '5';
-    const isV5 = ver === '5';
+    const isV3 = ver === '3' || ver === '4' || ver === '5' || ver === '6';
+    const isV5 = ver === '5' || ver === '6';
     const diff       = isV3 ? parts[6] : 'custom';
     const instrument = isV3 ? parts[7] : 'synth';
     const areaId     = isV5 && parts[8] ? parseInt(parts[8], 10) : null;
@@ -198,6 +206,7 @@
     const bgMode   = parts[3];
     const laneMidi = parts[4].split(',').map(n => parseInt(n, 10));
     const laneFreqs = laneMidi.map(midiToFreq);
+    const n = laneN(laneFreqs.length);
 
     const bassPattern = parts[5]
       ? parts[5].split(',').map(n => (n === '0' ? 0 : midiToFreq(parseInt(n, 10))))
@@ -206,10 +215,10 @@
     let curInst = null;
 
     const grid = (gridStr || '').split(';').map(rowStr => {
-      const row = [null, null, null, null];
+      const row = new Array(n).fill(null);
       let ci = 0, i = 0;
 
-      while (i < rowStr.length && ci < 4) {
+      while (i < rowStr.length && ci < n) {
         const ch = rowStr[i];
 
         if (ch === '`') {
@@ -263,7 +272,7 @@
     }));
 
     const out = { name, bpm, bgMode, laneFreqs, bassPattern, bassSteps,
-                  diff, instrument, grid };
+                  diff, instrument, grid, lanes: n };
     if (areaId) out.areaId = areaId;
     return out;
   }

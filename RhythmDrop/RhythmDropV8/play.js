@@ -21,16 +21,17 @@ let baseBeatMs = 500, currentBeatMs = 500;
 let speedMult = 1, gameTimeMs = 0;
 let doubleMode = false;
 let runSpeedBase = 1;
+let laneCount = 4;
 let fbTimers  = [0,0,0,0];
-let lastTapT  = {0:0,1:0,2:0,3:0};
+let lastTapT  = [0,0,0,0];
 let chaosMode = false;
 const CHAOS_LETTERS = 'ABCDEFGHIJKLMNOPSTUVWXYZ'.split('');
 let equippedTrailColor = null;
 const STREAK_TRAIL_AT = 100;
 
-const laneEls = [0,1,2,3].map(i => document.getElementById('lane'+i));
-const btnEls  = [0,1,2,3].map(i => document.getElementById('btn'+i));
-const fbEls   = [0,1,2,3].map(i => document.getElementById('fb'+i));
+let laneEls = [0,1,2,3].map(i => document.getElementById('lane'+i));
+let btnEls  = [0,1,2,3].map(i => document.getElementById('btn'+i));
+let fbEls   = [0,1,2,3].map(i => document.getElementById('fb'+i));
 const scoreEl = document.getElementById('g-score');
 const comboEl = document.getElementById('g-combo');
 const livesEl = document.getElementById('g-lives');
@@ -42,11 +43,37 @@ const ovBtn   = document.getElementById('ov-btn');
 const lvlName = document.getElementById('g-lvlname');
 const spdBadge= document.getElementById('speed-badge');
 
+function buildLanes(n) {
+  n = window.RD_Lanes.clamp(n);
+  const host = document.getElementById('g-lanes');
+  host.dataset.lanes = n;
+  if (n !== laneCount || laneEls.length !== n || !document.getElementById('lane0')) {
+    host.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+      const lane = document.createElement('div');
+      lane.className = 'lane';
+      lane.dataset.lane = i;
+      lane.id = 'lane' + i;
+      lane.innerHTML = '<div class="lane-hitglow"></div><div class="lane-hitbar"></div>'
+        + '<div class="lane-fb" id="fb' + i + '"></div>'
+        + '<div class="lane-btn" id="btn' + i + '"><span class="lane-key"></span></div>';
+      host.appendChild(lane);
+    }
+    laneCount = n;
+    laneEls = Array.from(host.children);
+    btnEls  = laneEls.map(l => l.querySelector('.lane-btn'));
+    fbEls   = laneEls.map(l => l.querySelector('.lane-fb'));
+    fbTimers = new Array(n).fill(0);
+    lastTapT = new Array(n).fill(0);
+  }
+  if (typeof applySettingsToDOM === 'function') applySettingsToDOM();
+}
+
 function laneH() { return laneEls[0].clientHeight || 380; }
 function hitY()  { return laneH() - HIT_BOTTOM; }
 
 function buildQueue(lvl) {
-  const fallbackFreqs = lvl.laneFreqs || [261.63,329.63,392.00,523.25];
+  const fallbackFreqs = lvl.laneFreqs || window.RD_Lanes.defaultFreqs(window.RD_Lanes.laneCountOf(lvl));
   const songInst = lvl.instrument || null;
   if (lvl.grid) {
     const q = [];
@@ -103,6 +130,7 @@ function spawnTile(note) {
 
 function launchLevel(lvl, asDouble) {
   gameLevel = lvl;
+  buildLanes(window.RD_Lanes.laneCountOf(lvl));
   doubleMode = !!asDouble;
   lvlName.textContent = lvl.name + (asDouble ? '  ·  DOUBLE' : '');
   baseBeatMs = Math.round(60000 / lvl.bpm);
@@ -169,6 +197,7 @@ function saveGenerated(lvl) {
     grid: lvl.grid.map(r => r.map(c => c ? { ...c } : null)),
     bgMode: lvl.bgMode || 'none',
     laneFreqs: lvl.laneFreqs ? [...lvl.laneFreqs] : undefined,
+    lanes: window.RD_Lanes.laneCountOf(lvl),
     bassPattern: lvl.bassPattern || [],
     generated: true, shareCode: lvl.shareCode || null,
   });
@@ -177,6 +206,7 @@ function saveGenerated(lvl) {
 }
 
 function startGame() {
+  if (typeof releaseAllLanes === 'function') releaseAllLanes();
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   maxLives = currentSettings.lives || 3;
   lifeScoreMult = maxLives < 3 ? 1 + 0.20 * (3 - maxLives)
@@ -187,7 +217,7 @@ function startGame() {
   runSpeedBase = doubleMode ? 2 : 1;
   speedMult = runSpeedBase;
   currentBeatMs = Math.round(baseBeatMs / speedMult);
-  fbTimers = [0,0,0,0]; lastTapT = {0:0,1:0,2:0,3:0};
+  fbTimers = new Array(laneCount).fill(0); lastTapT = new Array(laneCount).fill(0);
   gameQueue = buildQueue(gameLevel);
   notesHit = 0; notesTotal = gameQueue.length;
   scoreEl.textContent = '0'; comboEl.textContent = '×1'; comboEl.style.color = 'var(--tap)';
@@ -199,7 +229,7 @@ function startGame() {
   equippedTrailColor = _tr ? _tr.color : null;
 
   if (window.RD_setLaneFreqs && gameLevel.laneFreqs) window.RD_setLaneFreqs(gameLevel.laneFreqs);
-  else if (window.RD_setLaneFreqs) window.RD_setLaneFreqs([261.63,329.63,392.00,523.25]);
+  else if (window.RD_setLaneFreqs) window.RD_setLaneFreqs(window.RD_Lanes.defaultFreqs(laneCount));
 
   const bgM = gameLevel.bgMode || 'none';
   const bp  = gameLevel.bassPattern || [];
@@ -248,7 +278,7 @@ function loop(now) {
     }
   }
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < laneCount; i++) {
     if (fbTimers[i] > 0) { fbTimers[i] -= dt; if (fbTimers[i] <= 0) fbEls[i].classList.remove('show'); }
   }
   raf = requestAnimationFrame(loop);
@@ -386,6 +416,7 @@ function showFb(lane, text, color) {
 }
 
 function endGame(won) {
+  if (typeof releaseAllLanes === 'function') releaseAllLanes();
   running = false; cancelAnimationFrame(raf);
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   if (window.RD_stopBg) window.RD_stopBg();
@@ -518,6 +549,7 @@ function syncGeneratedKeepBtn(show) {
 }
 
 function quitToMenu() {
+  if (typeof releaseAllLanes === 'function') releaseAllLanes();
   running = false; cancelAnimationFrame(raf);
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   if (window.RD_stopBg) window.RD_stopBg();

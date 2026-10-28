@@ -11,7 +11,7 @@ V8 is built on the **v3.0** source — its look, its themes, its intro splash, i
 ```
 RhythmDropV8.zip          the game, zipped
 htmls/RhythmDrop.html     the game as one self-contained file (generated)
-tests/                    38 suites — 13 for V8, 25 for V7
+tests/                    39 suites — 14 for V8, 25 for V7
 RhythmDrop/
   RhythmDropV8/           the source — load this as an unpacked extension
     popup.html              markup, styling, the v3 theme system
@@ -20,6 +20,7 @@ RhythmDrop/
     creator.js              the level creator: grid, keyboard entry, multi-select
     notepicker.js           the Letter/Octave/Accidental note-selector modal
     campaign.js             progression: unlocks, XP, coins, records, dailies
+    lanes.js                lane counts 4/6/8: default pitches, default keys, helpers
     rowtypes.js             one kind of note per row (shared with the baker)
     levels.js               THE 150 SONGS, baked — generated, do not hand-edit
     audio.js                12 synthesized instruments, limiter, background layer
@@ -152,6 +153,16 @@ Each of the ten areas has a hand-drawn 64×64 pixel emblem, ported from V7: a wh
 
 ---
 
+## 5c. Lanes: 4, 6 and 8
+
+A level's lane count is its own: `lanes` (4, 6 or 8; absent means 4). `RD_Lanes` (`lanes.js`) owns the arithmetic: `laneCountOf(lvl)` reads `lanes`, then the row width, then `laneFreqs`, then falls back to 4, so every old level resolves to 4 with no migration. The campaign, Generate and Endless stay 4-lane — the composer is V7's and 4-wide; 6 and 8 lanes come from the creator.
+
+- **Board.** `buildLanes(n)` (play.js) builds the lanes, feedback labels and keycaps; the static 4-lane markup stays so the keycap exists at boot. Lane tint alternates by `nth-child`.
+- **Input.** One delegated `pointerdown/up/cancel` handler on `#g-lanes` (the whole lane is the button, with pointer capture and `touch-action:none`) plus `keydown/keyup`, all through `pressLane(lane, source)`: a lane has a set of active sources, so a key and a finger can't double-fire it, and `blur` releases everything. `onLaneRelease` is the hook hold notes use.
+- **Keys.** `keys` is the 4-lane row (unchanged on disk), `keys6` and `keys8` are new. `keysFor(n)`, `assignLaneKey` (swaps with the lane that had the key), `validKeyRow` (length, strings, unique). `freshSettings()` deep-copies the rows, so remapping on a fresh profile can no longer edit the defaults.
+- **Width.** Eight lanes need ~560 px for tiles that aren't slivers. `laneExpansion` widens the window on the game/creator screens the same way the advanced panel does (`advExpansion`), and the resize observer subtracts both, so the widening is never saved as the player's width. The advanced panel's room calculation accounts for it.
+- **Codes.** The lane count is implied by the `laneMidi` header. A level of more than 4 lanes is written as version 6; a 4-lane level is still version 5, byte for byte, so an older build refuses a wide code instead of truncating it. `tests/fixtures/codec-golden.json` holds codes for versions 2–5, and `v8codec.js` decodes them to the same levels they produced before lanes existed.
+
 ## 6. Architecture
 
 **Load order is fixed**: `levels.js → campaign.js → codec.js → audio.js → generator.js → game.js`. The baked data first, then the engine that reads it, then the codec, then audio, the live generator (endless), and the game that wires them together.
@@ -186,7 +197,7 @@ Each of the ten areas has a hand-drawn 64×64 pixel emblem, ported from V7: a wh
 cd tests && npm install && node run-all.js
 ```
 
-38 suites. Thirteen cover V8:
+39 suites. Fourteen cover V8:
 
 | Suite | Covers |
 |---|---|
@@ -200,6 +211,7 @@ cd tests && npm install && node run-all.js
 | `v8themes.js` | The ten campaign themes: one per area in order, each with its own texture, the unlock following the whole area and only the area, locked cards inert, a saved unearned theme not worn on boot, the unlock announced by the clear that earns it and only once, and contrast floors in every theme |
 | `v8gameplay.js` | The hit window widens the tolerance in order and is applied to judging; the Double runs at half the beat, pays double, is offered only off a clear and never chains; tiles are drawn within a pixel of where they are judged, by transform, at two UI scales |
 | `v8ui.js` | Real Chromium: the pinned height, the side panel widening the window without moving the grid, the overlay fallback, hidden panes built on show and the visible one refreshed on return, and one whole run from the campaign list to the results screen |
+| `v8lanes.js` | 4/6/8 lanes: the board per count, whole-lane pointer input (mouse, touch, chords, key-source guard, blur release), the window widening for 8 lanes without ever saving it as the player's width, keys per lane count, share codes, the creator's lane switch |
 
 The remaining 25 are V7's, unchanged, running against `RhythmDrop/v7/`. `APP_DIR` selects which V7 build they test; `V8_DIR` overrides the V8 one.
 

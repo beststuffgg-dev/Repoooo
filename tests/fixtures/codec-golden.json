@@ -1,0 +1,68 @@
+{
+ "v5": "RD2:NXxHb2xkZW4ggMOAiXR1gQV8MTMzfGJhc3N8NjAsNjSBGjcsNzJ8MzYsgRk0MYElLDQzgSkzOIElfG1lZGl1bXxwaWFub4EifHQuMzsuZH4zLnSBQzJgZ1Q2OS47ZGQuMoFDNDuBTjJ-NC5gZnR0",
+ "v4": "RD2:NHxHb2xkZW4ggMOAiXR1gQV8MTMzfGJhc3N8NjAsNjSBGjcsNzJ8MzYsgRk0MYElLDQzgSkzOIElfG1lZGl1bXxwaWFub3x0LjM7LmQuVIEggUIuYGdUNjk7ZIFELjs7gUwygUlmgUw3dA",
+ "v3": "RD2:M3xHb2xkZW4ggMOAiXR1gQV8MTOBAGJhc3N8NjAsNjSBGTcsNzJ8MzYsgRg0MYEkLDQzgSgzOIEkfG1lZGl1bXxwaWFub3x0LjM7LmQuVIEfgUEuYGdUNjk7ZIFDLjs7gUsygUhmgUs3dA",
+ "v2": "RD2:MnxHb2xkZW4ggMOAiXR1gQV8MTMzfGJhc3N8NjAsNjSBGjcsN4EAMzYsgRk0MYEkLDQzgSgzOIEkfHQuMzsuZC5UgSCBNIE3Njk7ZIE2Ljs7VDYygTs3dA",
+ "expect": {
+  "v2": {
+   "name": "Golden Étude",
+   "bpm": 133,
+   "bgMode": "bass",
+   "diff": "custom",
+   "instrument": "synth",
+   "areaId": null,
+   "laneFreqs": [
+    261.63,
+    329.63,
+    392,
+    523.25
+   ],
+   "grid": "tap:262:0:,-,-,-/-,dtap:330:0:,-,tap:523:0:/-,-,tap:440:0:,-/dtap:262:0:,dtap:330:0:,-,-/-,-,-,-/tap:294:0:,-,tap:392:0:,tap:523:0:"
+  },
+  "v3": {
+   "name": "Golden Étude",
+   "bpm": 133,
+   "bgMode": "bass",
+   "diff": "medium",
+   "instrument": "piano",
+   "areaId": null,
+   "laneFreqs": [
+    261.63,
+    329.63,
+    392,
+    523.25
+   ],
+   "grid": "tap:262:0:,-,-,-/-,dtap:330:0:,-,tap:523:0:/-,-,tap:440:0:guitar,-/dtap:262:0:guitar,dtap:330:0:guitar,-,-/-,-,-,-/tap:294:0:guitar,-,tap:392:0:flute,tap:523:0:flute"
+  },
+  "v4": {
+   "name": "Golden Étude",
+   "bpm": 133,
+   "bgMode": "bass",
+   "diff": "medium",
+   "instrument": "piano",
+   "areaId": null,
+   "laneFreqs": [
+    261.63,
+    329.63,
+    392,
+    523.25
+   ],
+   "grid": "tap:262:0:,-,-,-/-,dtap:330:0:,-,tap:523:0:/-,-,tap:440:0:guitar,-/dtap:262:0:guitar,dtap:330:0:guitar,-,-/-,-,-,-/tap:294:0:guitar,-,tap:392:0:flute,tap:523:0:flute"
+  },
+  "v5": {
+   "name": "Golden Étude",
+   "bpm": 133,
+   "bgMode": "bass",
+   "diff": "medium",
+   "instrument": "piano",
+   "areaId": 3,
+   "laneFreqs": [
+    261.63,
+    329.63,
+    392,
+    523.25
+   ],
+   "grid": "tap:262:0:,-,-,-/-,dtap:330:1.5:,-,tap:523:0:/-,-,tap:440:0:guitar,-/dtap:262:0:guitar,dtap:330:0:guitar,-,-/-,-,-,-/tap:294:2:guitar,-,tap:392:0:flute,tap:523:0:flute"
+  }
+ }
+}

@@ -1,6 +1,6 @@
 # RhythmDrop — test harnesses
 
-Thirty-eight suites, one command. Thirteen cover **V8**, the current game;
+Thirty-nine suites, one command. Fourteen cover **V8**, the current game;
 the other twenty-five cover **V7**, kept alongside it under `RhythmDrop/v7/`
 and still green. Most boot the build in jsdom with a stubbed Web Audio
 graph; six drive real Chromium, because jsdom has no layout engine and
@@ -22,6 +22,7 @@ structurally cannot catch a layout bug.
 | `v8gameplay.js` | The hit window and the Double; tiles drawn where they are judged |
 | `v8creator.js` | The generation menu, Endless as a tab, aspect ratios |
 | `v8editor.js` | Keyboard entry, multi-select, vertical resize |
+| `v8lanes.js` | 4, 6 and 8 lanes: the board built per count, whole-lane mouse/touch/chord input, the 8-lane window widening that is never saved as your width, keys per lane count with swap-on-conflict, share codes (golden fixtures for versions 2–5 live in `v8codec.js`), and the creator's lane switch |
 | `v8ui.js` | Real Chromium: the pinned height, the advanced panel widening the window without moving the grid, the overlay fallback at the cap, hidden panes built on show, and one whole run from the campaign list to the results screen |
 
 ```bash
@@ -49,7 +50,7 @@ drops straight into CI or a pre-commit hook.
 `APP_DIR` picks it. Unset, it's the shipping one:
 
 ```bash
-npm test                                    # everything, 38 suites
+npm test                                    # everything, 39 suites
 APP_DIR=RhythmDropV7-Redesign npm test      # V7's suites against its variant
 ```
 

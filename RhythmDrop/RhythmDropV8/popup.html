@@ -1075,7 +1075,7 @@ body.gfx-modern.theme-concrete .lane::after {
 
 .cr-grid-wrap { flex:1; overflow-y:auto; padding:10px 14px; }
 #cr-grid {
-  display:grid; grid-template-columns:28px repeat(4,1fr); gap:3px;
+  display:grid; grid-template-columns:28px repeat(var(--cr-lanes,4),1fr); gap:3px;
 }
 .cr-row-num {
   display:flex; align-items:center; justify-content:flex-end;
@@ -1225,15 +1225,17 @@ body.adv-overlay #adv-panel.open {
 }
 .hud-lives { font-size:15px; letter-spacing:4px; }
 
-#g-lanes { flex:1; display:flex; gap:6px; padding:0 12px; }
+#g-lanes { flex:1; display:flex; gap:6px; padding:0 12px; touch-action:none; user-select:none; -webkit-user-select:none; }
+#g-lanes[data-lanes="6"] { gap:5px; }
+#g-lanes[data-lanes="8"] { gap:4px; padding:0 8px; }
+#g-lanes[data-lanes="8"] .tile { left:3px; right:3px; }
+#g-lanes[data-lanes="8"] .lane-fb { font-size:8px; letter-spacing:.5px; }
 .lane {
   flex:1; position:relative; border-radius:10px; overflow:hidden;
   border:1px solid var(--border); transition:background .3s;
 }
-.lane[data-lane="0"] { background:color-mix(in srgb,var(--tap) 4%,var(--bg2)); }
-.lane[data-lane="1"] { background:color-mix(in srgb,var(--dtap) 4%,var(--bg2)); }
-.lane[data-lane="2"] { background:color-mix(in srgb,var(--tap) 4%,var(--bg2)); }
-.lane[data-lane="3"] { background:color-mix(in srgb,var(--dtap) 4%,var(--bg2)); }
+.lane:nth-child(odd)  { background:color-mix(in srgb,var(--tap) 4%,var(--bg2)); }
+.lane:nth-child(even) { background:color-mix(in srgb,var(--dtap) 4%,var(--bg2)); }
 .lane::before {
   content:''; position:absolute; inset:0; z-index:0;
   background:repeating-linear-gradient(0deg,transparent,transparent 11px,var(--scanline-clr) 12px);
@@ -1323,7 +1325,7 @@ body.adv-overlay #adv-panel.open {
 .ov-swatch { width:22px; height:14px; border-radius:4px; }
 .os-tap  { background:var(--tap);  box-shadow:0 0 6px var(--glow-tap); }
 .os-dtap { background:var(--dtap); border:1.5px solid var(--dtap2); box-shadow:0 0 6px var(--glow-dtap); }
-.ov-keys { display:flex; gap:8px; }
+.ov-keys { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
 .ov-key {
   background:var(--bg3); border:1px solid var(--border2); border-radius:7px;
   padding:7px 14px; font-size:14px; font-weight:700; color:var(--tap);
@@ -1789,6 +1791,12 @@ body.adv-overlay #adv-panel.open {
     </div>
 
     <div id="adv-settings" class="adv-mode-pane">
+    <div class="adv-section">Lanes</div>
+    <div class="bg-radio-group" id="cr-lane-count" style="margin-bottom:8px;">
+      <button class="bg-radio-btn sel" data-lanes="4">4</button>
+      <button class="bg-radio-btn" data-lanes="6">6</button>
+      <button class="bg-radio-btn" data-lanes="8">8</button>
+    </div>
     <div class="adv-section">Lane Default Notes</div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Default pitch per lane — override individual notes in the grid below</div>
     <div class="lane-note-grid" id="lane-note-grid"></div>
@@ -1963,6 +1971,7 @@ body.adv-overlay #adv-panel.open {
 
 <script src="levels.js"></script>
 <script src="campaign.js"></script>
+<script src="lanes.js"></script>
 <script src="codec.js"></script>
 <script src="audio.js"></script>
 <script src="generator.js"></script>

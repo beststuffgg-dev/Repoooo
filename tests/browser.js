@@ -41,7 +41,7 @@ function chromePath() {
     })
     .sort((a, b) => b.rev - a.rev);
   for (const b of builds) {
-    for (const rel of ['chrome-linux/chrome', 'chrome-mac/Chromium.app/Contents/MacOS/Chromium', 'chrome-win/chrome.exe', 'chrome']) {
+    for (const rel of ['chrome-linux/chrome', 'chrome-linux64/chrome', 'chrome-mac/Chromium.app/Contents/MacOS/Chromium', 'chrome-win/chrome.exe', 'chrome']) {
       const p = path.join(base, b.n, rel);
       if (fs.existsSync(p)) return p;
     }

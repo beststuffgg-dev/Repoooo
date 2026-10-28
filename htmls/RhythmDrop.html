@@ -1075,7 +1075,7 @@ body.gfx-modern.theme-concrete .lane::after {
 
 .cr-grid-wrap { flex:1; overflow-y:auto; padding:10px 14px; }
 #cr-grid {
-  display:grid; grid-template-columns:28px repeat(4,1fr); gap:3px;
+  display:grid; grid-template-columns:28px repeat(var(--cr-lanes,4),1fr); gap:3px;
 }
 .cr-row-num {
   display:flex; align-items:center; justify-content:flex-end;
@@ -1225,15 +1225,17 @@ body.adv-overlay #adv-panel.open {
 }
 .hud-lives { font-size:15px; letter-spacing:4px; }
 
-#g-lanes { flex:1; display:flex; gap:6px; padding:0 12px; }
+#g-lanes { flex:1; display:flex; gap:6px; padding:0 12px; touch-action:none; user-select:none; -webkit-user-select:none; }
+#g-lanes[data-lanes="6"] { gap:5px; }
+#g-lanes[data-lanes="8"] { gap:4px; padding:0 8px; }
+#g-lanes[data-lanes="8"] .tile { left:3px; right:3px; }
+#g-lanes[data-lanes="8"] .lane-fb { font-size:8px; letter-spacing:.5px; }
 .lane {
   flex:1; position:relative; border-radius:10px; overflow:hidden;
   border:1px solid var(--border); transition:background .3s;
 }
-.lane[data-lane="0"] { background:color-mix(in srgb,var(--tap) 4%,var(--bg2)); }
-.lane[data-lane="1"] { background:color-mix(in srgb,var(--dtap) 4%,var(--bg2)); }
-.lane[data-lane="2"] { background:color-mix(in srgb,var(--tap) 4%,var(--bg2)); }
-.lane[data-lane="3"] { background:color-mix(in srgb,var(--dtap) 4%,var(--bg2)); }
+.lane:nth-child(odd)  { background:color-mix(in srgb,var(--tap) 4%,var(--bg2)); }
+.lane:nth-child(even) { background:color-mix(in srgb,var(--dtap) 4%,var(--bg2)); }
 .lane::before {
   content:''; position:absolute; inset:0; z-index:0;
   background:repeating-linear-gradient(0deg,transparent,transparent 11px,var(--scanline-clr) 12px);
@@ -1323,7 +1325,7 @@ body.adv-overlay #adv-panel.open {
 .ov-swatch { width:22px; height:14px; border-radius:4px; }
 .os-tap  { background:var(--tap);  box-shadow:0 0 6px var(--glow-tap); }
 .os-dtap { background:var(--dtap); border:1.5px solid var(--dtap2); box-shadow:0 0 6px var(--glow-dtap); }
-.ov-keys { display:flex; gap:8px; }
+.ov-keys { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
 .ov-key {
   background:var(--bg3); border:1px solid var(--border2); border-radius:7px;
   padding:7px 14px; font-size:14px; font-weight:700; color:var(--tap);
@@ -1789,6 +1791,12 @@ body.adv-overlay #adv-panel.open {
     </div>
 
     <div id="adv-settings" class="adv-mode-pane">
+    <div class="adv-section">Lanes</div>
+    <div class="bg-radio-group" id="cr-lane-count" style="margin-bottom:8px;">
+      <button class="bg-radio-btn sel" data-lanes="4">4</button>
+      <button class="bg-radio-btn" data-lanes="6">6</button>
+      <button class="bg-radio-btn" data-lanes="8">8</button>
+    </div>
     <div class="adv-section">Lane Default Notes</div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Default pitch per lane — override individual notes in the grid below</div>
     <div class="lane-note-grid" id="lane-note-grid"></div>
@@ -2005,6 +2013,7 @@ window.RD_Campaign = (function () {
       seconds: rec.sec, bgMode: rec.bg,
       instrument: DATA.instruments[rec.ins] || 'synth',
       laneFreqs: rec.lf.map(midiToFreq),
+      lanes: 4,
       bassPattern: rec.bp.map(m => (m > 0 ? midiToFreq(m) : 0)),
       grid,
     };
@@ -2172,6 +2181,49 @@ window.RD_Campaign = (function () {
 })();
 
 </script>
+<script data-from="lanes.js">
+(function () {
+  const COUNTS = [4, 6, 8];
+
+  const FREQS = {
+    4: [261.63, 329.63, 392.00, 523.25],
+    6: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25],
+    8: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25],
+  };
+
+  const KEYS = {
+    4: ['KeyA', 'KeyS', 'KeyD', 'KeyF'],
+    6: ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH'],
+    8: ['KeyA', 'KeyS', 'KeyD', 'KeyF', 'KeyG', 'KeyH', 'KeyJ', 'KeyK'],
+  };
+
+  const MIN_WIDTH = { 4: 0, 6: 0, 8: 560 };
+
+  function clamp(n) {
+    n = Number(n) | 0;
+    return n > 6 ? 8 : n > 4 ? 6 : 4;
+  }
+
+  function laneCountOf(lvl) {
+    if (!lvl) return 4;
+    if (lvl.lanes) return clamp(lvl.lanes);
+    if (lvl.grid && lvl.grid.length && lvl.grid[0] && lvl.grid[0].length) return clamp(lvl.grid[0].length);
+    if (lvl.laneFreqs && lvl.laneFreqs.length) return clamp(lvl.laneFreqs.length);
+    return 4;
+  }
+
+  window.RD_Lanes = {
+    COUNTS,
+    clamp,
+    laneCountOf,
+    defaultFreqs: n => FREQS[clamp(n)].slice(),
+    defaultKeys: n => KEYS[clamp(n)].slice(),
+    minWidth: n => MIN_WIDTH[clamp(n)],
+    emptyRow: n => new Array(clamp(n)).fill(null),
+  };
+})();
+
+</script>
 <script data-from="codec.js">
 (function () {
   'use strict';
@@ -2282,14 +2334,22 @@ window.RD_Campaign = (function () {
   const CHAR_INST = Object.keys(INST_CHARS)
     .reduce((o, k) => { o[INST_CHARS[k]] = k; return o; }, {});
 
+  const DEFAULT_FREQS = {
+    4: [261.63, 329.63, 392.00, 523.25],
+    6: [261.63, 293.66, 329.63, 392.00, 440.00, 523.25],
+    8: [261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25],
+  };
+  const laneN = v => { v = v | 0; return v > 6 ? 8 : v > 4 ? 6 : 4; };
+
   function encodeLevel(lvl) {
-    const laneFreqs = lvl.laneFreqs || [261.63, 329.63, 392.00, 523.25];
+    const laneFreqs = lvl.laneFreqs || DEFAULT_FREQS[laneN(lvl.lanes)];
     const laneMidi  = laneFreqs.map(freqToMidi);
+    const n         = laneN(laneFreqs.length);
 
     let rows = lvl.grid;
     if (!rows && lvl.notes) {
       const beats = lvl.beats || (Math.max(...lvl.notes.map(n => n.b)) + 1);
-      rows = Array.from({ length: beats }, () => [null, null, null, null]);
+      rows = Array.from({ length: beats }, () => new Array(n).fill(null));
       lvl.notes.forEach(n => {
         rows[n.b][n.l] = {
           type:    n.t,
@@ -2310,7 +2370,7 @@ window.RD_Campaign = (function () {
         rest = 0;
       };
 
-      for (let ci = 0; ci < 4; ci++) {
+      for (let ci = 0; ci < n; ci++) {
         const cell = row[ci];
         if (!cell) { rest++; continue; }
         flush();
@@ -2340,7 +2400,7 @@ window.RD_Campaign = (function () {
       .map(f => (f > 0 ? freqToMidi(f) : '0')).join(',');
 
     const packed = [
-      '5',
+      n > 4 ? '6' : '5',
       (lvl.name || 'untitled').replace(/\|/g, '/'),
       lvl.bpm || 120,
       lvl.bgMode || 'none',
@@ -2359,10 +2419,10 @@ window.RD_Campaign = (function () {
     const packed = unpack(code.slice(4).trim());
     const parts  = packed.split('|');
     const ver    = parts[0];
-    if (['2','3','4','5'].indexOf(ver) < 0) throw new Error('bad version');
+    if (['2','3','4','5','6'].indexOf(ver) < 0) throw new Error('bad version');
 
-    const isV3 = ver === '3' || ver === '4' || ver === '5';
-    const isV5 = ver === '5';
+    const isV3 = ver === '3' || ver === '4' || ver === '5' || ver === '6';
+    const isV5 = ver === '5' || ver === '6';
     const diff       = isV3 ? parts[6] : 'custom';
     const instrument = isV3 ? parts[7] : 'synth';
     const areaId     = isV5 && parts[8] ? parseInt(parts[8], 10) : null;
@@ -2373,6 +2433,7 @@ window.RD_Campaign = (function () {
     const bgMode   = parts[3];
     const laneMidi = parts[4].split(',').map(n => parseInt(n, 10));
     const laneFreqs = laneMidi.map(midiToFreq);
+    const n = laneN(laneFreqs.length);
 
     const bassPattern = parts[5]
       ? parts[5].split(',').map(n => (n === '0' ? 0 : midiToFreq(parseInt(n, 10))))
@@ -2381,10 +2442,10 @@ window.RD_Campaign = (function () {
     let curInst = null;
 
     const grid = (gridStr || '').split(';').map(rowStr => {
-      const row = [null, null, null, null];
+      const row = new Array(n).fill(null);
       let ci = 0, i = 0;
 
-      while (i < rowStr.length && ci < 4) {
+      while (i < rowStr.length && ci < n) {
         const ch = rowStr[i];
 
         if (ch === '`') {
@@ -2438,7 +2499,7 @@ window.RD_Campaign = (function () {
     }));
 
     const out = { name, bpm, bgMode, laneFreqs, bassPattern, bassSteps,
-                  diff, instrument, grid };
+                  diff, instrument, grid, lanes: n };
     if (areaId) out.areaId = areaId;
     return out;
   }
@@ -4555,7 +4616,9 @@ let crGrid     = [];
 let crTool     = 'tap';
 let crAdvOpen  = false;
 let crBgMode   = 'none';
+let crLanes = 4;
 let crLaneFreqs = [261.63,329.63,392.00,523.25];
+const crEmptyRow = () => window.RD_Lanes.emptyRow(crLanes);
 let crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
 let _bassPickerFreq = 65.41;
 
@@ -4580,25 +4643,31 @@ function openCreator(idx) {
     document.getElementById('cr-name').value = l.name || '';
     document.getElementById('cr-bpm').value  = l.bpm  || 120;
     document.getElementById('cr-diff').value = l.diff || 'medium';
-    crGrid = l.grid.map(r => r.map(cell => {
-      if (!cell) return null;
-      if (typeof cell === 'string') return { type: cell, freq: null };
-      return { ...cell };
-    }));
+    crLanes = window.RD_Lanes.laneCountOf(l);
+    crGrid = l.grid.map(r => {
+      const row = r.map(cell => {
+        if (!cell) return null;
+        if (typeof cell === 'string') return { type: cell, freq: null };
+        return { ...cell };
+      });
+      while (row.length < crLanes) row.push(null);
+      return row;
+    });
     crBgMode    = l.bgMode    || 'none';
-    crLaneFreqs = l.laneFreqs ? [...l.laneFreqs] : [261.63,329.63,392.00,523.25];
+    crLaneFreqs = l.laneFreqs ? [...l.laneFreqs] : window.RD_Lanes.defaultFreqs(crLanes);
     crAdvOpen   = false;
     crBassSteps = l.bassSteps
       ? l.bassSteps.map(s => ({ ...s }))
       : [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
-    while (crGrid.length < 8) crGrid.push([null,null,null,null]);
+    while (crGrid.length < 8) crGrid.push(crEmptyRow());
   } else {
     document.getElementById('cr-name').value = '';
     document.getElementById('cr-bpm').value  = 120;
     document.getElementById('cr-diff').value = 'medium';
-    crGrid      = Array.from({ length:16 }, () => [null,null,null,null]);
+    crLanes     = 4;
+    crGrid      = Array.from({ length:16 }, () => crEmptyRow());
     crBgMode    = 'none';
-    crLaneFreqs = [261.63,329.63,392.00,523.25];
+    crLaneFreqs = window.RD_Lanes.defaultFreqs(4);
     crAdvOpen   = false;
     crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
   }
@@ -4639,12 +4708,12 @@ document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.addEventListene
 
 function moveCursor(d) {
   crCursor = Math.max(0, crCursor + d);
-  while (crCursor >= crGrid.length) crGrid.push([null, null, null, null]);
+  while (crCursor >= crGrid.length) crGrid.push(crEmptyRow());
   buildGrid();
 }
 function typeNoteAtCursor(lane) {
-  if (lane < 0 || lane > 3) return;
-  while (crCursor >= crGrid.length) crGrid.push([null, null, null, null]);
+  if (lane < 0 || lane >= crLanes) return;
+  while (crCursor >= crGrid.length) crGrid.push(crEmptyRow());
   if (cellType(crGrid[crCursor][lane])) {
     crGrid[crCursor][lane] = null;
   } else {
@@ -4693,8 +4762,8 @@ function selPaste() {
   const next = new Set();
   crClip.forEach(it => {
     const r = anchorR + it.dr, c = anchorC + it.dc;
-    if (c < 0 || c > 3) return;
-    while (r >= crGrid.length) crGrid.push([null, null, null, null]);
+    if (c < 0 || c >= crLanes) return;
+    while (r >= crGrid.length) crGrid.push(crEmptyRow());
     crGrid[r][c] = { ...it.cell };
     next.add(selKey(r, c));
   });
@@ -4710,7 +4779,7 @@ function selMove(dr, dc) {
   crSel.forEach(k => {
     const [r, c] = parseKey(k);
     const nr = r + dr, nc = c + dc;
-    if (nc < 0 || nc > 3 || nr < 0) inRange = false;
+    if (nc < 0 || nc >= crLanes || nr < 0) inRange = false;
     moves.push({ r, c, nr, nc });
   });
   if (!inRange) return;
@@ -4718,7 +4787,7 @@ function selMove(dr, dc) {
   moves.forEach(m => { crGrid[m.r][m.c] = null; });
   const next = new Set();
   picked.forEach(p => {
-    while (p.nr >= crGrid.length) crGrid.push([null, null, null, null]);
+    while (p.nr >= crGrid.length) crGrid.push(crEmptyRow());
     crGrid[p.nr][p.nc] = p.cell;
     next.add(selKey(p.nr, p.nc));
   });
@@ -4775,7 +4844,7 @@ const ADV_PANEL_W = 360;
 const ADV_PANEL_MIN = 170;
 
 function openAdvPanel() {
-  const room = Math.max(0, getMaxDims().maxW - currentSettings.width);
+  const room = Math.max(0, getMaxDims().maxW - currentSettings.width - laneExpansion);
   const grow = Math.min(ADV_PANEL_W, room);
   if (grow >= ADV_PANEL_MIN) {
     advExpansion = grow;
@@ -4827,9 +4896,10 @@ function buildGrid() {
   const adv = crAdvOpen;
   const g   = document.getElementById('cr-grid');
   g.innerHTML = '';
+  g.style.setProperty('--cr-lanes', crLanes);
 
   const blank = document.createElement('div'); g.appendChild(blank);
-  const headerKeys = currentSettings.keys.map(code => code.startsWith('Key') ? code.slice(3) : keyCodeLabel(code));
+  const headerKeys = keysFor(crLanes).map(keyCodeLabel);
   headerKeys.forEach(k => {
     const h = document.createElement('div');
     h.style.cssText = 'text-align:center;font-size:10px;font-weight:700;color:var(--tap);padding:2px 0;font-family:var(--font-data)';
@@ -4995,9 +5065,15 @@ let crGenBand = '3-6';
 function generateIntoGrid(band) {
   const lvl = generateLevel(band || crGenBand);
   if (!lvl || !lvl.grid) { showToast('Could not generate', true); return; }
-  crGrid = lvl.grid.map(r => r.map(c => (c ? { ...c } : null)));
-  while (crGrid.length < 8) crGrid.push([null, null, null, null]);
-  crLaneFreqs = lvl.laneFreqs ? [...lvl.laneFreqs] : [261.63, 329.63, 392.00, 523.25];
+  crGrid = lvl.grid.map(r => {
+    const row = r.map(c => (c ? { ...c } : null));
+    while (row.length < crLanes) row.push(null);
+    return row.slice(0, crLanes);
+  });
+  while (crGrid.length < 8) crGrid.push(crEmptyRow());
+  const genFreqs = lvl.laneFreqs ? [...lvl.laneFreqs] : window.RD_Lanes.defaultFreqs(4);
+  while (genFreqs.length < crLanes) genFreqs.push(window.RD_Lanes.defaultFreqs(crLanes)[genFreqs.length]);
+  crLaneFreqs = genFreqs.slice(0, crLanes);
   crBgMode = lvl.bgMode || 'none';
   const nameEl = document.getElementById('cr-name');
   const bpmEl  = document.getElementById('cr-bpm');
@@ -5036,7 +5112,7 @@ function generateIntoGrid(band) {
 })();
 
 document.getElementById('cr-add-rows').addEventListener('click', () => {
-  for (let i = 0; i < 4; i++) crGrid.push([null,null,null,null]);
+  for (let i = 0; i < 4; i++) crGrid.push(crEmptyRow());
   buildGrid();
 });
 
@@ -5051,6 +5127,7 @@ document.getElementById('cr-save').addEventListener('click', () => {
   const bassPattern = crBassSteps.map(s => s.active ? s.freq : 0);
   const lvl = {
     id: 'c' + Date.now(), name, bpm, diff,
+    lanes:       crLanes,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
     laneFreqs:   [...crLaneFreqs],
@@ -5075,6 +5152,7 @@ function autoSave() {
   const bassPattern = crBassSteps.map(s => s.active ? s.freq : 0);
   const lvl = {
     id: 'c' + Date.now(), name, bpm, diff,
+    lanes:       crLanes,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
     laneFreqs:   [...crLaneFreqs],
@@ -5088,7 +5166,46 @@ function autoSave() {
 
 let crDefaultSustain = 0;
 
+function setCreatorLanes(n) {
+  n = window.RD_Lanes.clamp(n);
+  if (n === crLanes) return;
+  if (n < crLanes) {
+    let lost = 0;
+    crGrid.forEach(row => { for (let c = n; c < crLanes; c++) if (row[c]) lost++; });
+    if (lost && !confirm(lost + ' note' + (lost === 1 ? '' : 's') + ' in the lanes being removed will be deleted. Continue?')) {
+      buildLaneCountControl();
+      return;
+    }
+  }
+  const defs = window.RD_Lanes.defaultFreqs(n);
+  const was = window.RD_Lanes.defaultFreqs(crLanes);
+  const pristine = crLaneFreqs.length === was.length && crLaneFreqs.every((f, c) => Math.abs(f - was[c]) < 0.01);
+  const freqs = [];
+  for (let c = 0; c < n; c++) freqs.push(pristine || c >= crLanes ? defs[c] : crLaneFreqs[c]);
+  crGrid = crGrid.map(row => {
+    const next = row.slice(0, n);
+    while (next.length < n) next.push(null);
+    return next;
+  });
+  crLaneFreqs = freqs;
+  crLanes = n;
+  crSel.clear();
+  crCursor = Math.min(crCursor, crGrid.length - 1);
+  syncLaneExpansion('creator');
+  buildAdvPanel();
+  buildGrid();
+  if (editIdx !== null) autoSave();
+}
+
+function buildLaneCountControl() {
+  document.querySelectorAll('#cr-lane-count .bg-radio-btn').forEach(b => {
+    b.classList.toggle('sel', +b.dataset.lanes === crLanes);
+    b.onclick = () => setCreatorLanes(+b.dataset.lanes);
+  });
+}
+
 function buildAdvPanel() {
+  buildLaneCountControl();
   buildLaneNoteGrid();
   buildBgRadio();
   buildBassEditor();
@@ -5150,7 +5267,7 @@ function buildAdvSustainControl() {
 function buildLaneNoteGrid() {
   const g = document.getElementById('lane-note-grid');
   g.innerHTML = '';
-  const keys = currentSettings.keys.map(code => code.startsWith('Key') ? code.slice(3) : keyCodeLabel(code));
+  const keys = keysFor(crLanes).map(keyCodeLabel);
   keys.forEach((k, i) => {
     const row = document.createElement('div');
     row.style.cssText = 'display:grid;grid-template-columns:20px 1fr;gap:4px;align-items:center;margin-bottom:4px;';
@@ -5194,11 +5311,11 @@ function buildLaneNoteGrid() {
 }
 
 function buildBgRadio() {
-  document.querySelectorAll('.bg-radio-btn').forEach(b => {
+  document.querySelectorAll('.bg-radio-btn[data-bg]').forEach(b => {
     b.classList.toggle('sel', b.dataset.bg === crBgMode);
     b.onclick = () => {
       crBgMode = b.dataset.bg;
-      document.querySelectorAll('.bg-radio-btn').forEach(x => x.classList.remove('sel'));
+      document.querySelectorAll('.bg-radio-btn[data-bg]').forEach(x => x.classList.remove('sel'));
       b.classList.add('sel');
       const bassEl = document.getElementById('bass-editor');
       bassEl.classList.toggle('open', crBgMode === 'bass');
@@ -5287,16 +5404,17 @@ let baseBeatMs = 500, currentBeatMs = 500;
 let speedMult = 1, gameTimeMs = 0;
 let doubleMode = false;
 let runSpeedBase = 1;
+let laneCount = 4;
 let fbTimers  = [0,0,0,0];
-let lastTapT  = {0:0,1:0,2:0,3:0};
+let lastTapT  = [0,0,0,0];
 let chaosMode = false;
 const CHAOS_LETTERS = 'ABCDEFGHIJKLMNOPSTUVWXYZ'.split('');
 let equippedTrailColor = null;
 const STREAK_TRAIL_AT = 100;
 
-const laneEls = [0,1,2,3].map(i => document.getElementById('lane'+i));
-const btnEls  = [0,1,2,3].map(i => document.getElementById('btn'+i));
-const fbEls   = [0,1,2,3].map(i => document.getElementById('fb'+i));
+let laneEls = [0,1,2,3].map(i => document.getElementById('lane'+i));
+let btnEls  = [0,1,2,3].map(i => document.getElementById('btn'+i));
+let fbEls   = [0,1,2,3].map(i => document.getElementById('fb'+i));
 const scoreEl = document.getElementById('g-score');
 const comboEl = document.getElementById('g-combo');
 const livesEl = document.getElementById('g-lives');
@@ -5308,11 +5426,37 @@ const ovBtn   = document.getElementById('ov-btn');
 const lvlName = document.getElementById('g-lvlname');
 const spdBadge= document.getElementById('speed-badge');
 
+function buildLanes(n) {
+  n = window.RD_Lanes.clamp(n);
+  const host = document.getElementById('g-lanes');
+  host.dataset.lanes = n;
+  if (n !== laneCount || laneEls.length !== n || !document.getElementById('lane0')) {
+    host.innerHTML = '';
+    for (let i = 0; i < n; i++) {
+      const lane = document.createElement('div');
+      lane.className = 'lane';
+      lane.dataset.lane = i;
+      lane.id = 'lane' + i;
+      lane.innerHTML = '<div class="lane-hitglow"></div><div class="lane-hitbar"></div>'
+        + '<div class="lane-fb" id="fb' + i + '"></div>'
+        + '<div class="lane-btn" id="btn' + i + '"><span class="lane-key"></span></div>';
+      host.appendChild(lane);
+    }
+    laneCount = n;
+    laneEls = Array.from(host.children);
+    btnEls  = laneEls.map(l => l.querySelector('.lane-btn'));
+    fbEls   = laneEls.map(l => l.querySelector('.lane-fb'));
+    fbTimers = new Array(n).fill(0);
+    lastTapT = new Array(n).fill(0);
+  }
+  if (typeof applySettingsToDOM === 'function') applySettingsToDOM();
+}
+
 function laneH() { return laneEls[0].clientHeight || 380; }
 function hitY()  { return laneH() - HIT_BOTTOM; }
 
 function buildQueue(lvl) {
-  const fallbackFreqs = lvl.laneFreqs || [261.63,329.63,392.00,523.25];
+  const fallbackFreqs = lvl.laneFreqs || window.RD_Lanes.defaultFreqs(window.RD_Lanes.laneCountOf(lvl));
   const songInst = lvl.instrument || null;
   if (lvl.grid) {
     const q = [];
@@ -5369,6 +5513,7 @@ function spawnTile(note) {
 
 function launchLevel(lvl, asDouble) {
   gameLevel = lvl;
+  buildLanes(window.RD_Lanes.laneCountOf(lvl));
   doubleMode = !!asDouble;
   lvlName.textContent = lvl.name + (asDouble ? '  ·  DOUBLE' : '');
   baseBeatMs = Math.round(60000 / lvl.bpm);
@@ -5435,6 +5580,7 @@ function saveGenerated(lvl) {
     grid: lvl.grid.map(r => r.map(c => c ? { ...c } : null)),
     bgMode: lvl.bgMode || 'none',
     laneFreqs: lvl.laneFreqs ? [...lvl.laneFreqs] : undefined,
+    lanes: window.RD_Lanes.laneCountOf(lvl),
     bassPattern: lvl.bassPattern || [],
     generated: true, shareCode: lvl.shareCode || null,
   });
@@ -5443,6 +5589,7 @@ function saveGenerated(lvl) {
 }
 
 function startGame() {
+  if (typeof releaseAllLanes === 'function') releaseAllLanes();
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   maxLives = currentSettings.lives || 3;
   lifeScoreMult = maxLives < 3 ? 1 + 0.20 * (3 - maxLives)
@@ -5453,7 +5600,7 @@ function startGame() {
   runSpeedBase = doubleMode ? 2 : 1;
   speedMult = runSpeedBase;
   currentBeatMs = Math.round(baseBeatMs / speedMult);
-  fbTimers = [0,0,0,0]; lastTapT = {0:0,1:0,2:0,3:0};
+  fbTimers = new Array(laneCount).fill(0); lastTapT = new Array(laneCount).fill(0);
   gameQueue = buildQueue(gameLevel);
   notesHit = 0; notesTotal = gameQueue.length;
   scoreEl.textContent = '0'; comboEl.textContent = '×1'; comboEl.style.color = 'var(--tap)';
@@ -5465,7 +5612,7 @@ function startGame() {
   equippedTrailColor = _tr ? _tr.color : null;
 
   if (window.RD_setLaneFreqs && gameLevel.laneFreqs) window.RD_setLaneFreqs(gameLevel.laneFreqs);
-  else if (window.RD_setLaneFreqs) window.RD_setLaneFreqs([261.63,329.63,392.00,523.25]);
+  else if (window.RD_setLaneFreqs) window.RD_setLaneFreqs(window.RD_Lanes.defaultFreqs(laneCount));
 
   const bgM = gameLevel.bgMode || 'none';
   const bp  = gameLevel.bassPattern || [];
@@ -5514,7 +5661,7 @@ function loop(now) {
     }
   }
 
-  for (let i = 0; i < 4; i++) {
+  for (let i = 0; i < laneCount; i++) {
     if (fbTimers[i] > 0) { fbTimers[i] -= dt; if (fbTimers[i] <= 0) fbEls[i].classList.remove('show'); }
   }
   raf = requestAnimationFrame(loop);
@@ -5652,6 +5799,7 @@ function showFb(lane, text, color) {
 }
 
 function endGame(won) {
+  if (typeof releaseAllLanes === 'function') releaseAllLanes();
   running = false; cancelAnimationFrame(raf);
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   if (window.RD_stopBg) window.RD_stopBg();
@@ -5784,6 +5932,7 @@ function syncGeneratedKeepBtn(show) {
 }
 
 function quitToMenu() {
+  if (typeof releaseAllLanes === 'function') releaseAllLanes();
   running = false; cancelAnimationFrame(raf);
   activeTiles.forEach(t => t.el.remove()); activeTiles = [];
   if (window.RD_stopBg) window.RD_stopBg();
@@ -5795,6 +5944,7 @@ function quitToMenu() {
 </script>
 <script data-from="game.js">
 let advExpansion = 0;
+let laneExpansion = 0;
 
 const store = {
   load:             ()  => { try { return JSON.parse(localStorage.getItem('rd_levels')||'[]'); } catch { return []; } },
@@ -6066,7 +6216,17 @@ function showToast(msg, isErr) {
   t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2400);
 }
 
+function syncLaneExpansion(id) {
+  const n = id === 'game' ? laneCount : id === 'creator' ? crLanes : 4;
+  const want = Math.min(window.RD_Lanes.minWidth(n), getMaxDims().maxW);
+  const next = Math.max(0, want - currentSettings.width);
+  if (next === laneExpansion) return;
+  laneExpansion = next;
+  applySettingsToDOM();
+}
+
 const showScreen = id => {
+  syncLaneExpansion(id);
   if (id !== 'creator' && advExpansion) {
     crAdvOpen = false;
     const ap = document.getElementById('adv-panel');
@@ -6833,6 +6993,7 @@ const KEY_CODE_LABELS = [
   'Digit0','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9',
   'ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
   'Space','Enter','ShiftLeft','ShiftRight','ControlLeft','AltLeft',
+  'Semicolon','Quote','Comma','Period','Slash','BracketLeft','BracketRight',
 ];
 function keyCodeLabel(code) {
   if (code.startsWith('Key'))   return code.slice(3);
@@ -6847,7 +7008,8 @@ function keyCodeLabel(code) {
   if (code === 'ShiftRight')    return 'SHR';
   if (code === 'ControlLeft')   return 'CTL';
   if (code === 'AltLeft')       return 'ALT';
-  return code;
+  const PUNCT = { Semicolon:';', Quote:"'", Comma:',', Period:'.', Slash:'/', BracketLeft:'[', BracketRight:']' };
+  return PUNCT[code] || code;
 }
 
 let settingsSubTab = 'controls';
@@ -6893,8 +7055,21 @@ function _settingsSliderRow(panel, label, min, max, step, value, unit, onChange,
 function buildSettingsControls(panel) {
   const s = currentSettings;
   panel.appendChild(_settingsSectionHead('Lane Keys'));
-  const laneNames = ['Lane 1', 'Lane 2', 'Lane 3', 'Lane 4'];
-  laneNames.forEach((name, i) => {
+  const countRow = document.createElement('div');
+  countRow.style.cssText = 'display:flex;gap:6px;margin-bottom:10px;';
+  window.RD_Lanes.COUNTS.forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'lane-count-btn' + (n === settingsLaneCount ? ' sel' : '');
+    b.dataset.lanes = n;
+    b.textContent = n + ' lanes';
+    b.style.cssText = 'flex:1;padding:7px 4px;border-radius:8px;font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;border:1px solid ' + (n === settingsLaneCount ? 'var(--tap)' : 'var(--border2)') + ';background:' + (n === settingsLaneCount ? 'var(--bg3)' : 'none') + ';color:' + (n === settingsLaneCount ? 'var(--tap)' : 'var(--muted)') + ';';
+    b.addEventListener('click', () => { settingsLaneCount = n; buildSettingsPanel(); });
+    countRow.appendChild(b);
+  });
+  panel.appendChild(countRow);
+  const rowKeys = keysFor(settingsLaneCount);
+  rowKeys.forEach((_, i) => {
+    const name = 'Lane ' + (i + 1);
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:6px;';
     const lbl = document.createElement('div');
@@ -6905,17 +7080,38 @@ function buildSettingsControls(panel) {
     KEY_CODE_LABELS.forEach(code => {
       const opt = document.createElement('option');
       opt.value = code; opt.textContent = keyCodeLabel(code);
-      if (code === s.keys[i]) opt.selected = true;
+      if (code === rowKeys[i]) opt.selected = true;
       sel.appendChild(opt);
     });
     sel.addEventListener('change', () => {
-      currentSettings.keys[i] = sel.value;
+      assignLaneKey(settingsLaneCount, i, sel.value);
       store.saveSettings(currentSettings);
       applySettingsToDOM();
+      buildSettingsPanel();
     });
     row.appendChild(lbl); row.appendChild(sel);
     panel.appendChild(row);
   });
+}
+
+let settingsLaneCount = 4;
+
+function keysFor(n) {
+  n = window.RD_Lanes.clamp(n);
+  return n === 4 ? currentSettings.keys : currentSettings['keys' + n];
+}
+
+function assignLaneKey(n, lane, code) {
+  const row = keysFor(n);
+  const clash = row.indexOf(code);
+  if (clash >= 0 && clash !== lane) row[clash] = row[lane];
+  row[lane] = code;
+}
+
+function validKeyRow(row, n) {
+  return Array.isArray(row) && row.length === n
+    && row.every(k => typeof k === 'string' && k)
+    && new Set(row).size === n;
 }
 
 const POPUP_MAX_W = 800;
@@ -6936,7 +7132,7 @@ function getMaxDims() {
 }
 
 function appliedWidth() {
-  return Math.min(getMaxDims().maxW, currentSettings.width + advExpansion);
+  return Math.min(getMaxDims().maxW, currentSettings.width + advExpansion + laneExpansion);
 }
 
 let _pendingSize = null;
@@ -7184,7 +7380,7 @@ function buildSettingsPanel() {
   resetBtn.onmouseenter = () => { resetBtn.style.borderColor='var(--miss)'; resetBtn.style.color='var(--miss)'; };
   resetBtn.onmouseleave = () => { resetBtn.style.borderColor='var(--border2)'; resetBtn.style.color='var(--muted)'; };
   resetBtn.addEventListener('click', () => {
-    currentSettings = Object.assign({}, DEFAULT_SETTINGS, { keys: [...DEFAULT_SETTINGS.keys] });
+    currentSettings = freshSettings();
     store.saveSettings(currentSettings);
     applySettingsToDOM();
     if (window.RD_setVolume) window.RD_setVolume(currentSettings.masterVol);
@@ -7201,7 +7397,9 @@ const GFX_STYLES = [
 ];
 
 const DEFAULT_SETTINGS = {
-  keys: ['KeyA', 'KeyS', 'KeyD', 'KeyF'],
+  keys: window.RD_Lanes.defaultKeys(4),
+  keys6: window.RD_Lanes.defaultKeys(6),
+  keys8: window.RD_Lanes.defaultKeys(8),
   gfx: 'modern',
   songVoices: true,
   hitWindow: 'normal',
@@ -7214,12 +7412,22 @@ const DEFAULT_SETTINGS = {
   musicVol: 1,
 };
 
-let currentSettings = Object.assign({}, DEFAULT_SETTINGS);
+function freshSettings() {
+  return Object.assign({}, DEFAULT_SETTINGS, {
+    keys: [...DEFAULT_SETTINGS.keys],
+    keys6: [...DEFAULT_SETTINGS.keys6],
+    keys8: [...DEFAULT_SETTINGS.keys8],
+  });
+}
+
+let currentSettings = freshSettings();
 
 function loadAndApplySettings() {
   const saved = store.loadSettings();
   if (saved) {
-    if (saved.keys && saved.keys.length === 4) currentSettings.keys = saved.keys;
+    if (validKeyRow(saved.keys, 4)) currentSettings.keys = saved.keys;
+    if (validKeyRow(saved.keys6, 6)) currentSettings.keys6 = saved.keys6;
+    if (validKeyRow(saved.keys8, 8)) currentSettings.keys8 = saved.keys8;
     if (saved.width)      currentSettings.width      = saved.width;
     if (saved.height)     currentSettings.height     = saved.height;
     if (saved.lives)      currentSettings.lives      = saved.lives;
@@ -7249,7 +7457,7 @@ let _resizeSaveTimer = null;
 function observeManualResize() {
   if (!window.ResizeObserver) return;
   const ro = new ResizeObserver(() => {
-    const w = Math.round(document.documentElement.offsetWidth) - advExpansion;
+    const w = Math.round(document.documentElement.offsetWidth) - advExpansion - laneExpansion;
     const h = Math.round(document.documentElement.offsetHeight);
     let changed = false;
     if (w !== currentSettings.width)  { currentSettings.width  = w; changed = true; }
@@ -7275,25 +7483,58 @@ function applySettingsToDOM() {
   root.style.height = currentSettings.height + 'px';
   document.body.classList.toggle('gfx-modern', currentSettings.gfx !== 'classic');
   document.body.style.zoom = currentSettings.uiScale || 1;
-  const keyLabels = ['A','S','D','F'];
-  currentSettings.keys.forEach((code, i) => {
-    const label = code.startsWith('Key') ? code.slice(3) : code;
+  const laneKeys = keysFor(laneCount);
+  laneKeys.forEach((code, i) => {
     const el = document.querySelector(`#btn${i} .lane-key`);
-    if (el) el.textContent = label;
-    keyLabels[i] = label;
+    if (el) el.textContent = keyCodeLabel(code);
   });
-  const ovKeys = document.querySelectorAll('.ov-key');
-  currentSettings.keys.forEach((code, i) => {
-    const label = code.startsWith('Key') ? code.slice(3) : code;
-    if (ovKeys[i]) ovKeys[i].textContent = label;
-  });
-  const crHeaders = document.querySelectorAll('#cr-grid > div:not(.cr-row-num)');
+  const ovHost = document.querySelector('.ov-keys');
+  if (ovHost) {
+    const labels = laneKeys.map(keyCodeLabel);
+    const have = [...ovHost.children].map(c => c.textContent);
+    if (have.join() !== labels.join()) {
+      ovHost.innerHTML = '';
+      labels.forEach(l => {
+        const d = document.createElement('div');
+        d.className = 'ov-key';
+        d.textContent = l;
+        ovHost.appendChild(d);
+      });
+    }
+  }
+}
+
+function activeLaneCount() {
+  return typeof creatorActive === 'function' && creatorActive() ? crLanes : laneCount;
 }
 
 function buildKeyMap() {
   const map = {};
-  currentSettings.keys.forEach((code, i) => { map[code] = i; });
+  keysFor(activeLaneCount()).forEach((code, i) => { map[code] = i; });
   return map;
+}
+
+const laneSources = [];
+function pressLane(lane, src) {
+  const set = laneSources[lane] || (laneSources[lane] = new Set());
+  if (set.has(src)) return;
+  const first = set.size === 0;
+  set.add(src);
+  if (!first) return;
+  if (running) tapLane(lane);
+  else if (window.RD_playNote) window.RD_playNote(lane, false, crLaneFreqs[lane] || window.RD_Lanes.defaultFreqs(activeLaneCount())[lane]);
+}
+function releaseLane(lane, src) {
+  const set = laneSources[lane];
+  if (!set || !set.delete(src)) return;
+  if (set.size === 0 && typeof onLaneRelease === 'function') onLaneRelease(lane);
+}
+function releaseAllLanes() {
+  laneSources.forEach((set, lane) => {
+    if (!set || !set.size) return;
+    set.clear();
+    if (typeof onLaneRelease === 'function') onLaneRelease(lane);
+  });
 }
 
 document.addEventListener('keydown', e => {
@@ -7317,15 +7558,7 @@ document.addEventListener('keydown', e => {
 
   if (e.code in KEY_MAP) {
     e.preventDefault();
-    const lane = KEY_MAP[e.code];
-    if (running) {
-      tapLane(lane);
-    } else {
-      if (window.RD_playNote) {
-        const freq = crLaneFreqs[lane] || [261.63,329.63,392.00,523.25][lane];
-        window.RD_playNote(lane, false, freq);
-      }
-    }
+    pressLane(KEY_MAP[e.code], 'k' + e.code);
     return;
   }
 
@@ -7333,10 +7566,34 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyQ') quitToMenu();
 });
 
-btnEls.forEach((el, i) => {
-  el.addEventListener('click',      ()  => tapLane(i));
-  el.addEventListener('touchstart', ev => { ev.preventDefault(); tapLane(i); });
+document.addEventListener('keyup', e => {
+  const map = buildKeyMap();
+  if (e.code in map) releaseLane(map[e.code], 'k' + e.code);
 });
+window.addEventListener('blur', releaseAllLanes);
+
+(function wireLanePointers() {
+  const host = document.getElementById('g-lanes');
+  const down = new Map();
+  host.addEventListener('pointerdown', ev => {
+    const ln = ev.target.closest && ev.target.closest('.lane');
+    if (!ln || ln.dataset.lane === undefined) return;
+    ev.preventDefault();
+    const lane = +ln.dataset.lane;
+    try { host.setPointerCapture(ev.pointerId); } catch (_) {}
+    down.set(ev.pointerId, lane);
+    pressLane(lane, 'p' + ev.pointerId);
+  });
+  const up = ev => {
+    const lane = down.get(ev.pointerId);
+    if (lane === undefined) return;
+    down.delete(ev.pointerId);
+    releaseLane(lane, 'p' + ev.pointerId);
+  };
+  host.addEventListener('pointerup', up);
+  host.addEventListener('pointercancel', up);
+  host.addEventListener('lostpointercapture', up);
+})();
 
 const pbarAvatar = document.getElementById('pbar-avatar');
 if (pbarAvatar) {

@@ -3,7 +3,7 @@
 </p>
 
 <h1 align="center">RhythmDrop</h1>
-<p align="center"><i>Four lanes. One song at a time.</i></p>
+<p align="center"><i>Four, six or eight lanes. One song at a time.</i></p>
 
 <p align="center">
   A tap-to-the-beat rhythm game, built as a Chrome extension — a 150-song campaign across ten
@@ -32,7 +32,7 @@
 
 ## What it is
 
-Hit **A · S · D · F** as slabs cross the strike line. Tap once for a single note, twice for the bordered ×2 slabs. That's the whole input model — everything else is depth: a 150-level campaign, a chord-aware music generator, a chart editor, and a full customization economy sitting on top of it.
+Hit **A · S · D · F** as slabs cross the strike line (the creator also makes 6-lane levels on **A S D F G H** and 8-lane levels on **A S D F G H J K**, all remappable). Tap once for a single note, twice for the bordered ×2 slabs. That's the whole input model — everything else is depth: a 150-level campaign, a chord-aware music generator, a chart editor, and a full customization economy sitting on top of it.
 
 - **Campaign** — 10 areas × 15 levels, **shipped as data rather than generated at boot**. The songs were composed once by a deterministic generator and baked into `levels.js`; the generator is kept as a build tool, so the campaign can be regenerated deliberately but never rewrites itself under you. Areas: Farmstead, Egypt, Greece, Rome, Aztec, Maya, Old England, Napoleonic, Modern, Retro-Future — each with its own scale, instrument and rhythmic character, so Egypt's double-harmonic scale sounds nothing like Farmstead's folk pentatonic. Each area also has its own hand-drawn pixel emblem — a wheat bundle for Farmstead, a pyramid for Egypt, a ship for Old England — shown on its tab and beside its name. Melody moves in phrases with real cadences and chords stack in actual thirds: 8,658 simultaneous chords across the 150 charts and not one minor second. A row is never a mix — a tap and a ×2 slab don't share a line, in the campaign or in anything generated.
 - **Progression** — songs unlock in order and areas unlock behind them, XP is keyed off note count and tempo, every level keeps its own record, and a seven-day daily lapses if you miss a day. Clearing every song in an area also earns that area's own theme.
@@ -64,13 +64,14 @@ RhythmDropV8.zip            the game, zipped — hand this to someone
 htmls/
   RhythmDrop.html             the whole game as one file — generated
 
-tests/                      38 suites — 13 for V8, 25 for V7
+tests/                      39 suites — 14 for V8, 25 for V7
 
 RhythmDrop/
   RhythmDropV8/               the source — load this as an unpacked extension
     popup.html                  markup, styling, the theme system
     game.js                     screens, input, scoring, campaign UI, shop, creator
     campaign.js                 unlocks, XP, coins, records, dailies
+    lanes.js                    lane counts 4/6/8: default pitches, default keys, helpers
     levels.js                   the 150 songs, baked — generated, not hand-edited
     rowtypes.js                 one kind of note per row; shared by the game and the baker
     audio.js                    12 synthesized instruments, limiter, backing layer
@@ -98,7 +99,7 @@ Never hand-edit anything in `htmls/`, any `.zip`, or `RhythmDrop/RhythmDropV8/le
 cd tests && npm install && node run-all.js
 ```
 
-Thirty-eight harnesses. Thirteen cover V8 — the baked campaign against the build that plays it, the progression rules, every instrument rendered and measured through an OfflineAudioContext, the graphics layer, generation and its one-type-per-row rule, the campaign themes and their unlocks, and real-Chromium passes over the layout, gameplay and whole runs. The other twenty-five are V7's, unchanged, still green against `RhythmDrop/v7/`.
+Thirty-nine harnesses. Fourteen cover V8 — the baked campaign against the build that plays it, the progression rules, every instrument rendered and measured through an OfflineAudioContext, the graphics layer, generation and its one-type-per-row rule, the 4/6/8 lane boards, the campaign themes and their unlocks, and real-Chromium passes over the layout, gameplay and whole runs. The other twenty-five are V7's, unchanged, still green against `RhythmDrop/v7/`.
 
 Eight suites drive a real browser rather than jsdom, because jsdom has no layout engine or audio engine and structurally cannot catch a layout or a silence bug — those are the ones that found the strike line sitting 12–19px off the bar it was drawn on, the campaign list collapsing to a 39px viewport, and the master bus peaking a third past full scale on a seven-note chord.
 

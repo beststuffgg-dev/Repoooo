@@ -15,7 +15,9 @@ let crGrid     = [];
 let crTool     = 'tap';
 let crAdvOpen  = false;
 let crBgMode   = 'none';
+let crLanes = 4;
 let crLaneFreqs = [261.63,329.63,392.00,523.25];
+const crEmptyRow = () => window.RD_Lanes.emptyRow(crLanes);
 let crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
 let _bassPickerFreq = 65.41;
 
@@ -40,25 +42,31 @@ function openCreator(idx) {
     document.getElementById('cr-name').value = l.name || '';
     document.getElementById('cr-bpm').value  = l.bpm  || 120;
     document.getElementById('cr-diff').value = l.diff || 'medium';
-    crGrid = l.grid.map(r => r.map(cell => {
-      if (!cell) return null;
-      if (typeof cell === 'string') return { type: cell, freq: null };
-      return { ...cell };
-    }));
+    crLanes = window.RD_Lanes.laneCountOf(l);
+    crGrid = l.grid.map(r => {
+      const row = r.map(cell => {
+        if (!cell) return null;
+        if (typeof cell === 'string') return { type: cell, freq: null };
+        return { ...cell };
+      });
+      while (row.length < crLanes) row.push(null);
+      return row;
+    });
     crBgMode    = l.bgMode    || 'none';
-    crLaneFreqs = l.laneFreqs ? [...l.laneFreqs] : [261.63,329.63,392.00,523.25];
+    crLaneFreqs = l.laneFreqs ? [...l.laneFreqs] : window.RD_Lanes.defaultFreqs(crLanes);
     crAdvOpen   = false;
     crBassSteps = l.bassSteps
       ? l.bassSteps.map(s => ({ ...s }))
       : [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
-    while (crGrid.length < 8) crGrid.push([null,null,null,null]);
+    while (crGrid.length < 8) crGrid.push(crEmptyRow());
   } else {
     document.getElementById('cr-name').value = '';
     document.getElementById('cr-bpm').value  = 120;
     document.getElementById('cr-diff').value = 'medium';
-    crGrid      = Array.from({ length:16 }, () => [null,null,null,null]);
+    crLanes     = 4;
+    crGrid      = Array.from({ length:16 }, () => crEmptyRow());
     crBgMode    = 'none';
-    crLaneFreqs = [261.63,329.63,392.00,523.25];
+    crLaneFreqs = window.RD_Lanes.defaultFreqs(4);
     crAdvOpen   = false;
     crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
   }
@@ -99,12 +107,12 @@ document.querySelectorAll('.tool-btn[data-tool]').forEach(b => b.addEventListene
 
 function moveCursor(d) {
   crCursor = Math.max(0, crCursor + d);
-  while (crCursor >= crGrid.length) crGrid.push([null, null, null, null]);
+  while (crCursor >= crGrid.length) crGrid.push(crEmptyRow());
   buildGrid();
 }
 function typeNoteAtCursor(lane) {
-  if (lane < 0 || lane > 3) return;
-  while (crCursor >= crGrid.length) crGrid.push([null, null, null, null]);
+  if (lane < 0 || lane >= crLanes) return;
+  while (crCursor >= crGrid.length) crGrid.push(crEmptyRow());
   if (cellType(crGrid[crCursor][lane])) {
     crGrid[crCursor][lane] = null;
   } else {
@@ -153,8 +161,8 @@ function selPaste() {
   const next = new Set();
   crClip.forEach(it => {
     const r = anchorR + it.dr, c = anchorC + it.dc;
-    if (c < 0 || c > 3) return;
-    while (r >= crGrid.length) crGrid.push([null, null, null, null]);
+    if (c < 0 || c >= crLanes) return;
+    while (r >= crGrid.length) crGrid.push(crEmptyRow());
     crGrid[r][c] = { ...it.cell };
     next.add(selKey(r, c));
   });
@@ -170,7 +178,7 @@ function selMove(dr, dc) {
   crSel.forEach(k => {
     const [r, c] = parseKey(k);
     const nr = r + dr, nc = c + dc;
-    if (nc < 0 || nc > 3 || nr < 0) inRange = false;
+    if (nc < 0 || nc >= crLanes || nr < 0) inRange = false;
     moves.push({ r, c, nr, nc });
   });
   if (!inRange) return;
@@ -178,7 +186,7 @@ function selMove(dr, dc) {
   moves.forEach(m => { crGrid[m.r][m.c] = null; });
   const next = new Set();
   picked.forEach(p => {
-    while (p.nr >= crGrid.length) crGrid.push([null, null, null, null]);
+    while (p.nr >= crGrid.length) crGrid.push(crEmptyRow());
     crGrid[p.nr][p.nc] = p.cell;
     next.add(selKey(p.nr, p.nc));
   });
@@ -235,7 +243,7 @@ const ADV_PANEL_W = 360;
 const ADV_PANEL_MIN = 170;
 
 function openAdvPanel() {
-  const room = Math.max(0, getMaxDims().maxW - currentSettings.width);
+  const room = Math.max(0, getMaxDims().maxW - currentSettings.width - laneExpansion);
   const grow = Math.min(ADV_PANEL_W, room);
   if (grow >= ADV_PANEL_MIN) {
     advExpansion = grow;
@@ -287,9 +295,10 @@ function buildGrid() {
   const adv = crAdvOpen;
   const g   = document.getElementById('cr-grid');
   g.innerHTML = '';
+  g.style.setProperty('--cr-lanes', crLanes);
 
   const blank = document.createElement('div'); g.appendChild(blank);
-  const headerKeys = currentSettings.keys.map(code => code.startsWith('Key') ? code.slice(3) : keyCodeLabel(code));
+  const headerKeys = keysFor(crLanes).map(keyCodeLabel);
   headerKeys.forEach(k => {
     const h = document.createElement('div');
     h.style.cssText = 'text-align:center;font-size:10px;font-weight:700;color:var(--tap);padding:2px 0;font-family:var(--font-data)';
@@ -455,9 +464,15 @@ let crGenBand = '3-6';
 function generateIntoGrid(band) {
   const lvl = generateLevel(band || crGenBand);
   if (!lvl || !lvl.grid) { showToast('Could not generate', true); return; }
-  crGrid = lvl.grid.map(r => r.map(c => (c ? { ...c } : null)));
-  while (crGrid.length < 8) crGrid.push([null, null, null, null]);
-  crLaneFreqs = lvl.laneFreqs ? [...lvl.laneFreqs] : [261.63, 329.63, 392.00, 523.25];
+  crGrid = lvl.grid.map(r => {
+    const row = r.map(c => (c ? { ...c } : null));
+    while (row.length < crLanes) row.push(null);
+    return row.slice(0, crLanes);
+  });
+  while (crGrid.length < 8) crGrid.push(crEmptyRow());
+  const genFreqs = lvl.laneFreqs ? [...lvl.laneFreqs] : window.RD_Lanes.defaultFreqs(4);
+  while (genFreqs.length < crLanes) genFreqs.push(window.RD_Lanes.defaultFreqs(crLanes)[genFreqs.length]);
+  crLaneFreqs = genFreqs.slice(0, crLanes);
   crBgMode = lvl.bgMode || 'none';
   const nameEl = document.getElementById('cr-name');
   const bpmEl  = document.getElementById('cr-bpm');
@@ -496,7 +511,7 @@ function generateIntoGrid(band) {
 })();
 
 document.getElementById('cr-add-rows').addEventListener('click', () => {
-  for (let i = 0; i < 4; i++) crGrid.push([null,null,null,null]);
+  for (let i = 0; i < 4; i++) crGrid.push(crEmptyRow());
   buildGrid();
 });
 
@@ -511,6 +526,7 @@ document.getElementById('cr-save').addEventListener('click', () => {
   const bassPattern = crBassSteps.map(s => s.active ? s.freq : 0);
   const lvl = {
     id: 'c' + Date.now(), name, bpm, diff,
+    lanes:       crLanes,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
     laneFreqs:   [...crLaneFreqs],
@@ -535,6 +551,7 @@ function autoSave() {
   const bassPattern = crBassSteps.map(s => s.active ? s.freq : 0);
   const lvl = {
     id: 'c' + Date.now(), name, bpm, diff,
+    lanes:       crLanes,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
     laneFreqs:   [...crLaneFreqs],
@@ -548,7 +565,46 @@ function autoSave() {
 
 let crDefaultSustain = 0;
 
+function setCreatorLanes(n) {
+  n = window.RD_Lanes.clamp(n);
+  if (n === crLanes) return;
+  if (n < crLanes) {
+    let lost = 0;
+    crGrid.forEach(row => { for (let c = n; c < crLanes; c++) if (row[c]) lost++; });
+    if (lost && !confirm(lost + ' note' + (lost === 1 ? '' : 's') + ' in the lanes being removed will be deleted. Continue?')) {
+      buildLaneCountControl();
+      return;
+    }
+  }
+  const defs = window.RD_Lanes.defaultFreqs(n);
+  const was = window.RD_Lanes.defaultFreqs(crLanes);
+  const pristine = crLaneFreqs.length === was.length && crLaneFreqs.every((f, c) => Math.abs(f - was[c]) < 0.01);
+  const freqs = [];
+  for (let c = 0; c < n; c++) freqs.push(pristine || c >= crLanes ? defs[c] : crLaneFreqs[c]);
+  crGrid = crGrid.map(row => {
+    const next = row.slice(0, n);
+    while (next.length < n) next.push(null);
+    return next;
+  });
+  crLaneFreqs = freqs;
+  crLanes = n;
+  crSel.clear();
+  crCursor = Math.min(crCursor, crGrid.length - 1);
+  syncLaneExpansion('creator');
+  buildAdvPanel();
+  buildGrid();
+  if (editIdx !== null) autoSave();
+}
+
+function buildLaneCountControl() {
+  document.querySelectorAll('#cr-lane-count .bg-radio-btn').forEach(b => {
+    b.classList.toggle('sel', +b.dataset.lanes === crLanes);
+    b.onclick = () => setCreatorLanes(+b.dataset.lanes);
+  });
+}
+
 function buildAdvPanel() {
+  buildLaneCountControl();
   buildLaneNoteGrid();
   buildBgRadio();
   buildBassEditor();
@@ -610,7 +666,7 @@ function buildAdvSustainControl() {
 function buildLaneNoteGrid() {
   const g = document.getElementById('lane-note-grid');
   g.innerHTML = '';
-  const keys = currentSettings.keys.map(code => code.startsWith('Key') ? code.slice(3) : keyCodeLabel(code));
+  const keys = keysFor(crLanes).map(keyCodeLabel);
   keys.forEach((k, i) => {
     const row = document.createElement('div');
     row.style.cssText = 'display:grid;grid-template-columns:20px 1fr;gap:4px;align-items:center;margin-bottom:4px;';
@@ -654,11 +710,11 @@ function buildLaneNoteGrid() {
 }
 
 function buildBgRadio() {
-  document.querySelectorAll('.bg-radio-btn').forEach(b => {
+  document.querySelectorAll('.bg-radio-btn[data-bg]').forEach(b => {
     b.classList.toggle('sel', b.dataset.bg === crBgMode);
     b.onclick = () => {
       crBgMode = b.dataset.bg;
-      document.querySelectorAll('.bg-radio-btn').forEach(x => x.classList.remove('sel'));
+      document.querySelectorAll('.bg-radio-btn[data-bg]').forEach(x => x.classList.remove('sel'));
       b.classList.add('sel');
       const bassEl = document.getElementById('bass-editor');
       bassEl.classList.toggle('open', crBgMode === 'bass');

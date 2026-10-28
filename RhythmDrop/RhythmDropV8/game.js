@@ -1,4 +1,5 @@
 let advExpansion = 0;
+let laneExpansion = 0;
 
 const store = {
   load:             ()  => { try { return JSON.parse(localStorage.getItem('rd_levels')||'[]'); } catch { return []; } },
@@ -270,7 +271,17 @@ function showToast(msg, isErr) {
   t._timer = setTimeout(() => { t.style.opacity = '0'; }, 2400);
 }
 
+function syncLaneExpansion(id) {
+  const n = id === 'game' ? laneCount : id === 'creator' ? crLanes : 4;
+  const want = Math.min(window.RD_Lanes.minWidth(n), getMaxDims().maxW);
+  const next = Math.max(0, want - currentSettings.width);
+  if (next === laneExpansion) return;
+  laneExpansion = next;
+  applySettingsToDOM();
+}
+
 const showScreen = id => {
+  syncLaneExpansion(id);
   if (id !== 'creator' && advExpansion) {
     crAdvOpen = false;
     const ap = document.getElementById('adv-panel');
@@ -1037,6 +1048,7 @@ const KEY_CODE_LABELS = [
   'Digit0','Digit1','Digit2','Digit3','Digit4','Digit5','Digit6','Digit7','Digit8','Digit9',
   'ArrowLeft','ArrowRight','ArrowUp','ArrowDown',
   'Space','Enter','ShiftLeft','ShiftRight','ControlLeft','AltLeft',
+  'Semicolon','Quote','Comma','Period','Slash','BracketLeft','BracketRight',
 ];
 function keyCodeLabel(code) {
   if (code.startsWith('Key'))   return code.slice(3);
@@ -1051,7 +1063,8 @@ function keyCodeLabel(code) {
   if (code === 'ShiftRight')    return 'SHR';
   if (code === 'ControlLeft')   return 'CTL';
   if (code === 'AltLeft')       return 'ALT';
-  return code;
+  const PUNCT = { Semicolon:';', Quote:"'", Comma:',', Period:'.', Slash:'/', BracketLeft:'[', BracketRight:']' };
+  return PUNCT[code] || code;
 }
 
 let settingsSubTab = 'controls';
@@ -1097,8 +1110,21 @@ function _settingsSliderRow(panel, label, min, max, step, value, unit, onChange,
 function buildSettingsControls(panel) {
   const s = currentSettings;
   panel.appendChild(_settingsSectionHead('Lane Keys'));
-  const laneNames = ['Lane 1', 'Lane 2', 'Lane 3', 'Lane 4'];
-  laneNames.forEach((name, i) => {
+  const countRow = document.createElement('div');
+  countRow.style.cssText = 'display:flex;gap:6px;margin-bottom:10px;';
+  window.RD_Lanes.COUNTS.forEach(n => {
+    const b = document.createElement('button');
+    b.className = 'lane-count-btn' + (n === settingsLaneCount ? ' sel' : '');
+    b.dataset.lanes = n;
+    b.textContent = n + ' lanes';
+    b.style.cssText = 'flex:1;padding:7px 4px;border-radius:8px;font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;border:1px solid ' + (n === settingsLaneCount ? 'var(--tap)' : 'var(--border2)') + ';background:' + (n === settingsLaneCount ? 'var(--bg3)' : 'none') + ';color:' + (n === settingsLaneCount ? 'var(--tap)' : 'var(--muted)') + ';';
+    b.addEventListener('click', () => { settingsLaneCount = n; buildSettingsPanel(); });
+    countRow.appendChild(b);
+  });
+  panel.appendChild(countRow);
+  const rowKeys = keysFor(settingsLaneCount);
+  rowKeys.forEach((_, i) => {
+    const name = 'Lane ' + (i + 1);
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:10px;margin-bottom:6px;';
     const lbl = document.createElement('div');
@@ -1109,17 +1135,38 @@ function buildSettingsControls(panel) {
     KEY_CODE_LABELS.forEach(code => {
       const opt = document.createElement('option');
       opt.value = code; opt.textContent = keyCodeLabel(code);
-      if (code === s.keys[i]) opt.selected = true;
+      if (code === rowKeys[i]) opt.selected = true;
       sel.appendChild(opt);
     });
     sel.addEventListener('change', () => {
-      currentSettings.keys[i] = sel.value;
+      assignLaneKey(settingsLaneCount, i, sel.value);
       store.saveSettings(currentSettings);
       applySettingsToDOM();
+      buildSettingsPanel();
     });
     row.appendChild(lbl); row.appendChild(sel);
     panel.appendChild(row);
   });
+}
+
+let settingsLaneCount = 4;
+
+function keysFor(n) {
+  n = window.RD_Lanes.clamp(n);
+  return n === 4 ? currentSettings.keys : currentSettings['keys' + n];
+}
+
+function assignLaneKey(n, lane, code) {
+  const row = keysFor(n);
+  const clash = row.indexOf(code);
+  if (clash >= 0 && clash !== lane) row[clash] = row[lane];
+  row[lane] = code;
+}
+
+function validKeyRow(row, n) {
+  return Array.isArray(row) && row.length === n
+    && row.every(k => typeof k === 'string' && k)
+    && new Set(row).size === n;
 }
 
 const POPUP_MAX_W = 800;
@@ -1140,7 +1187,7 @@ function getMaxDims() {
 }
 
 function appliedWidth() {
-  return Math.min(getMaxDims().maxW, currentSettings.width + advExpansion);
+  return Math.min(getMaxDims().maxW, currentSettings.width + advExpansion + laneExpansion);
 }
 
 let _pendingSize = null;
@@ -1388,7 +1435,7 @@ function buildSettingsPanel() {
   resetBtn.onmouseenter = () => { resetBtn.style.borderColor='var(--miss)'; resetBtn.style.color='var(--miss)'; };
   resetBtn.onmouseleave = () => { resetBtn.style.borderColor='var(--border2)'; resetBtn.style.color='var(--muted)'; };
   resetBtn.addEventListener('click', () => {
-    currentSettings = Object.assign({}, DEFAULT_SETTINGS, { keys: [...DEFAULT_SETTINGS.keys] });
+    currentSettings = freshSettings();
     store.saveSettings(currentSettings);
     applySettingsToDOM();
     if (window.RD_setVolume) window.RD_setVolume(currentSettings.masterVol);
@@ -1405,7 +1452,9 @@ const GFX_STYLES = [
 ];
 
 const DEFAULT_SETTINGS = {
-  keys: ['KeyA', 'KeyS', 'KeyD', 'KeyF'],
+  keys: window.RD_Lanes.defaultKeys(4),
+  keys6: window.RD_Lanes.defaultKeys(6),
+  keys8: window.RD_Lanes.defaultKeys(8),
   gfx: 'modern',
   songVoices: true,
   hitWindow: 'normal',
@@ -1418,12 +1467,22 @@ const DEFAULT_SETTINGS = {
   musicVol: 1,
 };
 
-let currentSettings = Object.assign({}, DEFAULT_SETTINGS);
+function freshSettings() {
+  return Object.assign({}, DEFAULT_SETTINGS, {
+    keys: [...DEFAULT_SETTINGS.keys],
+    keys6: [...DEFAULT_SETTINGS.keys6],
+    keys8: [...DEFAULT_SETTINGS.keys8],
+  });
+}
+
+let currentSettings = freshSettings();
 
 function loadAndApplySettings() {
   const saved = store.loadSettings();
   if (saved) {
-    if (saved.keys && saved.keys.length === 4) currentSettings.keys = saved.keys;
+    if (validKeyRow(saved.keys, 4)) currentSettings.keys = saved.keys;
+    if (validKeyRow(saved.keys6, 6)) currentSettings.keys6 = saved.keys6;
+    if (validKeyRow(saved.keys8, 8)) currentSettings.keys8 = saved.keys8;
     if (saved.width)      currentSettings.width      = saved.width;
     if (saved.height)     currentSettings.height     = saved.height;
     if (saved.lives)      currentSettings.lives      = saved.lives;
@@ -1453,7 +1512,7 @@ let _resizeSaveTimer = null;
 function observeManualResize() {
   if (!window.ResizeObserver) return;
   const ro = new ResizeObserver(() => {
-    const w = Math.round(document.documentElement.offsetWidth) - advExpansion;
+    const w = Math.round(document.documentElement.offsetWidth) - advExpansion - laneExpansion;
     const h = Math.round(document.documentElement.offsetHeight);
     let changed = false;
     if (w !== currentSettings.width)  { currentSettings.width  = w; changed = true; }
@@ -1479,25 +1538,58 @@ function applySettingsToDOM() {
   root.style.height = currentSettings.height + 'px';
   document.body.classList.toggle('gfx-modern', currentSettings.gfx !== 'classic');
   document.body.style.zoom = currentSettings.uiScale || 1;
-  const keyLabels = ['A','S','D','F'];
-  currentSettings.keys.forEach((code, i) => {
-    const label = code.startsWith('Key') ? code.slice(3) : code;
+  const laneKeys = keysFor(laneCount);
+  laneKeys.forEach((code, i) => {
     const el = document.querySelector(`#btn${i} .lane-key`);
-    if (el) el.textContent = label;
-    keyLabels[i] = label;
+    if (el) el.textContent = keyCodeLabel(code);
   });
-  const ovKeys = document.querySelectorAll('.ov-key');
-  currentSettings.keys.forEach((code, i) => {
-    const label = code.startsWith('Key') ? code.slice(3) : code;
-    if (ovKeys[i]) ovKeys[i].textContent = label;
-  });
-  const crHeaders = document.querySelectorAll('#cr-grid > div:not(.cr-row-num)');
+  const ovHost = document.querySelector('.ov-keys');
+  if (ovHost) {
+    const labels = laneKeys.map(keyCodeLabel);
+    const have = [...ovHost.children].map(c => c.textContent);
+    if (have.join() !== labels.join()) {
+      ovHost.innerHTML = '';
+      labels.forEach(l => {
+        const d = document.createElement('div');
+        d.className = 'ov-key';
+        d.textContent = l;
+        ovHost.appendChild(d);
+      });
+    }
+  }
+}
+
+function activeLaneCount() {
+  return typeof creatorActive === 'function' && creatorActive() ? crLanes : laneCount;
 }
 
 function buildKeyMap() {
   const map = {};
-  currentSettings.keys.forEach((code, i) => { map[code] = i; });
+  keysFor(activeLaneCount()).forEach((code, i) => { map[code] = i; });
   return map;
+}
+
+const laneSources = [];
+function pressLane(lane, src) {
+  const set = laneSources[lane] || (laneSources[lane] = new Set());
+  if (set.has(src)) return;
+  const first = set.size === 0;
+  set.add(src);
+  if (!first) return;
+  if (running) tapLane(lane);
+  else if (window.RD_playNote) window.RD_playNote(lane, false, crLaneFreqs[lane] || window.RD_Lanes.defaultFreqs(activeLaneCount())[lane]);
+}
+function releaseLane(lane, src) {
+  const set = laneSources[lane];
+  if (!set || !set.delete(src)) return;
+  if (set.size === 0 && typeof onLaneRelease === 'function') onLaneRelease(lane);
+}
+function releaseAllLanes() {
+  laneSources.forEach((set, lane) => {
+    if (!set || !set.size) return;
+    set.clear();
+    if (typeof onLaneRelease === 'function') onLaneRelease(lane);
+  });
 }
 
 document.addEventListener('keydown', e => {
@@ -1521,15 +1613,7 @@ document.addEventListener('keydown', e => {
 
   if (e.code in KEY_MAP) {
     e.preventDefault();
-    const lane = KEY_MAP[e.code];
-    if (running) {
-      tapLane(lane);
-    } else {
-      if (window.RD_playNote) {
-        const freq = crLaneFreqs[lane] || [261.63,329.63,392.00,523.25][lane];
-        window.RD_playNote(lane, false, freq);
-      }
-    }
+    pressLane(KEY_MAP[e.code], 'k' + e.code);
     return;
   }
 
@@ -1537,10 +1621,34 @@ document.addEventListener('keydown', e => {
   if (e.code === 'KeyQ') quitToMenu();
 });
 
-btnEls.forEach((el, i) => {
-  el.addEventListener('click',      ()  => tapLane(i));
-  el.addEventListener('touchstart', ev => { ev.preventDefault(); tapLane(i); });
+document.addEventListener('keyup', e => {
+  const map = buildKeyMap();
+  if (e.code in map) releaseLane(map[e.code], 'k' + e.code);
 });
+window.addEventListener('blur', releaseAllLanes);
+
+(function wireLanePointers() {
+  const host = document.getElementById('g-lanes');
+  const down = new Map();
+  host.addEventListener('pointerdown', ev => {
+    const ln = ev.target.closest && ev.target.closest('.lane');
+    if (!ln || ln.dataset.lane === undefined) return;
+    ev.preventDefault();
+    const lane = +ln.dataset.lane;
+    try { host.setPointerCapture(ev.pointerId); } catch (_) {}
+    down.set(ev.pointerId, lane);
+    pressLane(lane, 'p' + ev.pointerId);
+  });
+  const up = ev => {
+    const lane = down.get(ev.pointerId);
+    if (lane === undefined) return;
+    down.delete(ev.pointerId);
+    releaseLane(lane, 'p' + ev.pointerId);
+  };
+  host.addEventListener('pointerup', up);
+  host.addEventListener('pointercancel', up);
+  host.addEventListener('lostpointercapture', up);
+})();
 
 const pbarAvatar = document.getElementById('pbar-avatar');
 if (pbarAvatar) {

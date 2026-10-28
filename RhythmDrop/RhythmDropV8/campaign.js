@@ -37,6 +37,7 @@ window.RD_Campaign = (function () {
       seconds: rec.sec, bgMode: rec.bg,
       instrument: DATA.instruments[rec.ins] || 'synth',
       laneFreqs: rec.lf.map(midiToFreq),
+      lanes: 4,
       bassPattern: rec.bp.map(m => (m > 0 ? midiToFreq(m) : 0)),
       grid,
     };

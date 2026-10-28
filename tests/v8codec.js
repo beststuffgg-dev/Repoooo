@@ -74,6 +74,25 @@ console.log('== the codec is loaded before the game ==');
     ok(r.name && r.notes, 'a code shared from the old build still decodes');
   }
 
+  console.log('== golden codes: every old version decodes to the same level ==');
+  {
+    const gold = JSON.parse(fs.readFileSync(path.join(__dirname, 'fixtures', 'codec-golden.json'), 'utf8'));
+    const r = await page.evaluate(g => {
+      const flat = grid => grid.map(r => r.map(c => (c ? c.type + ':' + Math.round(c.freq) + ':' + (c.sustain || 0) + ':' + (c.inst || '') : '-')).join(',')).join('/');
+      const out = {};
+      for (const k of ['v2', 'v3', 'v4', 'v5']) {
+        const d = RD_Codec.decodeLevel(g[k]);
+        out[k] = { name: d.name, bpm: d.bpm, bgMode: d.bgMode, diff: d.diff, instrument: d.instrument, areaId: d.areaId || null, laneFreqs: d.laneFreqs, grid: flat(d.grid), lanes: d.lanes };
+      }
+      return out;
+    }, gold);
+    for (const k of ['v2', 'v3', 'v4', 'v5']) {
+      const { lanes, ...rest } = r[k];
+      ok(JSON.stringify(rest) === JSON.stringify(gold.expect[k]), 'a version ' + k.slice(1) + ' code decodes exactly as it did before lanes existed');
+      ok(lanes === 4, 'and is a 4-lane level');
+    }
+  }
+
   console.log('== export/import wire through the codec ==');
   {
     const r = await page.evaluate(() => {
