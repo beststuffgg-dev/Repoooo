@@ -11,7 +11,7 @@ V8 is built on the **v3.0** source — its look, its themes, its intro splash, i
 ```
 RhythmDropV8.zip          the game, zipped
 htmls/RhythmDrop.html     the game as one self-contained file (generated)
-tests/                    40 suites — 15 for V8, 25 for V7
+tests/                    41 suites — 16 for V8, 25 for V7
 RhythmDrop/
   RhythmDropV8/           the source — load this as an unpacked extension
     popup.html              markup, styling, the v3 theme system
@@ -192,6 +192,14 @@ A hold is a normal tap with a `hold: N` field (N rows below the head, 1 or more)
 
 **Creator.** The Hold tool (`▮ HOLD`): click an empty cell to place a two-row hold, or press and drag down to set the length in one gesture; the bottom cell of any hold has a grip you can drag in any tool (up to shorten, down to lengthen, past the last row to grow the grid). It stops at the next note in its lane. The grid still has one `.cr-cell` per cell (`data-r`/`data-c`), with `is-hold-head`/`-body`/`-tail` classes; erase, select and the editor on a body cell act on its head; the editor has a Hold row (off, 1-8) and making a note a double removes the hold; typing or placing a note into a body cuts the hold; copy/paste/move carry `hold` and `normalizeCrHolds()` shortens anything that now overlaps. Pointer handling is delegated on `#cr-grid` with pointer capture (the grid is rebuilt on every change, so per-cell listeners would die mid-drag), and a click that ends a gesture is ignored for 300 ms so finishing a drag doesn't open the editor. The cell editor's `write()` now keeps a note's other fields (it used to drop its instrument).
 
+## 5f. Creator: move, hear, undo, voices
+
+- **Move tool** (`✥ MOVE`). Press a note (or any cell of a hold) and drag; the source dims, the destination shows dashed. `planMove` decides: a drop off the grid or onto another note (or into another hold's body) is refused with a red drop, a shake and no change; a selection moves together or not at all; a hold moves as one piece and is shortened if it lands against another note. A note on its lane's default pitch takes the new lane's default, any other pitch is kept. Past the last row grows the grid. Shift-click toggles selection in this tool. `selMove` (the arrow keys and ◀▲▼▶) uses the same planner, so it no longer overwrites what is in its way.
+- **Sound.** `crPreview` plays the cell's own pitch with the level's voice (or the note's own), throttled to one per 60 ms, whenever a note is placed, typed, moved (as it crosses cells, ending on the pitch it lands with), changed in the editor (pitch, type, voice) or picked in the note picker or the lane defaults. A press-and-drag hold sounds for as long as the pointer is down. Removing a note is silent.
+- **Undo / redo.** `crRecord()` runs at the end of every `buildGrid()` and keeps a JSON snapshot of the grid, lane count and lane pitches whenever it changed (a drag in progress is held back, so a whole drag is one step); 200 deep; `↶ ↷`, Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y. Lane-count changes undo too. History is per opened level.
+- **Voices.** A creator level stores its own voice (`instrument`); the Advanced panel's *Note Sound* picks it, and no longer changes the player's global instrument. *Per-note Instrument* picks a voice for the notes you place next, and applies it to the selected notes (or clears it with *Level*); the cell editor has the same row for one note. A note with its own voice shows a dot, a short tag and a tooltip, and plays it in preference to the level's (unless the player has chosen "Always mine" in Settings).
+- **Fixes found on the way.** The cell editor's `write()` kept only type, pitch and sustain (it dropped `inst`); a stale picker or editor could write a note into a cell that had since gone (after an undo); `importLevel` stored whatever it decoded (rows of any width, unknown note types) and now sanitises it; and the share codec let a note's voice leak onto the notes after it that had none (a reset marker is now written, which older builds also read correctly).
+
 ## 6. Architecture
 
 **Load order is fixed**: `levels.js → campaign.js → codec.js → audio.js → generator.js → game.js`. The baked data first, then the engine that reads it, then the codec, then audio, the live generator (endless), and the game that wires them together.
@@ -226,7 +234,7 @@ A hold is a normal tap with a `hold: N` field (N rows below the head, 1 or more)
 cd tests && npm install && node run-all.js
 ```
 
-40 suites. Fifteen cover V8:
+41 suites. Sixteen cover V8:
 
 | Suite | Covers |
 |---|---|
@@ -240,6 +248,7 @@ cd tests && npm install && node run-all.js
 | `v8themes.js` | The ten campaign themes: one per area in order, each with its own texture, the unlock following the whole area and only the area, locked cards inert, a saved unearned theme not worn on boot, the unlock announced by the clear that earns it and only once, and contrast floors in every theme |
 | `v8gameplay.js` | The hit window widens the tolerance in order and is applied to judging; the Double runs at half the beat, pays double, is offered only off a clear and never chains; tiles are drawn within a pixel of where they are judged, by transform, at two UI scales |
 | `v8ui.js` | Real Chromium: the pinned height, the side panel widening the window without moving the grid, the overlay fallback, hidden panes built on show and the visible one refreshed on return, and one whole run from the campaign list to the results screen |
+| `v8move.js` | The creator's Move tool, refused drops, the sound on every edit, undo/redo, per-note instruments, the import sanitiser |
 | `v8holds.js` | Hold notes end to end: geometry, head/tick/tail scoring, early release and the re-grab grace, missed heads, blur, mouse/touch/chaos input, the sustained voice, codes, and the creator's Hold tool |
 | `v8lanes.js` | 4/6/8 lanes: the board per count, whole-lane pointer input (mouse, touch, chords, key-source guard, blur release), the window widening for 8 lanes without ever saving it as the player's width, keys per lane count, share codes, the creator's lane switch |
 

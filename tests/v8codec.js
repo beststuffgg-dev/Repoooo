@@ -83,6 +83,20 @@ console.log('== the codec is loaded before the game ==');
     ok(r.fresh.join() === 'cello,kazoo', 'the new voices round-trip under their own names (' + r.fresh + ')');
   }
 
+  console.log('== a note without its own voice stays without one ==');
+  {
+    const r = await page.evaluate(sample => {
+      const lvl = JSON.parse(JSON.stringify(sample));
+      lvl.grid[0][0] = { type: 'tap', freq: 261.63, sustain: 0, inst: 'flute' };
+      lvl.grid[1][1] = { type: 'tap', freq: 329.63, sustain: 0 };
+      lvl.grid[2][2] = { type: 'tap', freq: 392, sustain: 0, inst: 'piano' };
+      lvl.grid[3][3] = { type: 'tap', freq: 523.25, sustain: 0 };
+      const back = RD_Codec.decodeLevel(RD_Codec.encodeLevel(lvl));
+      return [back.grid[0][0].inst, back.grid[1][1].inst, back.grid[2][2].inst, back.grid[3][3].inst];
+    }, SAMPLE);
+    ok(r.join() === 'flute,,piano,', 'mixed own-voice and plain notes round-trip (' + r + ')');
+  }
+
   console.log('== old base64-JSON codes still import ==');
   {
     const r = await page.evaluate(sample => {

@@ -1047,6 +1047,8 @@ body.gfx-modern.theme-concrete .lane::after {
 }
 .tool-btn.at { border-color:var(--tap);  color:var(--tap);  background:color-mix(in srgb,var(--tap) 10%,transparent); }
 .tool-btn.ad { border-color:var(--dtap); color:var(--dtap); background:color-mix(in srgb,var(--dtap) 10%,transparent); }
+.tool-btn.am { border-color:var(--accent); color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
+.tool-btn:disabled { opacity:.35; cursor:default; }
 .tool-btn.ah { border-color:var(--perfect); color:var(--perfect); background:color-mix(in srgb,var(--perfect) 10%,transparent); }
 .tool-btn.ae { border-color:var(--muted);color:var(--text); background:var(--bg3); }
 .tool-btn.as { border-color:var(--accent);color:var(--accent); background:color-mix(in srgb,var(--accent) 10%,transparent); }
@@ -1104,7 +1106,15 @@ body.gfx-modern.theme-concrete .lane::after {
 .cr-cell.is-hold-tail::after {
   content:''; position:absolute; left:28%; right:28%; bottom:3px; height:3px; border-radius:2px; background:var(--tap); opacity:.85;
 }
-.cr-grid-wrap.hold-tool .cr-cell { touch-action:none; }
+.cr-grid-wrap.drag-tool .cr-cell { touch-action:none; }
+.cr-cell.is-moving { opacity:.35; }
+.cr-cell.is-drop { outline:2px dashed var(--accent); outline-offset:-2px; background:color-mix(in srgb,var(--accent) 22%,var(--bg3)); }
+.cr-cell.is-drop-bad { outline:2px dashed var(--miss); outline-offset:-2px; background:color-mix(in srgb,var(--miss) 22%,var(--bg3)); }
+.cr-cell.cr-refuse { animation:cr-shake .32s ease-in-out; border-color:var(--miss); }
+@keyframes cr-shake { 0%,100% { transform:translateX(0); } 25% { transform:translateX(-3px); } 75% { transform:translateX(3px); } }
+.cr-cell.has-inst { position:relative; }
+.cr-cell.has-inst::before { content:''; position:absolute; top:3px; right:3px; width:6px; height:6px; border-radius:50%; background:var(--perfect); }
+.cce-insts { flex-wrap:wrap; }
 .cr-cell.is-tap  { background:color-mix(in srgb,var(--tap) 40%,transparent); border-color:var(--tap); }
 .cr-cell.is-dtap { background:color-mix(in srgb,var(--dtap) 40%,transparent); border-color:var(--dtap); }
 
@@ -1778,8 +1788,11 @@ body.adv-overlay #adv-panel.open {
     <button class="tool-btn at" data-tool="tap" id="t-tap">■ TAP</button>
     <button class="tool-btn" data-tool="dtap" id="t-dtap">◆ ×2</button>
     <button class="tool-btn" data-tool="hold" id="t-hold">▮ HOLD</button>
+    <button class="tool-btn" data-tool="move" id="t-move">✥ MOVE</button>
     <button class="tool-btn" data-tool="erase" id="t-erase">✕ ERA</button>
     <button class="tool-btn" data-tool="select" id="t-select">▦ SEL</button>
+    <button class="tool-btn" id="cr-undo" title="Undo (Ctrl+Z)" disabled>↶</button>
+    <button class="tool-btn" id="cr-redo" title="Redo (Ctrl+Shift+Z)" disabled>↷</button>
     <div class="cr-sep"></div>
     <div class="bpm-row"><label>BPM</label><input class="bpm-input" id="cr-bpm" type="number" min="60" max="220" value="120"></div>
     <div class="cr-sep"></div>
@@ -1836,6 +1849,10 @@ body.adv-overlay #adv-panel.open {
 
     <div class="adv-section" style="margin-top:6px">Note Sound</div>
     <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;" id="adv-instrument-row"></div>
+
+    <div class="adv-section" style="margin-top:6px">Per-note Instrument</div>
+    <div style="font-size:10px;color:var(--muted);margin-bottom:4px;" id="adv-noteinst-hint">New notes use the level voice. Select notes first to change ones already placed.</div>
+    <div class="bg-radio-group" id="adv-noteinst-row" style="flex-wrap:wrap;"></div>
 
     <div class="adv-section" style="margin-top:6px">Default Sustain / Pedal</div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:4px;">How long the note fades — applies to new notes placed in the grid</div>

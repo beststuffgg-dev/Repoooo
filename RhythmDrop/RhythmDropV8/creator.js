@@ -18,6 +18,7 @@ let crAdvOpen  = false;
 let crBgMode   = 'none';
 let crLanes = 4;
 let crInstrument = 'synth';
+let crNoteInst = null;
 let crLaneFreqs = [261.63,329.63,392.00,523.25];
 const crEmptyRow = () => window.RD_Lanes.emptyRow(crLanes);
 let crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
@@ -37,6 +38,8 @@ function creatorActive() {
 function openCreator(idx) {
   crCursor = 0;
   crSel.clear();
+  crHist.undo.length = 0; crHist.redo.length = 0; crHist.last = null;
+  crNoteInst = null;
   editIdx = idx;
   const customs = store.load();
   if (idx !== null && customs[idx]) {
@@ -96,17 +99,17 @@ function openCreator(idx) {
   showScreen('creator');
 }
 
-const TOOL_CLASS = { tap:' at', dtap:' ad', hold:' ah', erase:' ae', select:' as' };
+const TOOL_CLASS = { tap:' at', dtap:' ad', hold:' ah', move:' am', erase:' ae', select:' as' };
 function setTool(t) {
   crTool = t;
-  ['tap','dtap','hold','erase','select'].forEach(x => {
+  ['tap','dtap','hold','move','erase','select'].forEach(x => {
     const b = document.getElementById('t-' + x);
     if (b) b.className = 'tool-btn' + (x === t ? TOOL_CLASS[x] : '');
   });
   const bar = document.getElementById('cr-selbar');
   if (bar) bar.classList.toggle('show', t === 'select');
   const wrap = document.querySelector('.cr-grid-wrap');
-  if (wrap) wrap.classList.toggle('hold-tool', t === 'hold');
+  if (wrap) wrap.classList.toggle('drag-tool', t === 'hold' || t === 'move');
   if (t !== 'select' && crSel.size) crSel.clear();
   if (document.getElementById('cr-grid')) buildGrid();
 }
@@ -166,8 +169,99 @@ function placeCell(r, c, cell) {
 function newCellFor(lane) {
   const cell = { type: crTool === 'dtap' ? 'dtap' : 'tap', freq: crLaneFreqs[lane], sustain: crDefaultSustain };
   if (crTool === 'hold') cell.hold = DEFAULT_HOLD;
+  if (crNoteInst) cell.inst = crNoteInst;
   return cell;
 }
+
+let crPreviewAt = 0;
+function crPreview(freq, isDtap, inst) {
+  if (!freq || !window.RD_playNoteFreq) return;
+  const now = performance.now();
+  if (now - crPreviewAt < 60) return;
+  crPreviewAt = now;
+  window.RD_playNoteFreq(freq, !!isDtap, 0, inst || crInstrument);
+}
+function crPreviewCell(cell) {
+  if (cell) crPreview(cell.freq, cell.type === 'dtap', cell.inst);
+}
+
+const crHist = { undo: [], redo: [], last: null, busy: false };
+const crSnapshot = () => JSON.stringify({ g: crGrid, n: crLanes, f: crLaneFreqs });
+
+function crRecord() {
+  if (crHist.busy || crDrag || crMove) return;
+  const now = crSnapshot();
+  if (crHist.last === null) { crHist.last = now; return; }
+  if (now === crHist.last) return;
+  crHist.undo.push(crHist.last);
+  if (crHist.undo.length > 200) crHist.undo.shift();
+  crHist.redo.length = 0;
+  crHist.last = now;
+}
+
+function crRestore(json) {
+  const st = JSON.parse(json);
+  crHist.busy = true;
+  const lanesChanged = st.n !== crLanes;
+  crGrid = st.g; crLanes = st.n; crLaneFreqs = st.f;
+  crSel.clear();
+  crCursor = Math.min(crCursor, crGrid.length - 1);
+  if (lanesChanged) { syncLaneExpansion('creator'); buildAdvPanel(); }
+  buildGrid();
+  crHist.last = crSnapshot();
+  crHist.busy = false;
+  buildGrid();
+  if (editIdx !== null) autoSave();
+}
+
+function crUndo() {
+  if (!crHist.undo.length) return;
+  crHist.redo.push(crHist.last);
+  crRestore(crHist.undo.pop());
+}
+
+function crRedo() {
+  if (!crHist.redo.length) return;
+  crHist.undo.push(crHist.last);
+  crRestore(crHist.redo.pop());
+}
+
+function planMove(keys, dr, dc) {
+  const moving = new Set(keys);
+  const items = [], dests = [];
+  let reason = null;
+  keys.forEach(k => {
+    const [r, c] = parseKey(k);
+    const cell = crGrid[r] && crGrid[r][c];
+    if (!cell) return;
+    const nr = r + dr, nc = c + dc;
+    items.push({ r, c, nr, nc, cell });
+    dests.push([nr, nc]);
+    if (nc < 0 || nc >= crLanes || nr < 0 || nr > crGrid.length + 64) { reason = reason || 'range'; return; }
+    const there = crGrid[nr] && crGrid[nr][nc];
+    if (there && !moving.has(selKey(nr, nc))) reason = reason || 'occupied';
+    const own = holdHeadRow(nr, nc);
+    if (own >= 0 && !moving.has(selKey(own, nc))) reason = reason || 'occupied';
+  });
+  return { ok: items.length > 0 && !reason, reason: items.length ? reason : 'empty', items, dests };
+}
+
+function applyMove(plan) {
+  plan.items.forEach(it => { crGrid[it.r][it.c] = null; });
+  const next = new Set();
+  plan.items.forEach(it => {
+    const cell = { ...it.cell };
+    if (it.nc !== it.c && Math.abs((cell.freq || 0) - crLaneFreqs[it.c]) < 0.01) cell.freq = crLaneFreqs[it.nc];
+    while (it.nr >= crGrid.length) crGrid.push(crEmptyRow());
+    crGrid[it.nr][it.nc] = cell;
+    next.add(selKey(it.nr, it.nc));
+  });
+  normalizeCrHolds();
+  return next;
+}
+
+let crMove = null;
+let crRefuse = null;
 
 function typeNoteAtCursor(lane) {
   if (lane < 0 || lane >= crLanes) return;
@@ -232,32 +326,23 @@ function selPaste() {
 }
 function selMove(dr, dc) {
   if (!crSel.size) return;
-  const moves = [];
-  let inRange = true;
-  crSel.forEach(k => {
-    const [r, c] = parseKey(k);
-    const nr = r + dr, nc = c + dc;
-    if (nc < 0 || nc >= crLanes || nr < 0) inRange = false;
-    moves.push({ r, c, nr, nc });
-  });
-  if (!inRange) return;
-  const picked = moves.map(m => ({ nr: m.nr, nc: m.nc, cell: crGrid[m.r][m.c] ? { ...crGrid[m.r][m.c] } : null }));
-  moves.forEach(m => { crGrid[m.r][m.c] = null; });
-  const next = new Set();
-  picked.forEach(p => {
-    while (p.nr >= crGrid.length) crGrid.push(crEmptyRow());
-    crGrid[p.nr][p.nc] = p.cell;
-    next.add(selKey(p.nr, p.nc));
-  });
-  normalizeCrHolds();
+  const plan = planMove(crSel, dr, dc);
+  if (!plan.ok) {
+    if (plan.reason === 'occupied') showToast('Something is in the way', true);
+    return;
+  }
+  const next = applyMove(plan);
   crSel = next;
   crCursor = Math.max(0, Math.min(crGrid.length - 1, crCursor + dr));
   buildGrid();
   if (editIdx !== null) autoSave();
+  if (next.size === 1) { const [r, c] = parseKey([...next][0]); crPreviewCell(crGrid[r][c]); }
 }
 
 function handleCreatorKey(e, keyMap) {
   const mod = e.ctrlKey || e.metaKey;
+  if (mod && e.code === 'KeyZ') { e.preventDefault(); if (e.shiftKey) crRedo(); else crUndo(); return true; }
+  if (mod && e.code === 'KeyY') { e.preventDefault(); crRedo(); return true; }
   if (mod && (e.code === 'KeyC' || e.code === 'KeyX' || e.code === 'KeyV')) {
     e.preventDefault();
     if (e.code === 'KeyC') selCopy(); else if (e.code === 'KeyX') selCut(); else selPaste();
@@ -280,11 +365,17 @@ function handleCreatorKey(e, keyMap) {
     e.preventDefault();
     const lane = keyMap[e.code];
     typeNoteAtCursor(lane);
-    if (window.RD_playNote) window.RD_playNote(lane, false, crLaneFreqs[lane] || 261.63, 0, crInstrument);
+    crPreviewCell(crGrid[crCursor] && crGrid[crCursor][lane]);
     return true;
   }
   return false;
 }
+
+(function wireUndo() {
+  const u = document.getElementById('cr-undo'), r = document.getElementById('cr-redo');
+  if (u) u.addEventListener('click', crUndo);
+  if (r) r.addEventListener('click', crRedo);
+})();
 
 (function wireSelBar() {
   const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('click', fn); };
@@ -370,6 +461,11 @@ function buildGrid() {
     const n = cellHold(cell);
     for (let k = 1; k <= n; k++) bodyOf.set((ri + k) + ',' + ci, { head: ri, tail: k === n });
   }));
+  const srcKeys = new Set(), dropKeys = new Set();
+  if (crMove && crMove.plan) {
+    crMove.plan.items.forEach(it => srcKeys.add(selKey(it.r, it.c)));
+    crMove.plan.dests.forEach(([r, c]) => dropKeys.add(selKey(r, c)));
+  }
 
   crGrid.forEach((row, ri) => {
     const lbl = document.createElement('div');
@@ -386,14 +482,19 @@ function buildGrid() {
         + (holdN ? ' is-hold-head' : '')
         + (body ? ' is-hold-body' + (body.tail ? ' is-hold-tail' : '') : '')
         + (ri === crCursor ? ' cur' : '')
-        + (crSel.has(selKey(body ? body.head : ri, ci)) ? ' cr-cell-sel' : '');
+        + (crSel.has(selKey(body ? body.head : ri, ci)) ? ' cr-cell-sel' : '')
+        + (cell && cell.inst ? ' has-inst' : '')
+        + (srcKeys.has(selKey(ri, ci)) ? ' is-moving' : '')
+        + (dropKeys.has(selKey(ri, ci)) ? (crMove.plan.ok ? ' is-drop' : ' is-drop-bad') : '')
+        + (crRefuse && crRefuse.r === ri && crRefuse.c === ci ? ' cr-refuse' : '');
       el.dataset.r = ri;
       el.dataset.c = ci;
+      if (cell && cell.inst) el.title = instLabel(cell.inst);
       if (type && crAdvOpen) {
         el.classList.add('cr-cell-named');
         const name = document.createElement('span');
         name.className = 'cr-cell-note';
-        name.textContent = freqToName(cellFreq(cell, ci));
+        name.textContent = freqToName(cellFreq(cell, ci)) + (cell && cell.inst ? ' ' + instAbbr(cell.inst) : '');
         el.appendChild(name);
         if (cellSustain(cell) > 0) {
           const dot = document.createElement('span');
@@ -402,20 +503,22 @@ function buildGrid() {
           el.appendChild(dot);
         }
       }
-      el.addEventListener('click', () => {
+      el.addEventListener('click', ev => {
         if (performance.now() - crGestureEnd < 300) return;
         crCursor = ri;
         const tr = body ? body.head : ri;
-        if (crTool === 'select') {
+        if (crTool === 'select' || (crTool === 'move' && ev.shiftKey)) {
           const k = selKey(tr, ci);
-          if (crSel.has(k)) crSel.delete(k); else crSel.add(k);
+          if (crSel.has(k)) crSel.delete(k); else if (crGrid[tr][ci]) crSel.add(k);
           buildGrid();
           return;
         }
         if (crTool === 'erase') { crGrid[tr][ci] = null; buildGrid(); return; }
         const cur = cellType(crGrid[tr][ci]);
         if (!cur) {
+          if (crTool === 'move') { buildGrid(); return; }
           placeCell(ri, ci, newCellFor(ci));
+          crPreviewCell(crGrid[ri][ci]);
           buildGrid();
         } else {
           openCellEditor(body ? g.querySelector('.cr-cell[data-r="' + tr + '"][data-c="' + ci + '"]') || el : el, tr, ci);
@@ -424,20 +527,24 @@ function buildGrid() {
       g.appendChild(el);
     });
   });
+  crRecord();
+  const undoBtn = document.getElementById('cr-undo'), redoBtn = document.getElementById('cr-redo');
+  if (undoBtn) undoBtn.disabled = !crHist.undo.length;
+  if (redoBtn) redoBtn.disabled = !crHist.redo.length;
+}
+
+function instLabel(id) {
+  const r = (window.RD_INSTRUMENTS || []).find(i => i.id === window.RD_resolveInstrument(id));
+  return r ? r.label : id;
+}
+
+const INST_ABBR = { synth:'Sy', violin:'Vn', cello:'Vc', flute:'Fl', clarinet:'Cl', trumpet:'Tp', horn:'Hn', harp:'Hp', piano:'Pf', drums:'Dr', kazoo:'Kz' };
+function instAbbr(id) {
+  return INST_ABBR[window.RD_resolveInstrument(id)] || '';
 }
 
 let crGestureEnd = 0;
 let crDrag = null;
-
-function crRowAt(ev) {
-  const g = document.getElementById('cr-grid');
-  const hit = document.elementFromPoint(ev.clientX, ev.clientY);
-  const cell = hit && hit.closest ? hit.closest('.cr-cell') : null;
-  if (cell && cell.dataset.r !== undefined) return +cell.dataset.r;
-  const last = g.querySelector('.cr-cell:last-child');
-  if (last && ev.clientY > last.getBoundingClientRect().bottom) return crGrid.length;
-  return null;
-}
 
 function setHoldLength(head, lane, want) {
   const cell = crGrid[head] && crGrid[head][lane];
@@ -449,39 +556,116 @@ function setHoldLength(head, lane, want) {
   return true;
 }
 
-(function wireHoldDrag() {
+let crHoldVoice = null;
+
+(function wireGridDrag() {
   const g = document.getElementById('cr-grid');
+  const cellAt = ev => {
+    const hit = document.elementFromPoint(ev.clientX, ev.clientY);
+    const cell = hit && hit.closest ? hit.closest('.cr-cell') : null;
+    if (cell && cell.dataset.r !== undefined) return [+cell.dataset.r, +cell.dataset.c];
+    const firstRow = [...g.querySelectorAll('.cr-cell[data-r="0"]')];
+    const col = firstRow.reduce((best, el, i) => {
+      const b = el.getBoundingClientRect();
+      const d = ev.clientX < b.left ? b.left - ev.clientX : ev.clientX > b.right ? ev.clientX - b.right : 0;
+      return d < best.d ? { d, i } : best;
+    }, { d: Infinity, i: 0 }).i;
+    const col0 = [...g.querySelectorAll('.cr-cell[data-c="0"]')];
+    const lastEl = col0[col0.length - 1];
+    if (!lastEl) return null;
+    const lb = lastEl.getBoundingClientRect();
+    if (ev.clientY <= lb.bottom) return null;
+    const step = col0.length > 1 ? col0[1].getBoundingClientRect().top - col0[0].getBoundingClientRect().top : 27;
+    return [crGrid.length - 1 + Math.ceil((ev.clientY - lb.bottom) / Math.max(10, step)), col];
+  };
+
   g.addEventListener('pointerdown', ev => {
     const el = ev.target.closest ? ev.target.closest('.cr-cell') : null;
     if (!el || el.dataset.r === undefined) return;
     const r = +el.dataset.r, c = +el.dataset.c;
+    if (crTool === 'move' && !ev.shiftKey) {
+      const head = el.classList.contains('is-hold-body') ? holdHeadRow(r, c) : r;
+      if (head < 0 || !crGrid[head] || !crGrid[head][c]) return;
+      const key = selKey(head, c);
+      const keys = crSel.has(key) && crSel.size > 1 ? new Set(crSel) : new Set([key]);
+      ev.preventDefault();
+      try { g.setPointerCapture(ev.pointerId); } catch (_) {}
+      crMove = { keys, ar: head, ac: c, gr: r, dr: 0, dc: 0, id: ev.pointerId, plan: null, fromSel: keys.size > 1 || crSel.has(key), last: '' };
+      return;
+    }
     let head = -1, placed = false;
     if (el.classList.contains('is-hold-tail')) head = holdHeadRow(r, c);
     else if (crTool === 'hold' && !crGrid[r][c] && holdHeadRow(r, c) < 0) {
       placeCell(r, c, newCellFor(c));
       head = r;
       placed = true;
+      crDrag = { head, lane: c, id: ev.pointerId, moved: false, placed };
       buildGrid();
-      if (editIdx !== null) autoSave();
+      if (window.RD_noteOn) {
+        const cell = crGrid[r][c];
+        crHoldVoice = window.RD_noteOn(cell.freq, { inst: cell.inst || crInstrument, vel: 0.6 });
+      }
     }
     if (head < 0) return;
     ev.preventDefault();
     try { g.setPointerCapture(ev.pointerId); } catch (_) {}
     crDrag = { head, lane: c, id: ev.pointerId, moved: false, placed };
   });
+
   g.addEventListener('pointermove', ev => {
+    if (crMove && ev.pointerId === crMove.id) {
+      const at = cellAt(ev);
+      if (!at || at[1] === null) return;
+      const dr = at[0] - crMove.gr, dc = at[1] - crMove.ac;
+      const sig = dr + ',' + dc;
+      if (sig === crMove.last) return;
+      crMove.last = sig;
+      crMove.dr = dr; crMove.dc = dc;
+      crMove.plan = dr || dc ? planMove(crMove.keys, dr, dc) : null;
+      if (crMove.plan && crMove.plan.ok && crMove.keys.size === 1) {
+        const it = crMove.plan.items[0];
+        const cell = it.cell;
+        const f = it.nc !== it.c && Math.abs((cell.freq || 0) - crLaneFreqs[it.c]) < 0.01 ? crLaneFreqs[it.nc] : cell.freq;
+        crPreview(f, cell.type === 'dtap', cell.inst);
+      }
+      buildGrid();
+      return;
+    }
     if (!crDrag || ev.pointerId !== crDrag.id) return;
-    const row = crRowAt(ev);
-    if (row === null) return;
-    if (setHoldLength(crDrag.head, crDrag.lane, row - crDrag.head)) {
+    const at = cellAt(ev);
+    if (!at) return;
+    if (setHoldLength(crDrag.head, crDrag.lane, at[0] - crDrag.head)) {
       crDrag.moved = true;
       buildGrid();
     }
   });
+
   const end = ev => {
+    if (crMove && ev.pointerId === crMove.id) {
+      const mv = crMove;
+      crMove = null;
+      if (mv.plan && (mv.dr || mv.dc)) {
+        if (mv.plan.ok) {
+          const next = applyMove(mv.plan);
+          if (mv.fromSel) crSel = next;
+          crCursor = Math.min(crGrid.length - 1, Math.max(0, mv.ar + mv.dr));
+          crGestureEnd = performance.now();
+        } else {
+          const [r, c] = mv.plan.dests[0] || [mv.ar, mv.ac];
+          crRefuse = { r, c };
+          setTimeout(() => { crRefuse = null; buildGrid(); }, 380);
+          crGestureEnd = performance.now();
+        }
+      }
+      buildGrid();
+      if (editIdx !== null) autoSave();
+      return;
+    }
     if (!crDrag || ev.pointerId !== crDrag.id) return;
     if (crDrag.moved || crDrag.placed) crGestureEnd = performance.now();
     crDrag = null;
+    if (crHoldVoice) { crHoldVoice.release(); crHoldVoice = null; }
+    buildGrid();
     if (editIdx !== null) autoSave();
   };
   g.addEventListener('pointerup', end);
@@ -497,18 +681,21 @@ function openCellEditor(anchorEl, ri, ci) {
   pop.className = 'cr-cell-editor';
 
   const write = patch => {
-    const cur = crGrid[ri][ci];
+    const cur = crGrid[ri] && crGrid[ri][ci];
+    if (!cur) return;
     const next = Object.assign({
       type: cellType(cur) || 'tap',
       freq: cellFreq(cur, ci),
       sustain: cellSustain(cur),
     }, typeof cur === 'object' ? cur : {}, patch);
+    if (next.inst === null) delete next.inst;
     if (next.type === 'dtap' || !(next.hold > 0)) delete next.hold;
     else {
       const n = Math.min(Math.floor(next.hold), holdSpace(ri, ci));
       if (n > 0) next.hold = n; else delete next.hold;
     }
     crGrid[ri][ci] = next;
+    if (patch.freq !== undefined || patch.type !== undefined || patch.inst !== undefined) crPreviewCell(next);
     buildGrid();
     render();
   };
@@ -560,6 +747,22 @@ function openCellEditor(anchorEl, ri, ci) {
       });
       pop.appendChild(holdRow);
     }
+
+    const instLabelEl = document.createElement('div');
+    instLabelEl.className = 'cce-sublabel';
+    instLabelEl.textContent = 'Instrument';
+    pop.appendChild(instLabelEl);
+    const instRow = document.createElement('div');
+    instRow.className = 'cce-sus cce-insts';
+    [{ id: null, label: 'Level' }].concat((window.RD_INSTRUMENTS || []).map(i => ({ id: i.id, label: i.label.replace('French ', '') }))).forEach(it => {
+      const btn = document.createElement('button');
+      const cur = c.inst ? window.RD_resolveInstrument(c.inst) : null;
+      btn.className = 'cce-schip' + (cur === it.id ? ' on' : '');
+      btn.textContent = it.label;
+      btn.addEventListener('click', () => write({ inst: it.id }));
+      instRow.appendChild(btn);
+    });
+    pop.appendChild(instRow);
 
     const susLabel = document.createElement('div');
     susLabel.className = 'cce-sublabel';
@@ -763,7 +966,44 @@ function buildLaneCountControl() {
   });
 }
 
+function applyNoteInstToSelection(id) {
+  let n = 0;
+  crSel.forEach(k => {
+    const [r, c] = parseKey(k);
+    const cell = crGrid[r] && crGrid[r][c];
+    if (!cell) return;
+    if (id) cell.inst = id; else delete cell.inst;
+    n++;
+  });
+  if (n) { buildGrid(); if (editIdx !== null) autoSave(); }
+  return n;
+}
+
+function buildAdvNoteInstRow() {
+  const row = document.getElementById('adv-noteinst-row');
+  if (!row) return;
+  row.innerHTML = '';
+  const items = [{ id: null, label: 'Level' }].concat((window.RD_INSTRUMENTS || []).map(i => ({ id: i.id, label: i.label })));
+  items.forEach(it => {
+    const btn = document.createElement('button');
+    btn.className = 'bg-radio-btn' + (crNoteInst === it.id ? ' sel' : '');
+    btn.dataset.noteinst = it.id || '';
+    btn.textContent = it.label;
+    btn.addEventListener('click', () => {
+      crNoteInst = it.id;
+      const n = applyNoteInstToSelection(it.id);
+      crPreview(crLaneFreqs[0], false, it.id);
+      buildAdvNoteInstRow();
+      const hint = document.getElementById('adv-noteinst-hint');
+      if (hint) hint.textContent = n ? 'Set on ' + n + ' selected note' + (n === 1 ? '' : 's') + '. New notes use ' + (it.id ? it.label : 'the level voice') + '.'
+        : 'New notes use ' + (it.id ? it.label : 'the level voice') + '. Select notes first to change ones already placed.';
+    });
+    row.appendChild(btn);
+  });
+}
+
 function buildAdvPanel() {
+  buildAdvNoteInstRow();
   buildLaneCountControl();
   buildLaneNoteGrid();
   buildBgRadio();
@@ -854,6 +1094,7 @@ function buildLaneNoteGrid() {
       e.stopPropagation();
       openNotePickerModal(badge, crLaneFreqs[i], (newFreq) => {
         crLaneFreqs[i] = newFreq;
+        crPreview(newFreq, false);
         buildLaneNoteGrid();
         buildGrid();
       });

@@ -164,8 +164,8 @@
         const midi    = freq ? freqToMidi(freq) : null;
         const isDefault = midi === null || midi === laneMidi[ci];
 
-        if (inst && inst !== curInst && INST_CHARS[inst]) {
-          out += '`' + INST_CHARS[inst];
+        if (inst !== curInst && (!inst || INST_CHARS[inst])) {
+          out += '`' + (inst ? INST_CHARS[inst] : '_');
           curInst = inst;
         }
 

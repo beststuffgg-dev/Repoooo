@@ -230,6 +230,29 @@ function tryCheatCode(text) {
   }
 }
 
+function sanitizeImportedGrid(lvl) {
+  if (!Array.isArray(lvl.grid) || !lvl.grid.length) throw new Error('empty grid');
+  const n = window.RD_Lanes.laneCountOf(lvl);
+  lvl.lanes = n;
+  lvl.grid = lvl.grid.map(row => {
+    const out = new Array(n).fill(null);
+    if (Array.isArray(row)) {
+      for (let c = 0; c < n; c++) {
+        const cell = row[c];
+        if (!cell) continue;
+        const type = typeof cell === 'string' ? cell : cell.type;
+        if (type !== 'tap' && type !== 'dtap') continue;
+        out[c] = typeof cell === 'string' ? { type, freq: null } : cell;
+      }
+    }
+    return out;
+  });
+  if (Array.isArray(lvl.laneFreqs) && lvl.laneFreqs.length !== n) {
+    const defs = window.RD_Lanes.defaultFreqs(n);
+    lvl.laneFreqs = defs.map((f, i) => lvl.laneFreqs[i] || f);
+  }
+}
+
 function importLevel() {
   const text = prompt('Paste your export code:');
   if (!text) { showToast('Invalid code', true); return; }
@@ -247,6 +270,7 @@ function importLevel() {
     }
     if (!lvl || !lvl.name || !lvl.bpm || !lvl.grid) throw new Error('missing fields');
     translateLevelVoices(lvl);
+    sanitizeImportedGrid(lvl);
     lvl.id = 'c' + Date.now();
     const arr = store.load(); arr.push(lvl); store.save(arr);
     renderCustoms();
