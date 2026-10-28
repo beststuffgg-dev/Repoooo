@@ -1,12 +1,12 @@
 # RhythmDrop — test harnesses
 
-Forty-two suites, one command. Seventeen cover **V8**, the current game;
+Forty-two suites, one command. Seventeen cover **V9**, the current game;
 the other twenty-five cover **V7**, kept alongside it under `RhythmDrop/v7/`
 and still green. Most boot the build in jsdom with a stubbed Web Audio
 graph; six drive real Chromium, because jsdom has no layout engine and
 structurally cannot catch a layout bug.
 
-## V8 — the current game
+## V9 — the current game
 
 | Suite | Covers |
 |---|---|
@@ -29,11 +29,11 @@ structurally cannot catch a layout bug.
 | `v8ui.js` | Real Chromium: the pinned height, the advanced panel widening the window without moving the grid, the overlay fallback at the cap, hidden panes built on show, and one whole run from the campaign list to the results screen |
 
 ```bash
-npm run test:v8          # just the V8 suites
+npm run test:v8          # just the V9 suites
 V8_DIR=/path/to/build npm run test:v8
 ```
 
-The V8 suites always test `RhythmDrop/RhythmDropV8` unless `V8_DIR` says
+The V9 suites always test `RhythmDrop/RhythmDropV9` unless `V8_DIR` says
 otherwise, so `APP_DIR` never affects them.
 
 ## V7 — kept alongside
@@ -76,7 +76,7 @@ path list going stale at different rates.
 
 `redesigntest` and `singlefiletest` test V7's generated artifacts
 directly rather than whatever `APP_DIR` points at, so they run once and
-are skipped when `APP_DIR` is the Redesign. The three V8 suites are
+are skipped when `APP_DIR` is the Redesign. The three V9 suites are
 skipped then too, for the same reason: they name their own build.
 
 ### V7's suites

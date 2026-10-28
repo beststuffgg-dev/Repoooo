@@ -3,8 +3,8 @@
 const fs = require('fs');
 const path = require('path');
 
-const ROOT = path.join(__dirname, '..', '..');
-const srcDir = path.resolve(ROOT, process.argv[2] || 'RhythmDrop/RhythmDropV8');
+const ROOT = path.join(__dirname, '..', '..', '..');
+const srcDir = path.resolve(ROOT, process.argv[2] || 'RhythmDropV9');
 const outFile = path.resolve(ROOT, process.argv[3] || 'htmls/RhythmDrop.html');
 
 const SRC_TAG = /<script\s+src="([^"]+)"\s*><\/script>/g;

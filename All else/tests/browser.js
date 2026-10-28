@@ -2,10 +2,11 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
+const REPO = path.join(ROOT, '..');
 const SRC  = path.join(ROOT, 'RhythmDrop');
-const V8   = path.join(SRC, 'RhythmDropV8');
+const V8   = path.join(REPO, 'RhythmDropV9');
 const V7   = path.join(SRC, 'v7');
-const HTML = path.join(ROOT, 'htmls');
+const HTML = path.join(REPO, 'htmls');
 
 const isBuild = d => fs.existsSync(path.join(d, 'popup.html'));
 

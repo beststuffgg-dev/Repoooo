@@ -1,19 +1,19 @@
-# RhythmDrop V8 — Handoff
+# RhythmDrop V9 — Handoff
 
 A four-lane rhythm game shipped as a Chrome extension popup. No build step for the app itself, no dependencies, no network calls.
 
-V8 is built on the **v3.0** source — its look, its themes, its intro splash, its shop — with the campaign and progression systems from V7 ported onto it. V7 is not gone: it lives whole under `RhythmDrop/v7/`, still builds, and still passes its own 25 test suites. See [`RhythmDrop/v7/HANDOFF.md`](v7/HANDOFF.md) for that one.
+V9 is built on the **v3.0** source — its look, its themes, its intro splash, its shop — with the campaign and progression systems from V7 ported onto it. V7 is not gone: it lives whole under `RhythmDrop/v7/`, still builds, and still passes its own 25 test suites. See [`RhythmDrop/v7/HANDOFF.md`](v7/HANDOFF.md) for that one.
 
 ---
 
 ## 1. Layout
 
 ```
-RhythmDropV8.zip          the game, zipped
+RhythmDropV9.zip          the game, zipped
 htmls/RhythmDrop.html     the game as one self-contained file (generated)
-tests/                    42 suites — 17 for V8, 25 for V7
+tests/                    42 suites — 17 for V9, 25 for V7
 RhythmDrop/
-  RhythmDropV8/           the source — load this as an unpacked extension
+  RhythmDropV9/           the source — load this as an unpacked extension
     popup.html              markup, styling, the v3 theme system
     game.js                 shell: screens, profile/coins, shop, themes, settings, boot
     play.js                 gameplay engine: queue, loop, input, scoring, the Double
@@ -36,11 +36,11 @@ Regenerate every derived artifact:
 bash RhythmDrop/tools/package.sh
 ```
 
-That rebuilds V8's single file and zip, and V7's in place. It deliberately does **not** re-bake the campaign — see §3.
+That rebuilds V9's single file and zip, and V7's in place. It deliberately does **not** re-bake the campaign — see §3.
 
 ---
 
-## 2. What V8 is
+## 2. What V9 is
 
 Everything the v3.0 build had — four lanes on **A S D F**, tap and double-tap notes, combo and streak multipliers, lives, the shop (avatars, colourways, note trails, mystery boxes), 20 themes including glass/paper/arctic, the custom theme builder, chaos keys, the intro splash, the level creator with its note picker and per-lane pitches — plus:
 
@@ -82,9 +82,9 @@ Why bake at all: a song that exists as a file can be read, diffed and reviewed. 
 
 **Format.** Each level stores its notes as a flat run of six integers — row, lane, type, MIDI, sustain×10, instrument index. Pitches are MIDI rather than frequencies: the composer draws every note from an equal-tempered table, so the number is exact, a third of the size, and readable. The baker asserts every pitch survives the frequency→MIDI→frequency round trip before writing. 150 levels, 33,766 notes, 515 KB (after the two-minute cap).
 
-**One kind of note per row.** A tap and a ×2 slab never share a row. The composer picks a type per note, so a chord could land a single beside a double — 2,744 of the campaign's 24,034 non-empty rows did, across 146 of the 150 songs. `rowtypes.js` fixes it after the fact, without touching a lane, pitch, sustain or voice: a mixed row takes whichever type it has more of, and a tie is steered by the song's own original share of doubles so the rule doesn't quietly turn a double-heavy style into a single-heavy one (the campaign's share went 22.7% → 22.5%; the worst single song moved 3.0 points, where breaking every tie the same way moved songs by 5–8). The baker loads that module and applies it to every grid before encoding, so a re-bake reproduces the same songs with only the type bit changed on 2,806 notes. The rule lives in V8, not in the composer, so `generator.js` can stay V7's verbatim. `v8rowtypes.js` checks the rule, the baked data, and every live generation path.
+**One kind of note per row.** A tap and a ×2 slab never share a row. The composer picks a type per note, so a chord could land a single beside a double — 2,744 of the campaign's 24,034 non-empty rows did, across 146 of the 150 songs. `rowtypes.js` fixes it after the fact, without touching a lane, pitch, sustain or voice: a mixed row takes whichever type it has more of, and a tie is steered by the song's own original share of doubles so the rule doesn't quietly turn a double-heavy style into a single-heavy one (the campaign's share went 22.7% → 22.5%; the worst single song moved 3.0 points, where breaking every tie the same way moved songs by 5–8). The baker loads that module and applies it to every grid before encoding, so a re-bake reproduces the same songs with only the type bit changed on 2,806 notes. The rule lives in V9, not in the composer, so `generator.js` can stay V7's verbatim. `v8rowtypes.js` checks the rule, the baked data, and every live generation path.
 
-**The trap to know about.** The composer resolves each area's voice against whatever `window.RD_INSTRUMENTS` says the target build has, falling back to a near neighbour when one is missing. Baking against an empty roster silently collapses ten area voices into four, and every song after Farmstead comes out wrong — the first bake did exactly that. `bake-levels.js` therefore declares the roster V8 actually ships, and `v8levels.js` asserts the shipped `audio.js` still provides every id the baked charts reference.
+**The trap to know about.** The composer resolves each area's voice against whatever `window.RD_INSTRUMENTS` says the target build has, falling back to a near neighbour when one is missing. Baking against an empty roster silently collapses ten area voices into four, and every song after Farmstead comes out wrong — the first bake did exactly that. `bake-levels.js` therefore declares the roster V9 actually ships, and `v8levels.js` asserts the shipped `audio.js` still provides every id the baked charts reference.
 
 **A known quirk, inherited.** 11 notes of the 40,913 sit above C8, up to 5.6 kHz, in the two brass areas (4 and 8). They come from the composer's melody walker running off the top of the chromatic table — the raw baked MIDI numbers carry them, so V7 has always had them too. They are left as composed rather than quietly transposed, and pinned at 11 by the test so the count cannot grow unnoticed.
 
@@ -100,7 +100,7 @@ Why bake at all: a song that exists as a file can be read, diffed and reviewed. 
 
 ## 4a. Live generation
 
-V8 ships a baked campaign, but V7's deterministic composer is bundled as `RhythmDrop/RhythmDropV8/generator.js` — `RhythmDrop/v7/RhythmDropV7/campaign.js` with its comments stripped and exporting `window.RD_Generator` instead of `window.RD_Campaign` (V8 already has an `RD_Campaign`, its progression engine; the two do not collide). It loads after `audio.js` because it reads `window.RD_INSTRUMENTS` to resolve each area's voice.
+V9 ships a baked campaign, but V7's deterministic composer is bundled as `RhythmDrop/RhythmDropV9/generator.js` — `RhythmDrop/v7/RhythmDropV7/campaign.js` with its comments stripped and exporting `window.RD_Generator` instead of `window.RD_Campaign` (V9 already has an `RD_Campaign`, its progression engine; the two do not collide). It loads after `audio.js` because it reads `window.RD_INSTRUMENTS` to resolve each area's voice.
 
 Two entry points use it:
 
@@ -114,7 +114,7 @@ Every generated chart — Generate, the creator's *Generate into grid*, each End
 `generator.js` is generated from V7's composer, not hand-edited. If the composer changes, refresh it from the repo root with:
 
 ```
-node -e "const {stripJs}=require('./tests/strip');const fs=require('fs');fs.writeFileSync('RhythmDrop/RhythmDropV8/generator.js',stripJs(fs.readFileSync('RhythmDrop/v7/RhythmDropV7/campaign.js','utf8')).replace('window.RD_Campaign = {','window.RD_Generator = {'))"
+node -e "const {stripJs}=require('./tests/strip');const fs=require('fs');fs.writeFileSync('RhythmDrop/RhythmDropV9/generator.js',stripJs(fs.readFileSync('RhythmDrop/v7/RhythmDropV7/campaign.js','utf8')).replace('window.RD_Campaign = {','window.RD_Generator = {'))"
 ```
 
 That reproduces the committed file byte for byte, and `v8generate.js` fails if the two ever differ by anything other than comments and the export name.
@@ -246,7 +246,7 @@ Custom tab -> *Song Studio*. In the extension the button opens `popup.html#studi
 cd tests && npm install && node run-all.js
 ```
 
-42 suites. Seventeen cover V8:
+42 suites. Seventeen cover V9:
 
 | Suite | Covers |
 |---|---|
@@ -265,7 +265,7 @@ cd tests && npm install && node run-all.js
 | `v8holds.js` | Hold notes end to end: geometry, head/tick/tail scoring, early release and the re-grab grace, missed heads, blur, mouse/touch/chaos input, the sustained voice, codes, and the creator's Hold tool |
 | `v8lanes.js` | 4/6/8 lanes: the board per count, whole-lane pointer input (mouse, touch, chords, key-source guard, blur release), the window widening for 8 lanes without ever saving it as the player's width, keys per lane count, share codes, the creator's lane switch |
 
-The remaining 25 are V7's, unchanged, running against `RhythmDrop/v7/`. `APP_DIR` selects which V7 build they test; `V8_DIR` overrides the V8 one.
+The remaining 25 are V7's, unchanged, running against `RhythmDrop/v7/`. `APP_DIR` selects which V7 build they test; `V8_DIR` overrides the V9 one.
 
 **On audio testing.** Everything before `v8audio` was structural — the roster has eleven ids, the file parses, the functions exist — and none of it would have caught a voice that was lifted from another build and no longer works. Rendering the samples caught two real bugs: the limiter was not actually limiting (seven simultaneous double-taps peaked at 1.318, a third past full scale), and `ctx()` called `resume()` unguarded on a context that could not be resumed, where the throw takes the note with it.
 
@@ -274,7 +274,7 @@ The remaining 25 are V7's, unchanged, running against `RhythmDrop/v7/`. `APP_DIR
 ## 8. Open items
 
 - **After the campaign, there is Endless.** Clearing area 10 no longer dead-ends — the Endless card rolls fresh songs indefinitely. There is still no scored, ranked endless *ladder* the way some rhythm games have; it is practice, not a leaderboard.
-- **Difficulty is inherited, not tuned.** The 150 charts carry V7's difficulty curve. Nobody has played them in V8's engine end to end — V8's scoring has v3's lives-based multiplier, which V7 did not have, so the balance may not be the same game.
+- **Difficulty is inherited, not tuned.** The 150 charts carry V7's difficulty curve. Nobody has played them in V9's engine end to end — V9's scoring has v3's lives-based multiplier, which V7 did not have, so the balance may not be the same game.
 - **The creator cannot make campaign-shaped levels.** It writes the same grid format, but nothing lets you save one into an area or share it.
 - **The generation menu lives in the creator's advanced panel** (a Settings / Generate toggle at the top): pick a difficulty band and either fill the grid with a composed chart to edit, or generate-and-play. The advanced panel widens the window through the same expansion system the side-panel uses, and falls back to an overlay when the window can't grow — verified at narrow-tall, wide-short, square and ultrawide.
 - **Endless is the eleventh campaign tab**, at the end of the era strip, unlocked once every area is cleared (the three difficulty bands live in its pane). It is no longer a card at the bottom of the levels list.

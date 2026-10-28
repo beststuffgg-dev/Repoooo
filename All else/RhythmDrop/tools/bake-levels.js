@@ -5,10 +5,11 @@ const path = require('path');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..', '..');
+const REPO = path.join(ROOT, '..');
 const GENERATOR = path.join(ROOT, 'RhythmDrop', 'v7', 'RhythmDropV7', 'campaign.js');
-const OUT = path.join(ROOT, 'RhythmDrop', 'RhythmDropV8', 'levels.js');
-const ROWTYPES = path.join(ROOT, 'RhythmDrop', 'RhythmDropV8', 'rowtypes.js');
-const AUDIO = path.join(ROOT, 'RhythmDrop', 'RhythmDropV8', 'audio.js');
+const OUT = path.join(REPO, 'RhythmDropV9', 'levels.js');
+const ROWTYPES = path.join(REPO, 'RhythmDropV9', 'rowtypes.js');
+const AUDIO = path.join(REPO, 'RhythmDropV9', 'audio.js');
 
 const ROSTER = ['synth', 'piano', 'guitar', 'marimba', 'bell', 'flute',
   'lyre', 'brass', 'organ', 'strings', 'chiptune', 'kalimba'];

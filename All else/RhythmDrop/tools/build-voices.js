@@ -3,7 +3,7 @@ const fs = require('fs');
 const path = require('path');
 
 const FIT = path.join(__dirname, 'out', 'fit.json');
-const OUT = path.join(__dirname, '..', 'RhythmDropV8', 'voices.js');
+const OUT = path.join(__dirname, '..', '..', '..', 'RhythmDropV9', 'voices.js');
 const ORDER = ['violin', 'cello', 'flute', 'clarinet', 'trumpet', 'horn', 'harp', 'piano'];
 
 const fit = JSON.parse(fs.readFileSync(FIT, 'utf8'));

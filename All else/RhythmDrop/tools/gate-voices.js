@@ -6,8 +6,8 @@ const { launchOpts } = require('../../tests/browser');
 const D = require('./lib/dsp');
 
 const CACHE = process.env.VSCO_DIR || '/tmp/vsco/x';
-const V8 = path.join(__dirname, '..', 'RhythmDropV8');
-const SRC = fs.readFileSync(path.join(V8, 'voices.js'), 'utf8') + '\n' + fs.readFileSync(path.join(V8, 'audio.js'), 'utf8');
+const V9 = path.join(__dirname, '..', '..', '..', 'RhythmDropV9');
+const SRC = fs.readFileSync(path.join(V9, 'voices.js'), 'utf8') + '\n' + fs.readFileSync(path.join(V9, 'audio.js'), 'utf8');
 const ONLY = process.argv.slice(2);
 
 const has = (...ts) => s => ts.every(t => s.name.toLowerCase().includes(t));

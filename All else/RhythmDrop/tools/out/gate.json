@@ -1,0 +1,82 @@
+[
+ {
+  "id": "violin",
+  "temporal": 6.449978221810946,
+  "spectral": 4.794880770230596,
+  "centroid": 2.6679322251684323,
+  "takeTemporal": 7.591229811032035,
+  "takeSpectral": 5.535854312735036,
+  "onBaselineNotesTemporal": 6.449978221810946,
+  "onBaselineNotesSpectral": 4.794880770230596
+ },
+ {
+  "id": "cello",
+  "temporal": 5.3744722691047775,
+  "spectral": 3.484886644249816,
+  "centroid": 2.7578092632963913,
+  "takeTemporal": 7.479923007495933,
+  "takeSpectral": 5.751356544314804,
+  "onBaselineNotesTemporal": 5.3744722691047775,
+  "onBaselineNotesSpectral": 3.484886644249816
+ },
+ {
+  "id": "flute",
+  "temporal": 4.614671374593625,
+  "spectral": 3.9330916902872746,
+  "centroid": 0.9574228500170519,
+  "takeTemporal": 3.4429752792021886,
+  "takeSpectral": 2.3048417160193377,
+  "onBaselineNotesTemporal": 5.267847878904397,
+  "onBaselineNotesSpectral": 4.763436995886901
+ },
+ {
+  "id": "clarinet",
+  "temporal": 4.814682943669045,
+  "spectral": 3.9190563048676825,
+  "centroid": 2.4878477994839234,
+  "takeTemporal": 7.757289618269531,
+  "takeSpectral": 6.827456551760143,
+  "onBaselineNotesTemporal": 4.814682943669045,
+  "onBaselineNotesSpectral": 3.9190563048676825
+ },
+ {
+  "id": "trumpet",
+  "temporal": 4.936017430769916,
+  "spectral": 4.394456843815929,
+  "centroid": 3.752919141380679,
+  "takeTemporal": 8.791695190765468,
+  "takeSpectral": 8.181451808689069,
+  "onBaselineNotesTemporal": 4.936017430769916,
+  "onBaselineNotesSpectral": 4.394456843815929
+ },
+ {
+  "id": "horn",
+  "temporal": 3.162584238823623,
+  "spectral": 2.7589287559080278,
+  "centroid": 0.5218947778391715,
+  "takeTemporal": 5.870421482205495,
+  "takeSpectral": 5.424361898056736,
+  "onBaselineNotesTemporal": 3.162584238823623,
+  "onBaselineNotesSpectral": 2.7589287559080278
+ },
+ {
+  "id": "harp",
+  "temporal": 2.0478666055689843,
+  "spectral": 1.7581098939453024,
+  "centroid": 0.4927756097034147,
+  "takeTemporal": null,
+  "takeSpectral": null,
+  "onBaselineNotesTemporal": 2.0478666055689843,
+  "onBaselineNotesSpectral": 1.7581098939453024
+ },
+ {
+  "id": "piano",
+  "temporal": 3.823237026401486,
+  "spectral": 3.3834210131817235,
+  "centroid": 1.3850078153749623,
+  "takeTemporal": 3.5987832125810906,
+  "takeSpectral": 3.415717647397289,
+  "onBaselineNotesTemporal": 3.823237026401486,
+  "onBaselineNotesSpectral": 3.3834210131817235
+ }
+]

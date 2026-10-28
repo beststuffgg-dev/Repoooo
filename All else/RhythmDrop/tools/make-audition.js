@@ -5,7 +5,7 @@ const D = require('./lib/dsp');
 
 const CACHE = process.env.VSCO_DIR || '/tmp/vsco/x';
 const PACK = path.dirname(CACHE);
-const V8 = path.join(__dirname, '..', 'RhythmDropV8');
+const V9 = path.join(__dirname, '..', '..', '..', 'RhythmDropV9');
 const OUT = process.argv[2] || path.join(__dirname, 'out', 'audition.html');
 const RATE = 22050;
 
@@ -130,8 +130,8 @@ button.go{border-color:var(--acc);color:var(--acc)}
 <div id="cards"></div>
 </main>
 <script>
-${fs.readFileSync(path.join(V8, 'voices.js'), 'utf8')}
-${fs.readFileSync(path.join(V8, 'audio.js'), 'utf8')}
+${fs.readFileSync(path.join(V9, 'voices.js'), 'utf8')}
+${fs.readFileSync(path.join(V9, 'audio.js'), 'utf8')}
 </script>
 <script>
 const CARDS = ${JSON.stringify(cards)};

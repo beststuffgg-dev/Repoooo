@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="RhythmDrop/docs/screenshots/logo.png" width="72" alt="RhythmDrop">
+  <img src="All%20else/RhythmDrop/docs/screenshots/logo.png" width="72" alt="RhythmDrop">
 </p>
 
 <h1 align="center">RhythmDrop</h1>
@@ -12,9 +12,9 @@
 </p>
 
 <p align="center">
-  <b>v8.0</b> ·
-  <a href="RhythmDrop/HANDOFF-V8.md">Full feature reference</a> ·
-  <a href="RhythmDrop/v7/HANDOFF.md">V7, kept alongside</a>
+  <b>v9.0</b> ·
+  <a href="All%20else/RhythmDrop/HANDOFF-V9.md">Full feature reference</a> ·
+  <a href="All%20else/RhythmDrop/v7/HANDOFF.md">V7, kept alongside</a>
 </p>
 
 ---
@@ -23,12 +23,12 @@
 
 | | |
 |---|---|
-| ![Home](RhythmDrop/docs/screenshots/home.png) | ![Gameplay](RhythmDrop/docs/screenshots/gameplay.png) |
+| ![Home](All%20else/RhythmDrop/docs/screenshots/home.png) | ![Gameplay](All%20else/RhythmDrop/docs/screenshots/gameplay.png) |
 | Home — the campaign, ten eras deep | Play — combo lit, a ×2 slab incoming |
-| ![Shop](RhythmDrop/docs/screenshots/shop.png) | ![Settings](RhythmDrop/docs/screenshots/settings.png) |
+| ![Shop](All%20else/RhythmDrop/docs/screenshots/shop.png) | ![Settings](All%20else/RhythmDrop/docs/screenshots/settings.png) |
 | Shop — avatars, trails, effects, mystery boxes | Settings — hit window, key remap, a visible timing band |
 
-<p align="center"><img src="RhythmDrop/docs/screenshots/creator.png" width="360" alt="Level Creator"><br><sub>The level creator — two-stage note placement, multi-select cut/copy/paste, a live sound preview</sub></p>
+<p align="center"><img src="All%20else/RhythmDrop/docs/screenshots/creator.png" width="360" alt="Level Creator"><br><sub>The level creator — two-stage note placement, multi-select cut/copy/paste, a live sound preview</sub></p>
 
 ## What it is
 
@@ -49,69 +49,66 @@ Hit **A · S · D · F** as slabs cross the strike line (the creator also makes 
 
 Three ways, all from the same source, no build step:
 
-1. **As the extension it's meant to be** — go to `chrome://extensions`, enable Developer Mode, "Load unpacked," and select `RhythmDrop/RhythmDropV8/`.
-2. **Unzip and load** — `RhythmDropV8.zip` is the same folder, zipped, for handing to someone else.
+1. **As the extension it's meant to be** — go to `chrome://extensions`, enable Developer Mode, "Load unpacked," and select `RhythmDropV9/`.
+2. **Unzip and load** — `RhythmDropV9.zip` is the same folder, zipped, for handing to someone else.
 3. **Just open it** — `htmls/RhythmDrop.html` is the entire game as one self-contained file. Double-click it, or open it on a phone. No dependencies, nothing to install, nothing to fetch over the network.
 
-`htmls/RhythmDrop.html` is *generated* from `RhythmDrop/RhythmDropV8/` — every script inlined in place. Never edit it directly; edit the source folder and run `bash RhythmDrop/tools/package.sh`.
+`htmls/RhythmDrop.html` is *generated* from `RhythmDropV9/` — every script inlined in place. Never edit it directly; edit the source folder and run `bash All else/RhythmDrop/tools/package.sh`.
 
-**V7 is still here.** The previous game lives whole under `RhythmDrop/v7/` — source, Redesign variant, single-file builds, zips and its own handoff — and still passes its own 25 test suites. V8 is built on the earlier v3.0 source with V7's campaign ported onto it, so the two are genuinely different games rather than versions of one.
+**V7 is still here.** The previous game lives whole under `All else/RhythmDrop/v7/` — source, Redesign variant, single-file builds, zips and its own handoff — and still passes its own 25 test suites. V9 (originally V8) is built on the earlier v3.0 source with V7's campaign ported onto it, so the two are genuinely different games rather than versions of one.
 
 ## Repo layout
 
 ```
-RhythmDropV8.zip            the game, zipped — hand this to someone
-
+```
+RhythmDropV9/               the game — load this folder as an unpacked extension
+  popup.html                  markup, styling, the theme system
+  game.js                     screens, input, scoring, campaign UI, shop, creator
+  studio.js, studio-dsp.js    the Song Studio screen and its audio analysis
+  campaign.js                 unlocks, XP, coins, records, dailies
+  lanes.js                    lane counts 4/6/8: default pitches, default keys, helpers
+  levels.js                   the 150 songs, baked — generated, not hand-edited
+  rowtypes.js                 one kind of note per row; shared by the game and the baker
+  audio.js                    the note engine (hold and release), 11 voices, limiter, backing layer
+  voices.js                   measured timbre tables for the eight pitched voices — generated
+RhythmDropV9.zip            the game, zipped — hand this to someone
 htmls/
   RhythmDrop.html             the whole game as one file — generated
 
-tests/                      42 suites — 17 for V8, 25 for V7
-
-RhythmDrop/
-  RhythmDropV8/               the source — load this as an unpacked extension
-    popup.html                  markup, styling, the theme system
-    game.js                     screens, input, scoring, campaign UI, shop, creator
-    studio.js, studio-dsp.js    the Song Studio screen and its audio analysis
-    campaign.js                 unlocks, XP, coins, records, dailies
-    lanes.js                    lane counts 4/6/8: default pitches, default keys, helpers
-    levels.js                   the 150 songs, baked — generated, not hand-edited
-    rowtypes.js                 one kind of note per row; shared by the game and the baker
-    audio.js                    the note engine (hold and release), 11 voices, limiter, backing layer
-    voices.js                   measured timbre tables for the eight pitched voices — generated
-  v7/                         the previous game, kept whole and still working
-  tools/
-    bake-levels.js              composes the 150 songs into levels.js
-    build-single.js             inlines the modules into one .html
-    build-redesign.js           regenerates V7's Redesign variant
-    package.sh                  rebuilds every derived artifact
-  docs/screenshots/           the images in this README
-  HANDOFF-V8.md               full feature inventory and architecture
+All else/
+  tests/                      42 suites — 17 for V9, 25 for V7
+  RhythmDrop/
+    v7/                       the previous game, kept whole and still working
+    tools/                    bake-levels, build-single, build-redesign, fit/build/gate voices, package.sh
+    docs/screenshots/         the images in this README
+    HANDOFF-V9.md             full feature inventory and architecture
+  anbernic/                   handheld build
 ```
 
 Everything derived is regenerated by one command:
 
 ```
-bash RhythmDrop/tools/package.sh
+bash All else/RhythmDrop/tools/package.sh
 ```
 
-Never hand-edit anything in `htmls/`, any `.zip`, or `RhythmDrop/RhythmDropV8/levels.js` — they are all outputs. `package.sh` deliberately does *not* re-bake the campaign: that is a 150-song diff and should be meant, so run `node RhythmDrop/tools/bake-levels.js` yourself when you want it.
+Never hand-edit anything in `htmls/`, any `.zip`, or `RhythmDropV9/levels.js` — they are all outputs. `package.sh` deliberately does *not* re-bake the campaign: that is a 150-song diff and should be meant, so run `node All else/RhythmDrop/tools/bake-levels.js` yourself when you want it.
 
 ## Testing
 
 ```
-cd tests && npm install && node run-all.js
+cd "All else/tests" && npm install && node run-all.js
 ```
 
-Forty-two harnesses. Seventeen cover V8 — the baked campaign against the build that plays it, the progression rules, every instrument rendered and measured through an OfflineAudioContext, the graphics layer, generation and its one-type-per-row rule, the 4/6/8 lane boards, hold notes, the creator's move, undo and preview, the campaign themes and their unlocks, and real-Chromium passes over the layout, gameplay and whole runs. The other twenty-five are V7's, unchanged, still green against `RhythmDrop/v7/`.
+Forty-two harnesses. Seventeen cover V9 — the baked campaign against the build that plays it, the progression rules, every instrument rendered and measured through an OfflineAudioContext, the graphics layer, generation and its one-type-per-row rule, the 4/6/8 lane boards, hold notes, the creator's move, undo and preview, the campaign themes and their unlocks, and real-Chromium passes over the layout, gameplay and whole runs. The other twenty-five are V7's, unchanged, still green against `All else/RhythmDrop/v7/`.
 
 Eight suites drive a real browser rather than jsdom, because jsdom has no layout engine or audio engine and structurally cannot catch a layout or a silence bug — those are the ones that found the strike line sitting 12–19px off the bar it was drawn on, the campaign list collapsing to a 39px viewport, and the master bus peaking a third past full scale on a seven-note chord.
 
 ```
-npm run test:v8                                # just the V8 suites
+npm run test:v8                                # just the V9 suites
 APP_DIR=RhythmDropV7-Redesign node run-all.js  # V7's suites against its variant
 ```
 
-See [`tests/README.md`](tests/README.md) for the per-suite breakdown, and [`HANDOFF-V8.md`](RhythmDrop/HANDOFF-V8.md#7-testing) for how it fits together.
+See [`All else/tests/README.md`](All%20else/tests/README.md) for the per-suite breakdown, and [`HANDOFF-V9.md`](All%20else/RhythmDrop/HANDOFF-V9.md#7-testing) for how it fits together.
 
 ---
 

@@ -4,7 +4,7 @@ const path = require('path');
 const D = require('./lib/dsp');
 
 const CACHE = process.env.VSCO_DIR || '/tmp/vsco/x';
-const OUT = path.join(__dirname, '..', 'RhythmDropV8', 'voices.js');
+const OUT = path.join(__dirname, '..', '..', '..', 'RhythmDropV9', 'voices.js');
 const ONLY = process.argv.slice(2);
 
 const has = (...ts) => s => ts.every(t => s.name.toLowerCase().includes(t));
