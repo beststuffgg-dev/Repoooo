@@ -187,6 +187,28 @@ const INIT = () => {
     await page.evaluate(() => { document.querySelectorAll('.cr-cell-editor, #note-picker-modal').forEach(e => e.remove()); });
   }
 
+  console.log('== the editor menu keeps its place ==');
+  {
+    const r = await page.evaluate(() => {
+      fresh();
+      crGrid[6][2] = { type: 'tap', freq: 392, sustain: 0 };
+      buildGrid();
+      cellEl(6, 2).click();
+      const pop = document.querySelector('.cr-cell-editor');
+      const at = () => { const b = pop.getBoundingClientRect(); return [Math.round(b.left), Math.round(b.top)]; };
+      const first = at();
+      const tiles = pop.querySelectorAll('.cce-grid > *').length;
+      document.querySelector('.cr-cell-editor [data-sec="inst"] .cce-sum').click();
+      const during = at();
+      document.querySelector('.cr-cell-editor .cce-sum').click();
+      const back = at();
+      pop.remove();
+      return { first, during, back, tiles };
+    });
+    ok(r.tiles >= 6, 'the menu is a grid of tiles (' + r.tiles + ')');
+    ok(r.first[0] === r.during[0] && r.first[0] === r.back[0] && r.first[1] === r.back[1], 'opening and closing a setting leaves the menu where it was (' + r.first + ' -> ' + r.back + ')');
+  }
+
   console.log('== undo and redo ==');
   {
     const r = await page.evaluate(async () => {

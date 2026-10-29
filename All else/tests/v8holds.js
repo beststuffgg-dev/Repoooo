@@ -393,6 +393,30 @@ const INIT = () => {
     ok(e.done === 8 && e.lives === 9, 'and all eight finish (' + e.done + ' done, ' + e.lives + ' lives)');
   }
 
+  console.log('== eight fingers hold eight lanes ==');
+  {
+    await page.evaluate(async () => {
+      const grid = Array.from({ length: 40 }, () => new Array(8).fill(null));
+      for (let c = 0; c < 8; c++) grid[2][c] = { type: 'tap', freq: 261.63 * Math.pow(2, c / 12), sustain: 0, hold: 6 };
+      currentSettings.lives = 9;
+      launchLevel({ name: 'eight', bpm: 120, diff: 'easy', bgMode: 'none', lanes: 8, grid });
+      document.getElementById('g-overlay').classList.remove('show');
+      startGame();
+      await waitFor(() => activeTiles.filter(t => t.hold).length === 8 && activeTiles.every(t => Math.abs(headPt(t) - hitY()) < 9), 6000);
+    });
+    const cdp = await ctx.newCDPSession(page);
+    const pts = await page.evaluate(() => laneEls.map((l, i) => { const r = l.getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height * 0.4, id: i + 1 }; }));
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: pts });
+    await page.waitForTimeout(150);
+    const mid = await page.evaluate(() => activeTiles.filter(t => t.held && t.down).length);
+    await page.waitForTimeout(2800);
+    const end = await page.evaluate(() => ({ done: activeTiles.filter(t => t.done).length, lives, dropped: activeTiles.filter(t => t.dropped).length }));
+    await cdp.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
+    await page.evaluate(() => quitToMenu());
+    ok(mid === 8, 'eight touches at once hold all eight notes (' + mid + ')');
+    ok(end.dropped === 0 && end.lives === 9, 'and they stay held with nothing dropped (' + end.dropped + ' dropped)');
+  }
+
   console.log('== codes carry holds ==');
   {
     const r = await page.evaluate(() => {

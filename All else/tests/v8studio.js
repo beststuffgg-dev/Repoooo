@@ -154,7 +154,7 @@ function spec(bpm) {
     await page.waitForTimeout(300);
     const s = await page.evaluate(() => ({ on: document.getElementById('studio').classList.contains('active'), main: document.getElementById('st-main').hidden, w: document.documentElement.offsetWidth }));
     ok(s.on && s.main, 'it opens the Studio, with nothing loaded yet');
-    ok(s.w >= 780, 'the window widens to fit it (' + s.w + 'px)');
+    ok(s.w === 420, 'the window keeps its width (' + s.w + 'px)');
   }
 
   await page.setInputFiles('#st-file', { name: 'My Song.wav', mimeType: 'audio/wav', buffer: wavBytes });

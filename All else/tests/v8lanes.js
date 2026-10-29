@@ -75,13 +75,12 @@ const INIT = () => {
     ok(r.ids, 'every lane has its keycap and feedback label');
     ok(r.tint, 'neighbouring lanes alternate their tint');
     notes.push(n + ' lanes: narrowest lane ' + r.minW.toFixed(0) + 'px in a ' + r.rootW + 'px window');
-    if (n === 8) ok(r.rootW >= 560, 'eight lanes widen the window to ' + r.rootW + 'px');
-    if (n < 8) ok(r.rootW < 560, n + ' lanes leave the window alone (' + r.rootW + 'px)');
+    ok(r.rootW === 420, n + ' lanes leave the window at its width (' + r.rootW + 'px)');
     await page.evaluate(() => { quitToMenu(); });
     await page.waitForTimeout(150);
   }
 
-  console.log('== the widening is never saved as your width ==');
+  console.log('== the width never changes with the lane count ==');
   {
     const r = await page.evaluate(async () => {
       const before = currentSettings.width;
@@ -283,7 +282,7 @@ const INIT = () => {
     ok(r.start[0] === 4 && r.start[1] === 4, 'a new level starts with 4 lanes');
     ok(r.six[0] === 6 && r.six[1] === 6 && r.six[2] === 6 && r.six[3], 'switching to 6 widens the grid, the rows and the lane pitches');
     ok(r.keptNote, 'and keeps the notes already placed');
-    ok(r.eightWindow >= 560, 'eight lanes in the creator widen the window (' + r.eightWindow + 'px)');
+    ok(r.eightWindow === 420, 'eight lanes in the creator leave the window at its width (' + r.eightWindow + 'px)');
     ok(r.saved.join() === '8,8,8', 'saving writes lanes: 8 and 8-wide rows');
     ok(r.reopened[0] === 8 && r.reopened[1] === 8 && r.reopened[2], 'reopening restores all 8 lanes and the note in lane 8');
     ok(r.keyK, 'K types a note into lane 8');

@@ -297,11 +297,8 @@ function showToast(msg, isErr) {
 }
 
 function syncLaneExpansion(id) {
-  const n = id === 'game' ? laneCount : id === 'creator' ? crLanes : 4;
-  const want = Math.min(id === 'studio' ? 780 : window.RD_Lanes.minWidth(n), getMaxDims().maxW);
-  const next = Math.max(0, want - currentSettings.width);
-  if (next === laneExpansion) return;
-  laneExpansion = next;
+  if (laneExpansion === 0) return;
+  laneExpansion = 0;
   applySettingsToDOM();
 }
 

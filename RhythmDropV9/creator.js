@@ -719,8 +719,12 @@ function openCellEditor(anchorEl, ri, ci) {
     pop.appendChild(head);
     }
 
+    const grid = document.createElement('div');
+    grid.className = 'cce-grid';
+    const host = listMode ? grid : pop;
+    if (listMode) pop.appendChild(grid);
     const typeRow = document.createElement('div');
-    typeRow.className = 'cce-row';
+    typeRow.className = 'cce-row cce-typerow';
     [['tap', 'TAP'], ['dtap', '×2']].forEach(([t, label]) => {
       const btn = document.createElement('button');
       btn.className = 'cce-btn' + (cellType(c) === t ? ' on' : '') + (t === 'dtap' ? ' dtap' : '');
@@ -728,7 +732,7 @@ function openCellEditor(anchorEl, ri, ci) {
       btn.addEventListener('click', () => write({ type: t }));
       typeRow.appendChild(btn);
     });
-    if (listMode) pop.appendChild(typeRow);
+    if (listMode) grid.appendChild(typeRow);
 
     const SEMI = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
     const midi0 = Math.round(69 + 12 * Math.log2(cellFreq(c, ci) / 440));
@@ -765,7 +769,7 @@ function openCellEditor(anchorEl, ri, ci) {
       sum.innerHTML = '<span class="k"></span><span class="v"></span><span class="chev">' + (listMode ? '▸' : '▾') + '</span>';
       sum.querySelector('.k').textContent = label;
       sum.querySelector('.v').textContent = value;
-      sum.addEventListener('click', () => { crEditorOpen = listMode ? id : null; render(); positionPopup(pop, anchorEl); });
+      sum.addEventListener('click', () => { crEditorOpen = listMode ? id : null; render(); clampPopup(pop); });
       sec.appendChild(sum);
       if (!listMode) {
         const body = document.createElement('div');
@@ -773,7 +777,7 @@ function openCellEditor(anchorEl, ri, ci) {
         build(body);
         sec.appendChild(body);
       }
-      pop.appendChild(sec);
+      host.appendChild(sec);
     };
 
     section('note', 'Note', '♪ ' + freqToName(cellFreq(c, ci)), body => {
@@ -782,6 +786,12 @@ function openCellEditor(anchorEl, ri, ci) {
       chipRow(body, [2, 3, 4, 5, 6, 7].map(o => ({ label: String(o), v: o })), it => it.v === oct0, it => setPitch(letter0, acc0, it.v), 'cce-pick');
     });
 
+    if (cellType(c) === 'dtap' && listMode) {
+      const na = document.createElement('div');
+      na.className = 'cce-sec na';
+      na.innerHTML = '<div class="cce-sum"><span class="k">Hold</span><span class="v">double</span></div>';
+      host.appendChild(na);
+    }
     if (cellType(c) !== 'dtap') {
       const room = holdSpace(ri, ci);
       section('hold', 'Hold', cellHold(c) ? cellHold(c) + (cellHold(c) === 1 ? ' row' : ' rows') : 'off', body => {
@@ -812,7 +822,8 @@ function openCellEditor(anchorEl, ri, ci) {
     done.textContent = 'Done';
     done.addEventListener('click', () => pop.remove());
     foot.appendChild(erase); foot.appendChild(done);
-    if (listMode) pop.appendChild(foot);
+    foot.classList.add('cce-typerow');
+    if (listMode) grid.appendChild(foot);
   }
 
   render();
@@ -828,6 +839,16 @@ function openCellEditor(anchorEl, ri, ci) {
     };
     document.addEventListener('click', close, true);
   }, 0);
+}
+
+function clampPopup(pop) {
+  const vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+  const w = pop.offsetWidth, h = pop.offsetHeight;
+  let left = parseFloat(pop.style.left) || 0, top = parseFloat(pop.style.top) || 0;
+  if (left + w > vw - 6) left = vw - w - 6;
+  if (top + h > vh - 6) top = vh - h - 6;
+  pop.style.left = Math.max(6, Math.round(left)) + 'px';
+  pop.style.top = Math.max(6, Math.round(top)) + 'px';
 }
 
 function positionPopup(pop, anchorEl) {
