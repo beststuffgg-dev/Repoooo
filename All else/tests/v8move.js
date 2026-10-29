@@ -176,6 +176,8 @@ const INIT = () => {
       const first = __plays.length ? __plays[__plays.length - 1] : null;
       await new Promise(r => setTimeout(r, 100));
       __plays.length = 0;
+      const open = id => document.querySelector('.cr-cell-editor [data-sec="' + id + '"] .cce-sum').click();
+      open('note');
       const a = [...document.querySelectorAll('.cr-cell-editor .cce-pick')][0];
       [...a.children].find(b => b.textContent === 'A').click();
       return { first, afterPick: __plays.slice(), freq: crGrid[4][3].freq };
@@ -303,6 +305,8 @@ const INIT = () => {
       fresh();
       crGrid[1][0] = { type: 'tap', freq: 261.63, sustain: 0 }; buildGrid();
       cellEl(1, 0).click();
+      const open = id => document.querySelector('.cr-cell-editor [data-sec="' + id + '"] .cce-sum').click();
+      open('inst');
       const row = document.querySelector('.cr-cell-editor .cce-insts');
       const chips = [...row.children].map(b => b.textContent);
       [...row.children].find(b => b.textContent === 'Harp').click();
@@ -340,7 +344,9 @@ const INIT = () => {
       crGrid[1][0] = { type: 'tap', freq: 261.63, sustain: 0, inst: 'cello', hold: 2 };
       buildGrid();
       cellEl(1, 0).click();
-      const sus = [...document.querySelectorAll('.cr-cell-editor .cce-sus')].pop();
+      const open = id => document.querySelector('.cr-cell-editor [data-sec="' + id + '"] .cce-sum').click();
+      open('sus');
+      const sus = document.querySelector('.cr-cell-editor .cce-susrow');
       [...sus.children].find(b => b.textContent === '1').click();
       const c = crGrid[1][0];
       document.querySelectorAll('.cr-cell-editor').forEach(x => x.remove());

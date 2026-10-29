@@ -120,6 +120,26 @@ const INIT = () => {
     ok(r.lives === 9 && r.livesAfterKeyUp === 9, 'holding past the tail costs nothing');
   }
 
+  console.log('== the hold fills up as you hold it ==');
+  {
+    const r = await page.evaluate(async () => {
+      startHold(holdLevel(40, 4));
+      const t = await waitFor(() => atHead(5));
+      const before = t.fill.getBoundingClientRect().height;
+      key('KeyA', true);
+      await new Promise(r => setTimeout(r, 250));
+      const a = t.fill.getBoundingClientRect().height;
+      await new Promise(r => setTimeout(r, 450));
+      const b = t.fill.getBoundingClientRect().height;
+      const op = parseFloat(getComputedStyle(t.fill).opacity);
+      key('KeyA', false);
+      quitToMenu();
+      return { before, a, b, op, h: t.h };
+    });
+    ok(r.b > r.a + 8 && r.a >= 18, 'a bright fill climbs the hold the longer it is held (' + r.a.toFixed(0) + 'px then ' + r.b.toFixed(0) + 'px of ' + r.h + ')');
+    ok(r.op > 0.5, 'and shows only while it is held');
+  }
+
   console.log('== letting go early drops it ==');
   {
     const r = await page.evaluate(async () => {
@@ -485,9 +505,12 @@ const INIT = () => {
       buildGrid();
       cell(3, 1).click();
       out.editor = !!document.querySelector('.cr-cell-editor');
-      const chips = [...document.querySelector('.cr-cell-editor .cce-sus').children];
+      const summaries = [...document.querySelectorAll('.cr-cell-editor .cce-sum')].map(b => b.textContent);
+      out.summary = summaries.join('|');
+      document.querySelector('.cr-cell-editor [data-sec="hold"] .cce-sum').click();
+      const chips = [...document.querySelector('.cr-cell-editor .cce-holds').children];
       out.chips = chips.length;
-      [...document.querySelectorAll('.cr-cell-editor .cce-schip')].find(b => b.textContent === '2' && b.parentElement.previousSibling.textContent.startsWith('Hold')).click();
+      [...document.querySelector('.cr-cell-editor .cce-holds').children].find(b => b.textContent === '2').click();
       out.afterChip = crGrid[1][1].hold;
       out.instKept = crGrid[1][1].inst;
       [...document.querySelectorAll('.cr-cell-editor .cce-btn')].find(b => b.textContent === '×2').click();
@@ -498,6 +521,7 @@ const INIT = () => {
     });
     ok(r.selected.join() === '1,1' && r.glow === 4, 'selecting any cell of a hold selects its head and lights the whole hold (' + r.selected + ', ' + r.glow + ' cells)');
     ok(r.erased && r.bodyGone === 0, 'erasing its body erases the whole hold');
+    ok(/Note.*E4/.test(r.summary) && /Hold.*3 rows/.test(r.summary) && /Instrument.*Cello/.test(r.summary) && /Sustain.*off/.test(r.summary), 'the editor lists each setting with its current value (' + r.summary + ')');
     ok(r.editor && r.chips === 7, 'clicking its body opens the editor, with a Hold row (' + r.chips + ' options)');
     ok(r.afterChip === 2, 'picking 2 shortens it (' + r.afterChip + ')');
     ok(r.instKept === 'cello' && r.instStill === 'cello', 'editing a note keeps its own instrument');

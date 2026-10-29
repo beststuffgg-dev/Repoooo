@@ -21,12 +21,14 @@ window.RD_Campaign = (function () {
     for (let i = 0; i < rec.nt.length; i += 6) {
       const row = rec.nt[i], lane = rec.nt[i + 1];
       if (!grid[row]) continue;
+      const kind = rec.nt[i + 2];
       grid[row][lane] = {
-        type:    rec.nt[i + 2] ? 'dtap' : 'tap',
+        type:    kind === 1 ? 'dtap' : 'tap',
         freq:    midiToFreq(rec.nt[i + 3]),
         sustain: rec.nt[i + 4] / 10,
         inst:    DATA.instruments[rec.nt[i + 5]] || '',
       };
+      if (kind >= 3) grid[row][lane].hold = kind - 2;
     }
 
     const area = areaById(rec.a);

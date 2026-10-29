@@ -50,6 +50,32 @@ function loadVoiceAliases() {
   return sandbox.window.RD_resolveInstrument;
 }
 
+function addHolds(grid, levelIdx) {
+  const maxN = 2 + Math.floor(levelIdx / 4);
+  const ends = [];
+  let lastStart = -99, made = 0;
+  for (let r = 8; r < grid.length; r++) {
+    if (r % 4 !== 0 || r - lastStart < 6) continue;
+    const row = grid[r];
+    if (row.some(c => c && c.type === 'dtap')) continue;
+    for (let lane = 0; lane < row.length; lane++) {
+      const cell = row[lane];
+      if (!cell || cell.type !== 'tap') continue;
+      let gap = 0;
+      while (r + gap + 1 < grid.length && !grid[r + gap + 1][lane]) gap++;
+      const n = Math.min(gap - 1, maxN);
+      if (n < 2) continue;
+      if (ends.filter(e => e > r).length >= 2) continue;
+      cell.hold = n;
+      ends.push(r + n);
+      lastStart = r;
+      made++;
+      break;
+    }
+  }
+  return made;
+}
+
 function loadRowTypes() {
   const sandbox = { window: {} };
   vm.runInContext(fs.readFileSync(ROWTYPES, 'utf8'), vm.createContext(sandbox));
@@ -74,7 +100,7 @@ function main() {
   }));
 
   const levels = [];
-  let notesTotal = 0, drift = 0, capped = 0;
+  let notesTotal = 0, drift = 0, capped = 0, holdsMade = 0;
 
   for (const area of C.AREAS) {
     for (let idx = 0; idx < C.LEVELS_PER_AREA; idx++) {
@@ -83,12 +109,13 @@ function main() {
       l.grid = cap.grid;
       if (cap.capped) capped++;
       RowTypes.uniformRowTypes(l.grid);
+      holdsMade += addHolds(l.grid, l.levelIdx);
       const nt = [];
       l.grid.forEach((row, r) => row.forEach((cell, lane) => {
         if (!cell) return;
         const midi = toMidi(cell.freq);
         if (Math.abs(toFreq(midi) - cell.freq) > 0.02) drift++;
-        nt.push(r, lane, cell.type === 'dtap' ? 1 : 0, midi,
+        nt.push(r, lane, cell.hold ? cell.hold + 2 : cell.type === 'dtap' ? 1 : 0, midi,
           Math.round((cell.sustain || 0) * 10), instIdx(cell.inst));
         notesTotal++;
       }));
@@ -124,6 +151,7 @@ function main() {
   console.log('  ' + areas.length + ' areas, ' + notesTotal.toLocaleString() + ' notes, '
     + instruments.length + ' instruments (' + instruments.filter(Boolean).join(', ') + ')');
   console.log('  ' + capped + ' of ' + levels.length + ' trimmed to <=' + MAX_SECONDS + 's on a bar line; rest as composed');
+  console.log('  ' + holdsMade + ' hold notes');
   console.log('  ' + (fs.statSync(OUT).size / 1024).toFixed(0) + ' KB, every pitch exact through midi');
 }
 

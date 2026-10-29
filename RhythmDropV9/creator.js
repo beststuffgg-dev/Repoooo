@@ -675,6 +675,8 @@ let crHoldVoice = null;
   g.addEventListener('pointercancel', end);
 })();
 
+let crEditorOpen = null;
+
 function openCellEditor(anchorEl, ri, ci) {
   document.querySelectorAll('.cr-cell-editor').forEach(e => e.remove());
   const cell = crGrid[ri][ci];
@@ -730,80 +732,69 @@ function openCellEditor(anchorEl, ri, ci) {
     const pc = ((midi0 % 12) + 12) % 12;
     const flat = !Object.values(SEMI).includes(pc);
     const letter0 = Object.keys(SEMI).find(k => SEMI[k] === pc) || Object.keys(SEMI).find(k => SEMI[k] === pc - 1);
+    const acc0 = flat ? 1 : 0;
     const setPitch = (letter, acc, oct) => {
       const m = (oct + 1) * 12 + SEMI[letter] + acc;
       write({ freq: parseFloat((440 * Math.pow(2, (m - 69) / 12)).toFixed(2)) });
     };
-    const pitchHead = document.createElement('div');
-    pitchHead.className = 'cce-pitch';
-    pitchHead.textContent = '♪ ' + freqToName(cellFreq(c, ci));
-    pop.appendChild(pitchHead);
-    const chipRow = (items, isOn, onPick) => {
+    const chipRow = (body, items, isOn, onPick, cls) => {
       const row = document.createElement('div');
-      row.className = 'cce-sus cce-pick';
+      row.className = 'cce-sus ' + (cls || '');
       items.forEach(it => {
         const btn = document.createElement('button');
         btn.className = 'cce-schip' + (isOn(it) ? ' on' : '');
         btn.textContent = it.label;
+        if (it.off) { btn.disabled = true; btn.style.opacity = '.35'; }
         btn.addEventListener('click', () => onPick(it));
         row.appendChild(btn);
       });
-      pop.appendChild(row);
+      body.appendChild(row);
     };
-    const acc0 = flat ? 1 : 0;
-    chipRow(['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(l => ({ label: l, v: l })), it => it.v === letter0, it => setPitch(it.v, acc0, oct0));
-    chipRow([{ label: '♮', v: 0 }, { label: '♯', v: 1 }, { label: '♭', v: -1 }], it => (flat ? it.v === 1 : it.v === 0), it => setPitch(it.v === -1 && SEMI[letter0] !== undefined ? letter0 : letter0, it.v, oct0));
-    chipRow([2, 3, 4, 5, 6, 7].map(o => ({ label: String(o), v: o })), it => it.v === oct0, it => setPitch(letter0, acc0, it.v));
+    const section = (id, label, value, build) => {
+      const sec = document.createElement('div');
+      sec.className = 'cce-sec' + (crEditorOpen === id ? ' open' : '');
+      sec.dataset.sec = id;
+      const sum = document.createElement('button');
+      sum.type = 'button';
+      sum.className = 'cce-sum';
+      sum.innerHTML = '<span class="k"></span><span class="v"></span><span class="chev">' + (crEditorOpen === id ? '▾' : '▸') + '</span>';
+      sum.querySelector('.k').textContent = label;
+      sum.querySelector('.v').textContent = value;
+      sum.addEventListener('click', () => { crEditorOpen = crEditorOpen === id ? null : id; render(); positionPopup(pop, anchorEl); });
+      sec.appendChild(sum);
+      if (crEditorOpen === id) {
+        const body = document.createElement('div');
+        body.className = 'cce-secbody';
+        build(body);
+        sec.appendChild(body);
+      }
+      pop.appendChild(sec);
+    };
+
+    section('note', 'Note', '♪ ' + freqToName(cellFreq(c, ci)), body => {
+      chipRow(body, ['C', 'D', 'E', 'F', 'G', 'A', 'B'].map(l => ({ label: l, v: l })), it => it.v === letter0, it => setPitch(it.v, acc0, oct0), 'cce-pick');
+      chipRow(body, [{ label: '♮', v: 0 }, { label: '♯', v: 1 }, { label: '♭', v: -1 }], it => (flat ? it.v === 1 : it.v === 0), it => setPitch(letter0, it.v, oct0), 'cce-pick');
+      chipRow(body, [2, 3, 4, 5, 6, 7].map(o => ({ label: String(o), v: o })), it => it.v === oct0, it => setPitch(letter0, acc0, it.v), 'cce-pick');
+    });
 
     if (cellType(c) !== 'dtap') {
-      const holdLabel = document.createElement('div');
-      holdLabel.className = 'cce-sublabel';
-      holdLabel.textContent = 'Hold (rows)';
-      pop.appendChild(holdLabel);
-      const holdRow = document.createElement('div');
-      holdRow.className = 'cce-sus';
       const room = holdSpace(ri, ci);
-      [[0, 'off'], [1, '1'], [2, '2'], [3, '3'], [4, '4'], [6, '6'], [8, '8']].forEach(([v, label]) => {
-        const btn = document.createElement('button');
-        btn.className = 'cce-schip' + (cellHold(c) === v ? ' on' : '');
-        btn.textContent = label;
-        if (v > room) { btn.disabled = true; btn.style.opacity = '.35'; }
-        btn.addEventListener('click', () => write({ hold: v }));
-        holdRow.appendChild(btn);
+      section('hold', 'Hold', cellHold(c) ? cellHold(c) + (cellHold(c) === 1 ? ' row' : ' rows') : 'off', body => {
+        chipRow(body, [[0, 'off'], [1, '1'], [2, '2'], [3, '3'], [4, '4'], [6, '6'], [8, '8']].map(([v, label]) => ({ label, v, off: v > room })),
+          it => cellHold(c) === it.v, it => write({ hold: it.v }), 'cce-holds');
       });
-      pop.appendChild(holdRow);
     }
 
-    const instLabelEl = document.createElement('div');
-    instLabelEl.className = 'cce-sublabel';
-    instLabelEl.textContent = 'Instrument';
-    pop.appendChild(instLabelEl);
-    const instRow = document.createElement('div');
-    instRow.className = 'cce-sus cce-insts';
-    [{ id: null, label: 'Level' }].concat((window.RD_INSTRUMENTS || []).map(i => ({ id: i.id, label: i.label.replace('French ', '') }))).forEach(it => {
-      const btn = document.createElement('button');
-      const cur = c.inst ? window.RD_resolveInstrument(c.inst) : null;
-      btn.className = 'cce-schip' + (cur === it.id ? ' on' : '');
-      btn.textContent = it.label;
-      btn.addEventListener('click', () => write({ inst: it.id }));
-      instRow.appendChild(btn);
+    const curInst = c.inst ? window.RD_resolveInstrument(c.inst) : null;
+    section('inst', 'Instrument', curInst ? instLabel(curInst) : 'Level', body => {
+      chipRow(body, [{ label: 'Level', v: null }].concat((window.RD_INSTRUMENTS || []).map(i => ({ label: i.label.replace('French ', ''), v: i.id }))),
+        it => curInst === it.v, it => write({ inst: it.v }), 'cce-insts');
     });
-    pop.appendChild(instRow);
 
-    const susLabel = document.createElement('div');
-    susLabel.className = 'cce-sublabel';
-    susLabel.textContent = 'Sustain';
-    pop.appendChild(susLabel);
-    const susRow = document.createElement('div');
-    susRow.className = 'cce-sus';
-    [[0, 'off'], [0.5, '.5'], [1, '1'], [1.5, '1.5'], [2, '2'], [2.5, '2.5'], [3, '3']].forEach(([v, label]) => {
-      const btn = document.createElement('button');
-      btn.className = 'cce-schip' + (Math.abs(cellSustain(c) - v) < 0.01 ? ' on' : '');
-      btn.textContent = label;
-      btn.addEventListener('click', () => write({ sustain: v }));
-      susRow.appendChild(btn);
+    section('sus', 'Sustain', cellSustain(c) > 0 ? cellSustain(c) + 's' : 'off', body => {
+      chipRow(body, [[0, 'off'], [0.5, '.5'], [1, '1'], [1.5, '1.5'], [2, '2'], [2.5, '2.5'], [3, '3']].map(([v, label]) => ({ label, v })),
+        it => Math.abs(cellSustain(c) - it.v) < 0.01, it => write({ sustain: it.v }), 'cce-susrow');
     });
-    pop.appendChild(susRow);
 
     const foot = document.createElement('div');
     foot.className = 'cce-row';

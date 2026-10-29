@@ -1136,7 +1136,7 @@ body.gfx-modern.theme-concrete .lane::after {
 }
 
 .cr-cell-editor {
-  position:fixed; z-index:120; width:176px;
+  position:fixed; z-index:120; width:200px;
   background:var(--bg2); border:1px solid var(--border2); border-radius:11px;
   box-shadow:0 14px 34px -10px rgba(0,0,0,.7); padding:10px; display:flex; flex-direction:column; gap:7px;
 }
@@ -1157,6 +1157,13 @@ body.gfx-modern.theme-concrete .lane::after {
   font-family:var(--font-data); cursor:pointer; transition:border-color .12s;
 }
 .cce-pitch:hover { border-color:var(--tap); }
+.cce-sec { border:1px solid var(--border2); border-radius:8px; background:var(--bg3); overflow:hidden; }
+.cce-sum { width:100%; display:flex; align-items:center; gap:8px; padding:7px 9px; background:none; border:none; color:var(--text); font-family:var(--font-body); font-size:12px; cursor:pointer; text-align:left; }
+.cce-sum .k { color:var(--muted); font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:1px; font-family:var(--font-data); width:62px; }
+.cce-sum .v { flex:1; font-weight:700; font-family:var(--font-data); }
+.cce-sum .chev { color:var(--muted); }
+.cce-sec.open { border-color:var(--tap); }
+.cce-secbody { display:flex; flex-direction:column; gap:4px; padding:2px 8px 8px; }
 .cce-sublabel { font-size:10px; color:var(--muted); font-family:var(--font-data); }
 .cce-sus { display:flex; gap:3px; flex-wrap:wrap; }
 .cce-schip {
@@ -1383,6 +1390,13 @@ body.adv-overlay #adv-panel.open {
   box-shadow:0 0 10px var(--glow-tap);
 }
 .tile-hold .tile-chaos-key { inset:auto 0 0 0; height:38px; z-index:2; }
+.hold-fill {
+  position:absolute; left:-2px; right:-2px; bottom:0; height:0; border-radius:7px; pointer-events:none; z-index:1;
+  background:linear-gradient(0deg,var(--tap2),color-mix(in srgb,var(--tap) 55%,#fff));
+  opacity:0; transition:opacity .08s; box-shadow:0 0 14px var(--glow-tap);
+}
+.tile-hold.held .hold-fill { opacity:.9; }
+.tile-hold.held.letgo .hold-fill { opacity:.4; }
 .tile-hold.held { box-shadow:0 0 20px var(--glow-tap); }
 .tile-hold.held::before { filter:brightness(1.3); }
 .tile-hold.dropped, .tile-hold.missed { opacity:.35; filter:grayscale(.7); }
@@ -1421,6 +1435,7 @@ body.adv-overlay #adv-panel.open {
 }
 .ov-swatch { width:22px; height:14px; border-radius:4px; }
 .os-tap  { background:var(--tap);  box-shadow:0 0 6px var(--glow-tap); }
+.os-hold { background:color-mix(in srgb,var(--tap) 40%,transparent); border:2px solid var(--tap); }
 .os-dtap { background:var(--dtap); border:1.5px solid var(--dtap2); box-shadow:0 0 6px var(--glow-dtap); }
 .ov-keys { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; }
 .ov-key {
@@ -1969,6 +1984,7 @@ body.adv-overlay #adv-panel.open {
     <div class="ov-legend">
       <div class="ov-leg"><div class="ov-swatch os-tap"></div>tap once</div>
       <div class="ov-leg"><div class="ov-swatch os-dtap"></div>tap twice</div>
+      <div class="ov-leg"><div class="ov-swatch os-hold"></div>hold</div>
     </div>
     <div id="ov-score-lbl">score</div>
     <div id="ov-score"></div>

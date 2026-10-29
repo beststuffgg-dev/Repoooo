@@ -81,6 +81,26 @@ console.log('== the flat encoding decodes back to real charts ==');
     + ' (found ' + aboveTable.length + ')');
 }
 
+console.log('== hold notes in the campaign ==');
+{
+  let holds = 0, perLevel = [], bad = 0;
+  for (const l of DATA.levels) {
+    let n = 0;
+    for (let i = 0; i < l.nt.length; i += 6) if (l.nt[i + 2] >= 3) n++;
+    holds += n; perLevel.push(n);
+  }
+  ok(holds > 1500, holds.toLocaleString() + ' hold notes are baked in');
+  ok(perLevel.every(n => n >= 3), 'every one of the 150 songs has some (fewest ' + Math.min(...perLevel) + ')');
+  const L = C.levelAt(1, 14);
+  {
+    let h = 0;
+    L.grid.forEach((row, r) => row.forEach((c, lane) => {
+      if (c && c.hold) { h++; for (let k = 1; k <= c.hold; k++) if (!L.grid[r + k] || L.grid[r + k][lane] || c.type !== 'tap') bad++; }
+    }));
+    ok(h > 0 && bad === 0, 'a song expands with its holds, clear of other notes in their lane (' + h + ' holds)');
+  }
+}
+
 console.log('== the build can actually play what was baked ==');
 {
   const roster = (sb.window.RD_INSTRUMENTS || []).map(i => i.id);

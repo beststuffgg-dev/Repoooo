@@ -154,8 +154,14 @@ function spawnTile(note) {
     el.appendChild(keyLbl);
   }
 
+  let fill = null;
+  if (note.hold) {
+    fill = document.createElement('div');
+    fill.className = 'hold-fill';
+    el.appendChild(fill);
+  }
   laneEls[note.lane].appendChild(el);
-  return { el, lane:note.lane, chaosCode, y:-h, type:note.type, h, freq:note.freq||null, sustain:note.sustain||0, inst:note.inst||null,
+  return { fill, el, lane:note.lane, chaosCode, y:-h, type:note.type, h, freq:note.freq||null, sustain:note.sustain||0, inst:note.inst||null,
            hold:note.hold||0, pending:0, held:false, down:false, releasedAt:0, tickAcc:0, voice:null, missed:false, dropped:false,
            firstTapped:false, done:false };
 }
@@ -313,6 +319,8 @@ function loop(now) {
           damage(t.lane); if (!running) return;
         }
       } else if (t.held) {
+        t.el.classList.toggle('letgo', !t.down);
+        if (t.fill) t.fill.style.height = Math.max(TILE_H * 0.5, Math.min(t.h, t.y + t.h - hitY())) + 'px';
         if (t.down) {
           t.tickAcc += dt;
           const iv = currentBeatMs / 2;

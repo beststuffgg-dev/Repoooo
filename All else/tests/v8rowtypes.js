@@ -81,8 +81,8 @@ console.log('== the baked campaign ==');
   for (const l of D_.levels) {
     const byRow = {};
     for (let i = 0; i < l.nt.length; i += 6) {
-      (byRow[l.nt[i]] = byRow[l.nt[i]] || new Set()).add(l.nt[i + 2]);
-      notesN++; doubles += l.nt[i + 2];
+      (byRow[l.nt[i]] = byRow[l.nt[i]] || new Set()).add(l.nt[i + 2] === 1 ? 1 : 0);
+      notesN++; if (l.nt[i + 2] === 1) doubles++;
     }
     for (const r in byRow) { rows++; if (byRow[r].size > 1) mixed++; }
   }
