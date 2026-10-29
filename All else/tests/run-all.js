@@ -20,6 +20,7 @@ const SUITES = [
   ['v8holds.js',    'V8 holds — hold notes in play, in codes and in the creator'],
   ['v8move.js',     'V8 creator — move, hear, undo, per-note voices'],
   ['v8studio.js',   'V8 Song Studio — note starts, pitches, tempo, tapping, making a level'],
+  ['autochart.js',  'Auto Level Generator — standalone page: notes, chords, holds, instruments, lanes, import'],
   ['smoke.js',        'UI — boot, tabs, campaign, shop, editor, themes'],
   ['smoke2.js',       'Gameplay — scoring, lives, tile pool, migration'],
   ['progression.js',  'Progression — generation, XP, codes, dailies, economy'],
@@ -49,7 +50,7 @@ const SUITES = [
 
 const APP = process.env.APP_DIR || '';
 const SKIP = /Redesign/.test(APP)
-  ? new Set(['redesigntest.js', 'singlefiletest.js', 'v8levels.js', 'v8campaign.js', 'v8audio.js', 'v8graphics.js', 'v8settings.js', 'v8generate.js', 'v8rowtypes.js', 'v8themes.js', 'v8gameplay.js', 'v8editor.js', 'v8ui.js', 'v8lanes.js', 'v8holds.js', 'v8move.js', 'v8studio.js'])
+  ? new Set(['redesigntest.js', 'singlefiletest.js', 'v8levels.js', 'v8campaign.js', 'v8audio.js', 'v8graphics.js', 'v8settings.js', 'v8generate.js', 'v8rowtypes.js', 'v8themes.js', 'v8gameplay.js', 'v8editor.js', 'v8ui.js', 'v8lanes.js', 'v8holds.js', 'v8move.js', 'v8studio.js', 'autochart.js'])
   : new Set();
 
 let failed = [], ran = 0;

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RhythmDrop Auto Level Generator</title>
+<style>
+:root { --bg:#101315; --card:#171c1f; --line:#2a3236; --text:#e7eef0; --mut:#8da0a6; --acc:#6fa8b5; --acc2:#e0894a; --bad:#e4637a; }
+@media (prefers-color-scheme: light) { :root { --bg:#f4f1ea; --card:#fff; --line:#d8d2c4; --text:#1b2124; --mut:#5d6b70; --acc:#1e7a8c; --acc2:#b8561f; --bad:#b02a45; } }
+* { box-sizing:border-box; }
+body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui, sans-serif; padding:24px 16px 80px; }
+main { max-width:780px; margin:0 auto; display:flex; flex-direction:column; gap:14px; }
+h1 { font-size:24px; margin:0; letter-spacing:-.4px; }
+p.lead { margin:0; color:var(--mut); }
+.card { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:16px; }
+.drop { display:flex; gap:12px; align-items:center; flex-wrap:wrap; border-style:dashed; }
+.drop.over { border-color:var(--acc); }
+button, select, input[type=number] { font:inherit; font-size:14px; border-radius:10px; border:1px solid var(--line); background:transparent; color:var(--text); padding:8px 14px; }
+button { cursor:pointer; font-weight:600; }
+button:hover:not(:disabled) { border-color:var(--acc); color:var(--acc); }
+button.primary { border-color:var(--acc); color:var(--acc); }
+button:disabled { opacity:.4; cursor:default; }
+.row { display:flex; gap:12px 18px; flex-wrap:wrap; align-items:center; }
+label { display:flex; align-items:center; gap:8px; color:var(--mut); font-size:13px; }
+.status { color:var(--mut); min-height:22px; font-size:14px; }
+.bar { height:6px; border-radius:99px; background:var(--line); overflow:hidden; }
+.bar > i { display:block; height:100%; width:0; background:var(--acc); transition:width .15s; }
+.stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:10px; }
+.stat b { display:block; font-size:22px; font-variant-numeric:tabular-nums; }
+.stat span { color:var(--mut); font-size:12px; }
+canvas { width:100%; height:200px; border-radius:12px; background:var(--bg); border:1px solid var(--line); display:block; }
+textarea { width:100%; height:110px; border-radius:12px; border:1px solid var(--line); background:var(--bg); color:var(--text); font:12px/1.4 ui-monospace, monospace; padding:10px; resize:vertical; }
+.chips { display:flex; gap:6px; flex-wrap:wrap; }
+.chip { padding:3px 10px; border-radius:99px; border:1px solid var(--line); font-size:12px; color:var(--mut); }
+h2 { font-size:15px; margin:0 0 8px; }
+ol { margin:6px 0 0 18px; padding:0; color:var(--mut); font-size:13px; }
+[hidden] { display:none !important; }
+</style>
+</head>
+<body>
+<main>
+  <div>
+    <h1>Auto Level Generator</h1>
+    <p class="lead">Drop in a piece of music. It finds where the notes start, which notes and chords are playing, how long each lasts (so it can make holds), and which kind of instrument is playing, then lays out a RhythmDrop level whose notes are the song's own. Everything happens on this computer.</p>
+  </div>
+
+  <div class="card drop" id="drop">
+    <input type="file" id="file" accept="audio/*,.mp3,.wav,.ogg,.m4a,.flac" hidden>
+    <button class="primary" id="pick" type="button">Choose a music file</button>
+    <span style="color:var(--mut);font-size:13px" id="fname">or drop it here. Classical music with clear notes works best.</span>
+  </div>
+
+  <div class="card" id="opts" hidden>
+    <div class="row">
+      <label>Difficulty <select id="diff"><option value="easy">Easy</option><option value="medium" selected>Medium</option><option value="hard">Hard</option></select></label>
+      <label>Lanes <select id="lanes"><option>4</option><option>6</option><option>8</option></select></label>
+      <label><input type="checkbox" id="inst" checked> Detect instruments</label>
+      <label><input type="checkbox" id="holds" checked> Make holds</label>
+      <label>Density <input type="range" id="density" min="0.5" max="1.6" step="0.1" value="1"></label>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <button class="primary" id="go" type="button">Generate level</button>
+      <button id="reroll" type="button" disabled>Shuffle lanes</button>
+      <label>Seed <input type="number" id="seed" value="1" min="1" style="width:90px"></label>
+    </div>
+    <div class="bar" style="margin-top:12px"><i id="prog"></i></div>
+    <div class="status" id="status"></div>
+  </div>
+
+  <div class="card" id="result" hidden>
+    <div class="stats" id="stats"></div>
+    <div class="chips" id="insts" style="margin-top:12px"></div>
+    <canvas id="roll" height="200" style="margin-top:12px"></canvas>
+    <div class="row" style="margin-top:12px">
+      <button id="play" type="button">▶ Hear the chart</button>
+      <label>Name <input type="text" id="name" value="Auto level" maxlength="28" style="font:inherit;font-size:14px;border-radius:10px;border:1px solid var(--line);background:transparent;color:var(--text);padding:8px 12px"></label>
+    </div>
+  </div>
+
+  <div class="card" id="share" hidden>
+    <h2>Your level code</h2>
+    <textarea id="code" readonly></textarea>
+    <div class="row" style="margin-top:10px">
+      <button class="primary" id="copy" type="button">Copy code</button>
+      <button id="save" type="button">Download as .txt</button>
+    </div>
+    <ol>
+      <li>Open RhythmDrop and go to the <b>Custom</b> tab.</li>
+      <li>Press <b>Import from code</b> and paste the code.</li>
+      <li>Open the level in the creator to touch it up, then play it.</li>
+    </ol>
+  </div>
+</main>
+<script>
+/*SCRIPTS*/
+</script>
+</body>
+</html>
