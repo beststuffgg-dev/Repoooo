@@ -6115,6 +6115,7 @@ let crHoldVoice = null;
 let crEditorOpen = null;
 
 function openCellEditor(anchorEl, ri, ci) {
+  crEditorOpen = null;
   document.querySelectorAll('.cr-cell-editor').forEach(e => e.remove());
   const cell = crGrid[ri][ci];
   if (!cell) return;
@@ -6147,10 +6148,13 @@ function openCellEditor(anchorEl, ri, ci) {
     if (!c) { pop.remove(); return; }
     pop.innerHTML = '';
 
+    const listMode = crEditorOpen === null;
+    if (listMode) {
     const head = document.createElement('div');
     head.className = 'cce-head';
     head.textContent = 'Edit note';
     pop.appendChild(head);
+    }
 
     const typeRow = document.createElement('div');
     typeRow.className = 'cce-row';
@@ -6161,7 +6165,7 @@ function openCellEditor(anchorEl, ri, ci) {
       btn.addEventListener('click', () => write({ type: t }));
       typeRow.appendChild(btn);
     });
-    pop.appendChild(typeRow);
+    if (listMode) pop.appendChild(typeRow);
 
     const SEMI = { C:0, D:2, E:4, F:5, G:7, A:9, B:11 };
     const midi0 = Math.round(69 + 12 * Math.log2(cellFreq(c, ci) / 440));
@@ -6188,18 +6192,19 @@ function openCellEditor(anchorEl, ri, ci) {
       body.appendChild(row);
     };
     const section = (id, label, value, build) => {
+      if (!listMode && crEditorOpen !== id) return;
       const sec = document.createElement('div');
-      sec.className = 'cce-sec' + (crEditorOpen === id ? ' open' : '');
+      sec.className = 'cce-sec' + (listMode ? '' : ' open');
       sec.dataset.sec = id;
       const sum = document.createElement('button');
       sum.type = 'button';
       sum.className = 'cce-sum';
-      sum.innerHTML = '<span class="k"></span><span class="v"></span><span class="chev">' + (crEditorOpen === id ? '▾' : '▸') + '</span>';
+      sum.innerHTML = '<span class="k"></span><span class="v"></span><span class="chev">' + (listMode ? '▸' : '▾') + '</span>';
       sum.querySelector('.k').textContent = label;
       sum.querySelector('.v').textContent = value;
-      sum.addEventListener('click', () => { crEditorOpen = crEditorOpen === id ? null : id; render(); positionPopup(pop, anchorEl); });
+      sum.addEventListener('click', () => { crEditorOpen = listMode ? id : null; render(); positionPopup(pop, anchorEl); });
       sec.appendChild(sum);
-      if (crEditorOpen === id) {
+      if (!listMode) {
         const body = document.createElement('div');
         body.className = 'cce-secbody';
         build(body);
@@ -6244,7 +6249,7 @@ function openCellEditor(anchorEl, ri, ci) {
     done.textContent = 'Done';
     done.addEventListener('click', () => pop.remove());
     foot.appendChild(erase); foot.appendChild(done);
-    pop.appendChild(foot);
+    if (listMode) pop.appendChild(foot);
   }
 
   render();

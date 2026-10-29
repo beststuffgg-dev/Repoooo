@@ -511,6 +511,9 @@ const INIT = () => {
       const chips = [...document.querySelector('.cr-cell-editor .cce-holds').children];
       out.chips = chips.length;
       [...document.querySelector('.cr-cell-editor .cce-holds').children].find(b => b.textContent === '2').click();
+      out.takeover = document.querySelectorAll('.cr-cell-editor .cce-sec').length + ':' + document.querySelectorAll('.cr-cell-editor .cce-btn').length;
+      document.querySelector('.cr-cell-editor .cce-sum').click();
+      out.back = document.querySelectorAll('.cr-cell-editor .cce-sec').length;
       out.afterChip = crGrid[1][1].hold;
       out.instKept = crGrid[1][1].inst;
       [...document.querySelectorAll('.cr-cell-editor .cce-btn')].find(b => b.textContent === '×2').click();
@@ -523,6 +526,8 @@ const INIT = () => {
     ok(r.erased && r.bodyGone === 0, 'erasing its body erases the whole hold');
     ok(/Note.*E4/.test(r.summary) && /Hold.*3 rows/.test(r.summary) && /Instrument.*Cello/.test(r.summary) && /Sustain.*off/.test(r.summary), 'the editor lists each setting with its current value (' + r.summary + ')');
     ok(r.editor && r.chips === 7, 'clicking its body opens the editor, with a Hold row (' + r.chips + ' options)');
+    ok(r.takeover === '1:0', 'opening a setting takes over the menu (' + r.takeover + ')');
+    ok(r.back >= 3, 'and clicking its header brings the full list back (' + r.back + ' settings)');
     ok(r.afterChip === 2, 'picking 2 shortens it (' + r.afterChip + ')');
     ok(r.instKept === 'cello' && r.instStill === 'cello', 'editing a note keeps its own instrument');
     ok(r.afterDouble[0] === 'dtap' && r.afterDouble[1] === undefined, 'making it a double removes the hold');
