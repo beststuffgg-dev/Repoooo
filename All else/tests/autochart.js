@@ -104,6 +104,7 @@ const PIECE = () => {
   const lowNotes = cells.filter(x => midi(x.c.freq) < 45), highNotes = cells.filter(x => midi(x.c.freq) > 70);
   ok(lowNotes.length && lowNotes.filter(x => ['cello', 'horn', 'clarinet', 'piano'].includes(x.c.inst)).length / lowNotes.length >= 0.6, 'low notes are given low instruments');
   ok(med.status.startsWith('Done'), 'the page says it is done');
+  const np = /after (\d+) passes/.exec(med.status); ok(np && +np[1] >= 3 && +np[1] <= 8, 'it ran at least 3 passes and says so (' + (np && np[1]) + ')');
 
   console.log('== difficulty changes the density ==');
   const easy = await run('easy', 4);

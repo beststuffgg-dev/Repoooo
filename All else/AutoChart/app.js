@@ -44,7 +44,7 @@
       setProg(1);
       S.result = A.layout(S.analysis, o);
       show();
-      status('Done. Listen to it below, then copy the code into RhythmDrop.');
+      status('Done after ' + S.analysis.passes + ' passes; notes kept only where at least 3 passes agreed. Listen below, then copy the code into RhythmDrop.');
     } catch (e) {
       status('Something went wrong: ' + e.message, true);
     }

@@ -131,23 +131,60 @@ window.RD_AutoChart = (function () {
     return onsets.filter((_, i) => keep.has(i));
   }
 
-  async function analyse(pcm, sr, opts, progress) {
-    const dur = pcm.length / sr;
-    const cfg = DIFFICULTY[opts.difficulty] || DIFFICULTY.medium;
-    const step = (p, msg) => progress && progress(p, msg);
+  const MINP = 3, MAXP = 8, NEED = 3;
+  const VARIANTS = [
+    { sens: 1, skip: 0.025, lenK: 1 }, { sens: 1.25, skip: 0.04, lenK: 0.85 }, { sens: 0.8, skip: 0.015, lenK: 1.15 },
+    { sens: 1.1, skip: 0.05, lenK: 1 }, { sens: 0.9, skip: 0.02, lenK: 0.9 }, { sens: 1.4, skip: 0.035, lenK: 1.1 },
+    { sens: 0.7, skip: 0.03, lenK: 1 }, { sens: 1, skip: 0.06, lenK: 0.95 }
+  ];
 
-    step(0, 'Listening for note starts');
-    const curve = await D().onsetCurve(pcm, sr, p => step(p * 0.3, 'Listening for note starts'));
-    const allOnsets = D().pickOnsets(curve);
-    const tempo = D().estimateTempo(curve, allOnsets);
-    const onsets = thinOnsets(allOnsets, cfg.perSec * (opts.density || 1), dur);
+  function cluster(passes) {
+    const items = [];
+    passes.forEach((ev, p) => ev.forEach(e => e.notes.forEach(n => items.push({ t: e.t, midi: n.midi, p, e, n }))));
+    items.sort((a, b) => a.midi - b.midi || a.t - b.t);
+    const groups = [];
+    items.forEach(it => {
+      const g = groups[groups.length - 1];
+      if (g && g.midi === it.midi && it.t - g.last <= 0.07) { g.items.push(it); g.last = it.t; }
+      else groups.push({ midi: it.midi, last: it.t, items: [it] });
+    });
+    groups.forEach(g => { g.votes = new Set(g.items.map(i => i.p)).size; });
+    return groups;
+  }
 
+  function tally(passes) {
+    const gs = cluster(passes);
+    return { agreed: gs.filter(g => g.votes >= NEED).length, pending: gs.some(g => g.votes === NEED - 1) };
+  }
+
+  function consensus(passes) {
+    const gs = cluster(passes).filter(g => g.votes >= Math.min(NEED, passes.length));
+    const byEvent = new Map();
+    gs.forEach(g => {
+      const ts = g.items.map(i => i.t).sort((a, b) => a - b);
+      const t = ts[Math.floor(ts.length / 2)];
+      const lens = g.items.map(i => i.n.length).sort((a, b) => a - b);
+      const first = g.items[0];
+      const key = Math.round(t / 0.07);
+      const note = { midi: g.midi, freq: first.n.freq, conf: first.n.conf, length: lens[Math.floor(lens.length / 2)], trace: first.n.trace, votes: g.votes };
+      const ev = byEvent.get(key) || { t, strength: first.e.strength, notes: [], fam: first.e.fam, feat: first.e.feat };
+      ev.notes.push(note);
+      byEvent.set(key, ev);
+    });
+    const out = [...byEvent.values()].sort((a, b) => a.t - b.t);
+    out.forEach(e => e.notes.sort((a, b) => a.midi - b.midi));
+    return out;
+  }
+
+  async function onePass(pcm, sr, cfg, opts, curve, v, passNo, step, dur) {
+    const all = D().pickOnsets(curve, { sensitivity: v.sens });
+    const onsets = thinOnsets(all, cfg.perSec * (opts.density || 1), dur);
     const events = [];
     for (let i = 0; i < onsets.length; i++) {
       const o = onsets[i];
       const next = onsets[i + 1] ? onsets[i + 1].t : Infinity;
       const len = isFinite(next) ? Math.max(0.12, Math.min(0.32, next - o.t - 0.02)) : 0.3;
-      const found = D().pitchesAt(pcm, sr, o.t, { maxNotes: cfg.chord, len, lowMidi: 31 });
+      const found = D().pitchesAt(pcm, sr, o.t, { maxNotes: cfg.chord, len: len * v.lenK, lowMidi: 31, skip: v.skip });
       if (found.length) {
         const reach = Math.min(6, (isFinite(next) ? next - o.t : 6) + 0.6);
         found.forEach(n => {
@@ -178,9 +215,32 @@ window.RD_AutoChart = (function () {
         }
         events.push({ t: o.t, strength: o.strength, notes, fam, feat });
       }
-      if (i % 12 === 11) { step(0.3 + 0.7 * i / onsets.length, 'Naming notes and instruments'); await tick(); }
+      if (i % 12 === 11) { step(0.3 + 0.7 * ((passNo + i / onsets.length) / MAXP), 'Pass ' + (passNo + 1) + ': naming notes'); await tick(); }
     }
+    return events;
+  }
 
+
+  async function analyse(pcm, sr, opts, progress) {
+    const dur = pcm.length / sr;
+    const cfg = DIFFICULTY[opts.difficulty] || DIFFICULTY.medium;
+    const step = (p, msg) => progress && progress(p, msg);
+
+    step(0, 'Listening for note starts');
+    const curve = await D().onsetCurve(pcm, sr, p => step(p * 0.3, 'Listening for note starts'));
+    const allOnsets = D().pickOnsets(curve);
+    const tempo = D().estimateTempo(curve, allOnsets);
+
+    const passes = [];
+    let agreed = 0;
+    while (passes.length < MAXP) {
+      passes.push(await onePass(pcm, sr, cfg, opts, curve, VARIANTS[passes.length], passes.length, step, dur));
+      if (passes.length < MINP) continue;
+      const c = tally(passes);
+      agreed = c.agreed;
+      if (!c.pending) break;
+    }
+    const events = consensus(passes);
     if (opts.instruments !== false) {
       for (let i = 0; i < events.length; i++) {
         const votes = {};
@@ -195,7 +255,7 @@ window.RD_AutoChart = (function () {
       }
     }
     step(1, 'Done');
-    return { events, tempo, onsets: allOnsets.length, kept: onsets.length, duration: dur };
+    return { events, tempo, onsets: allOnsets.length, kept: events.length, duration: dur, passes: passes.length, agreed };
   }
 
   function layout(analysis, opts) {
