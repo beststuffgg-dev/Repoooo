@@ -1907,11 +1907,12 @@ window.RD_AutoChart = (function () {
     return onsets.filter((_, i) => keep.has(i));
   }
 
-  const MINP = 3, MAXP = 5, NEED = 3;
-  const VARIANTS = [
-    { sens: 1, skip: 0.025, lenK: 1 }, { sens: 1, skip: 0.035, lenK: 0.9 }, { sens: 1, skip: 0.018, lenK: 1.1 },
-    { sens: 1, skip: 0.042, lenK: 0.95 }, { sens: 1, skip: 0.03, lenK: 1.05 }
-  ];
+  const MINP = 3, MAXP = 10, NEED = 3;
+  function variantFor(n) {
+    if (n === 0) return { sens: 1, skip: 0.025, lenK: 1 };
+    const r = rng(n * 7919 + 13);
+    return { sens: 1, skip: 0.018 + r() * 0.027, lenK: 0.9 + r() * 0.2 };
+  }
 
   function cluster(passes) {
     const items = [];
@@ -2009,7 +2010,7 @@ window.RD_AutoChart = (function () {
     const passes = [];
     let agreed = 0;
     while (passes.length < MAXP) {
-      passes.push(await onePass(pcm, sr, cfg, opts, curve, VARIANTS[passes.length], passes.length, step, dur));
+      passes.push(await onePass(pcm, sr, cfg, opts, curve, variantFor(passes.length), passes.length, step, dur));
       if (passes.length < MINP) continue;
       const c = tally(passes);
       const settled = Math.abs(c.agreed - agreed) <= 0.03 * Math.max(1, c.agreed);
