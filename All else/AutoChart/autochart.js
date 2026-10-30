@@ -202,7 +202,7 @@ window.RD_AutoChart = (function () {
     return kept.map(i => ({ t: Math.max(0, (i * curve.hop + curve.frame * 0.4) / curve.sr - 0.0115), strength: Math.min(1.5, sm[i] / topAt(i)) }));
   }
 
-  const MINP = 3, MAXP = 10, NEED = 3;
+  const MINP = 10, MAXP = 30, NEED = 3;
   const specCache = new WeakMap();
 
   function cluster(passes) {
