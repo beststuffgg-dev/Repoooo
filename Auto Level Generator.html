@@ -1907,11 +1907,10 @@ window.RD_AutoChart = (function () {
     return onsets.filter((_, i) => keep.has(i));
   }
 
-  const MINP = 3, MAXP = 8, NEED = 3;
+  const MINP = 3, MAXP = 5, NEED = 3;
   const VARIANTS = [
-    { sens: 1, skip: 0.025, lenK: 1 }, { sens: 1.25, skip: 0.04, lenK: 0.85 }, { sens: 0.8, skip: 0.015, lenK: 1.15 },
-    { sens: 1.1, skip: 0.05, lenK: 1 }, { sens: 0.9, skip: 0.02, lenK: 0.9 }, { sens: 1.4, skip: 0.035, lenK: 1.1 },
-    { sens: 0.7, skip: 0.03, lenK: 1 }, { sens: 1, skip: 0.06, lenK: 0.95 }
+    { sens: 1, skip: 0.025, lenK: 1 }, { sens: 1, skip: 0.035, lenK: 0.9 }, { sens: 1, skip: 0.018, lenK: 1.1 },
+    { sens: 1, skip: 0.042, lenK: 0.95 }, { sens: 1, skip: 0.03, lenK: 1.05 }
   ];
 
   function cluster(passes) {
@@ -1930,7 +1929,7 @@ window.RD_AutoChart = (function () {
 
   function tally(passes) {
     const gs = cluster(passes);
-    return { agreed: gs.filter(g => g.votes >= NEED).length, pending: gs.some(g => g.votes === NEED - 1) };
+    return { agreed: gs.filter(g => g.votes >= NEED).length, pending: gs.filter(g => g.votes === NEED - 1).length > 0.08 * Math.max(1, gs.filter(g => g.votes >= NEED).length) };
   }
 
   function consensus(passes) {
@@ -2013,8 +2012,9 @@ window.RD_AutoChart = (function () {
       passes.push(await onePass(pcm, sr, cfg, opts, curve, VARIANTS[passes.length], passes.length, step, dur));
       if (passes.length < MINP) continue;
       const c = tally(passes);
+      const settled = Math.abs(c.agreed - agreed) <= 0.03 * Math.max(1, c.agreed);
       agreed = c.agreed;
-      if (!c.pending) break;
+      if (!c.pending || (passes.length > MINP && settled)) break;
     }
     const events = consensus(passes);
     if (opts.instruments !== false) {
