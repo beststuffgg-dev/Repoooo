@@ -132,16 +132,20 @@ window.RD_AutoChart = (function () {
   }
 
   const MINP = 3, MAXP = 10, NEED = 3;
-  const specCache = new WeakMap();
+  function variantFor(n) {
+    if (n === 0) return { sens: 1, skip: 0.025, lenK: 1 };
+    const r = rng(n * 7919 + 13);
+    return { sens: 1, skip: 0.018 + r() * 0.027, lenK: 0.9 + r() * 0.2 };
+  }
 
   function cluster(passes) {
     const items = [];
-    passes.forEach((ns, p) => ns.forEach(n => items.push({ p, n, midi: n.midi, t: n.t })));
+    passes.forEach((ev, p) => ev.forEach(e => e.notes.forEach(n => items.push({ t: e.t, midi: n.midi, p, e, n }))));
     items.sort((a, b) => a.midi - b.midi || a.t - b.t);
     const groups = [];
     items.forEach(it => {
       const g = groups[groups.length - 1];
-      if (g && g.midi === it.midi && it.t - g.last <= 0.09) { g.items.push(it); g.last = it.t; }
+      if (g && g.midi === it.midi && it.t - g.last <= 0.07) { g.items.push(it); g.last = it.t; }
       else groups.push({ midi: it.midi, last: it.t, items: [it] });
     });
     groups.forEach(g => { g.votes = new Set(g.items.map(i => i.p)).size; });
@@ -150,95 +154,174 @@ window.RD_AutoChart = (function () {
 
   function tally(passes) {
     const gs = cluster(passes);
-    const ok = gs.filter(g => g.votes >= NEED).length;
-    return { agreed: ok, pending: gs.filter(g => g.votes === NEED - 1).length > 0.08 * Math.max(1, ok) };
+    return { agreed: gs.filter(g => g.votes >= NEED).length, pending: gs.filter(g => g.votes === NEED - 1).length > 0.08 * Math.max(1, gs.filter(g => g.votes >= NEED).length) };
   }
 
-  function median(a) { const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; }
-
-  function agreedNotes(passes) {
-    return cluster(passes).filter(g => g.votes >= Math.min(NEED, passes.length)).map(g => ({
-      midi: g.midi, freq: g.items[0].n.freq, t: median(g.items.map(i => i.n.t)), end: median(g.items.map(i => i.n.end)),
-      level: median(g.items.map(i => i.n.level)), rise: median(g.items.map(i => i.n.rise)), votes: g.votes
-    }));
+  function consensus(passes) {
+    const gs = cluster(passes).filter(g => g.votes >= Math.min(NEED, passes.length));
+    const byEvent = new Map();
+    gs.forEach(g => {
+      const ts = g.items.map(i => i.t).sort((a, b) => a - b);
+      const t = ts[Math.floor(ts.length / 2)];
+      const lens = g.items.map(i => i.n.length).sort((a, b) => a - b);
+      const first = g.items[0];
+      const key = Math.round(t / 0.07);
+      const note = { midi: g.midi, freq: first.n.freq, conf: first.n.conf, length: lens[Math.floor(lens.length / 2)], trace: first.n.trace, votes: g.votes };
+      const ev = byEvent.get(key) || { t, strength: first.e.strength, notes: [], fam: first.e.fam, feat: first.e.feat };
+      ev.notes.push(note);
+      byEvent.set(key, ev);
+    });
+    const out = [...byEvent.values()].sort((a, b) => a.t - b.t);
+    out.forEach(e => e.notes.sort((a, b) => a.midi - b.midi));
+    return out;
   }
 
-  function toEvents(notes, onsets, top, cfg, pcm, sr) {
-    const diffs = [];
-    notes.forEach(n => {
-      let best = null;
-      for (const o of onsets) { const d = n.t - o.t; if (Math.abs(d) < 0.16 && (best === null || Math.abs(d) < Math.abs(best))) best = d; }
-      if (best !== null) diffs.push(best);
+  const FPS = 100;
+
+  async function onsetCurve100(x, sr, progress) {
+    const FRAME = 1024, HOP = Math.round(sr / FPS);
+    const frames = Math.max(0, Math.floor((x.length - FRAME) / HOP));
+    const flux = new Float32Array(frames);
+    const re = new Float64Array(FRAME), im = new Float64Array(FRAME);
+    const w = hann(FRAME);
+    const bins = Math.min(FRAME / 2 - 1, Math.floor(7000 / (sr / FRAME)));
+    let prev = new Float64Array(bins), cur = new Float64Array(bins);
+    for (let f = 0; f < frames; f++) {
+      const st = f * HOP;
+      for (let i = 0; i < FRAME; i++) { re[i] = x[st + i] * w[i]; im[i] = 0; }
+      D().fft(re, im);
+      let sum = 0;
+      for (let k = 1; k <= bins; k++) cur[k - 1] = Math.log(1 + 240 * Math.hypot(re[k], im[k]) / FRAME);
+      for (let k = 0; k < bins; k++) {
+        const ref = Math.max(prev[k > 1 ? k - 2 : 0], prev[k > 0 ? k - 1 : 0], prev[k], prev[k + 1 < bins ? k + 1 : k], prev[k + 2 < bins ? k + 2 : k]);
+        const d = cur[k] - ref;
+        if (d > 0) sum += d;
+      }
+      flux[f] = f ? sum : 0;
+      const t = prev; prev = cur; cur = t;
+      if (progress && f % 400 === 399) { progress(f / frames); await tick(); }
+    }
+    return { flux, hop: HOP, frame: FRAME, sr };
+  }
+
+  function pickLocal(curve, sens) {
+    const flux = curve.flux, n = flux.length;
+    if (!n) return [];
+    const sm = new Float32Array(n);
+    for (let i = 0; i < n; i++) sm[i] = (flux[Math.max(0, i - 1)] + 2 * flux[i] + flux[Math.min(n - 1, i + 1)]) / 4;
+    const fps = curve.sr / curve.hop, w = Math.round(0.209 * fps), nb = Math.max(2, Math.round(0.023 * fps));
+    const prefix = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) prefix[i + 1] = prefix[i] + sm[i];
+    const R = Math.round(3 * curve.sr / curve.hop), stride = 16;
+    const tops = [];
+    for (let c = 0; c < n; c += stride) {
+      const a = Math.max(0, c - R), b = Math.min(n, c + R);
+      const arr = [];
+      for (let i = a; i < b; i += 2) arr.push(sm[i]);
+      arr.sort((x, y) => x - y);
+      tops.push(arr[Math.floor(arr.length * 0.96)] || 1e-9);
+    }
+    const topAt = i => tops[Math.min(tops.length - 1, Math.round(i / stride))];
+    const picks = [];
+    for (let i = nb; i < n - nb; i++) {
+      const lo = Math.max(0, i - w), hi = Math.min(n, i + w + 1);
+      const mean = (prefix[hi] - prefix[lo]) / (hi - lo);
+      const top = topAt(i);
+      if (sm[i] < mean * (1.25 / sens) + 0.06 * top) continue;
+      let isPeak = true;
+      for (let d = 1; d <= nb && isPeak; d++) if (sm[i] < sm[i - d] || sm[i] < sm[i + d]) isPeak = false;
+      if (!isPeak) continue;
+      picks.push(i);
+    }
+    const minGap = Math.round(0.06 * curve.sr / curve.hop);
+    const out = [];
+    for (const i of picks) {
+      const last = out[out.length - 1];
+      if (last !== undefined && i - last < minGap) { if (sm[i] > sm[last]) out[out.length - 1] = i; } else out.push(i);
+    }
+    const after = Math.round(0.14 * curve.sr / curve.hop);
+    const kept = out.filter((i, idx) => {
+      for (let j = idx - 1; j >= 0 && i - out[j] <= after; j--) if (sm[out[j]] >= 0.7 * sm[i]) return false;
+      return true;
     });
-    const bias = diffs.length > 8 ? median(diffs) : 0;
-    notes.forEach(n => { n.t -= bias; n.end -= bias; });
-    notes.forEach(n => {
-      let best = null;
-      for (const o of onsets) if (Math.abs(n.t - o.t) < 0.06 && (best === null || Math.abs(n.t - o.t) < Math.abs(n.t - best.t))) best = o;
-      if (best) n.t = best.t;
-      n.t = Math.max(0, n.t);
-      n.length = Math.max(0.1, n.end - n.t);
-      n.strength = Math.max(0, Math.min(1, (n.level - (top - 50)) / 50)) * 0.6 + Math.max(0, Math.min(1, n.rise / 18)) * 0.4;
-    });
-    notes.sort((a, b) => a.t - b.t || a.midi - b.midi);
+    return kept.map(i => ({ t: Math.max(0, (i * curve.hop + curve.frame * 0.4) / curve.sr - 0.0115), strength: Math.min(1.5, sm[i] / topAt(i)) }));
+  }
+
+  async function onePass(pcm, sr, cfg, opts, curve, v, passNo, step, dur) {
+    const all = pickLocal(curve, v.sens);
+    const onsets = thinOnsets(all, cfg.perSec * (opts.density || 1), dur);
     const events = [];
-    notes.forEach(n => {
-      const e = events[events.length - 1];
-      if (e && n.t - e.t < 0.045) e.notes.push(n);
-      else events.push({ t: n.t, notes: [n] });
-    });
-    events.forEach(e => {
-      e.notes.sort((a, b) => b.strength - a.strength);
-      e.notes = e.notes.slice(0, cfg.chord).sort((a, b) => a.midi - b.midi);
-      e.strength = Math.max.apply(null, e.notes.map(n => n.strength));
-    });
+    for (let i = 0; i < onsets.length; i++) {
+      const o = onsets[i];
+      const next = onsets[i + 1] ? onsets[i + 1].t : Infinity;
+      const len = isFinite(next) ? Math.max(0.12, Math.min(0.32, next - o.t - 0.02)) : 0.3;
+      const found = D().pitchesAt(pcm, sr, o.t, { maxNotes: cfg.chord, len: len * v.lenK, lowMidi: 31, skip: v.skip });
+      if (found.length) {
+        const reach = Math.min(6, (isFinite(next) ? next - o.t : 6) + 0.6);
+        found.forEach(n => {
+          if (n.midi >= 64 || n.midi - 12 < 28) return;
+          const st = Math.round((o.t + 0.12) * sr), w = Math.round(0.3 * sr);
+          const hi = bandLevel(pcm, sr, st, w, n.freq), lo = bandLevel(pcm, sr, st, w, n.freq / 2);
+          if (lo > 0.015 * hi) { n.midi -= 12; n.freq = 440 * Math.pow(2, (n.midi - 69) / 12); }
+        });
+        let sq = 0, cnt = 0;
+        for (let j = Math.max(0, Math.round((o.t - 1) * sr)); j < Math.min(pcm.length, Math.round((o.t + 1) * sr)); j += 7) { sq += pcm[j] * pcm[j]; cnt++; }
+        const rms = Math.sqrt(sq / Math.max(1, cnt));
+        for (let j = found.length - 1; j >= 0; j--) {
+          const lv = bandLevel(pcm, sr, Math.round((o.t + 0.04) * sr), Math.round(0.25 * sr), found[j].freq);
+          if (lv < 0.012 * rms) found.splice(j, 1);
+        }
+        if (!found.length) continue;
+        const fresh = found.filter(n => {
+          const ringing = events.some(e => e.notes.some(a => e.t + a.length > o.t - 0.03 && [0, 12, 19, 24].includes(n.midi - a.midi)));
+          if (!ringing) return true;
+          const w = Math.round(0.09 * sr);
+          const before = bandLevel(pcm, sr, Math.max(0, Math.round((o.t - 0.1) * sr)), w, n.freq);
+          const after = bandLevel(pcm, sr, Math.round((o.t + 0.07) * sr), w, n.freq);
+          return after > 1.8 * before;
+        });
+        if (fresh.length) { found.length = 0; fresh.forEach(n => found.push(n)); } else found.length = 0;
+        if (!found.length) continue;
+        const notes = found.map(n => {
+          const tr = noteTrace(pcm, sr, o.t, n.freq, Math.max(0.5, reach));
+          return { midi: n.midi, freq: n.freq, conf: n.conf, length: noteLength(tr), trace: tr };
+        });
+        let fam = null, feat = null;
+        if (opts.instruments !== false) {
+          const top = notes[notes.length - 1];
+          feat = timbre(pcm, sr, o.t, top.midi, top.trace);
+          fam = family(feat, top.midi);
+        }
+        events.push({ t: o.t, strength: o.strength, notes, fam, feat });
+      }
+      if (i % 12 === 11) { step(0.3 + 0.7 * ((passNo + i / onsets.length) / MAXP), 'Pass ' + (passNo + 1) + ': naming notes'); await tick(); }
+    }
     return events;
   }
+
 
   async function analyse(pcm, sr, opts, progress) {
     const dur = pcm.length / sr;
     const cfg = DIFFICULTY[opts.difficulty] || DIFFICULTY.medium;
     const step = (p, msg) => progress && progress(p, msg);
-    const S = window.RD_Spectro;
 
-    step(0, 'Reading the spectrogram');
-    let spec = specCache.get(pcm);
-    if (!spec) { spec = await S.spectrogram(pcm, sr, p => step(p * 0.55, 'Reading the spectrogram')); specCache.set(pcm, spec); S.notesFor(spec, 0); }
-    const curve = await D().onsetCurve(pcm, sr, p => step(0.55 + p * 0.1, 'Listening for note starts'));
-    const allOnsets = D().pickOnsets(curve, { sensitivity: 1.3 });
-    const tempo = D().estimateTempo(curve, D().pickOnsets(curve));
+    step(0, 'Listening for note starts');
+    const curve = await onsetCurve100(pcm, sr, p => step(p * 0.3, 'Listening for note starts'));
+    const allOnsets = D().pickOnsets(curve);
+    const tempo = D().estimateTempo(curve, allOnsets);
 
     const passes = [];
     let agreed = 0;
     while (passes.length < MAXP) {
-      step(0.65 + 0.3 * passes.length / MAXP, 'Pass ' + (passes.length + 1) + ': finding notes');
-      await tick();
-      passes.push(S.notesFor(spec, passes.length));
+      passes.push(await onePass(pcm, sr, cfg, opts, curve, variantFor(passes.length), passes.length, step, dur));
       if (passes.length < MINP) continue;
       const c = tally(passes);
       const settled = Math.abs(c.agreed - agreed) <= 0.03 * Math.max(1, c.agreed);
       agreed = c.agreed;
       if (!c.pending || (passes.length > MINP && settled)) break;
     }
-    const all = agreedNotes(passes);
-    let events = toEvents(all, allOnsets, spec._ctx.top, cfg, pcm, sr);
-
-    const win = 4, keep = [];
-    for (let t0 = 0; t0 < dur; t0 += win) {
-      const inWin = events.filter(e => e.t >= t0 && e.t < t0 + win).sort((a, b) => b.strength - a.strength);
-      keep.push.apply(keep, inWin.slice(0, Math.max(1, Math.round(cfg.perSec * (opts.density || 1) * win))));
-    }
-    events = keep.sort((a, b) => a.t - b.t);
-
+    const events = consensus(passes);
     if (opts.instruments !== false) {
-      for (let i = 0; i < events.length; i++) {
-        const e = events[i], top = e.notes[e.notes.length - 1];
-        const reach = Math.min(6, Math.max(0.6, top.length));
-        const tr = noteTrace(pcm, sr, e.t, top.freq, reach);
-        e.feat = timbre(pcm, sr, e.t, top.midi, tr);
-        e.fam = family(e.feat, top.midi);
-        if (i % 40 === 39) await tick();
-      }
       for (let i = 0; i < events.length; i++) {
         const votes = {};
         for (let j = Math.max(0, i - 3); j <= Math.min(events.length - 1, i + 3); j++) {

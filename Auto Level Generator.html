@@ -1774,271 +1774,6 @@ window.RD_StudioDSP = (function () {
 })();
 
 ;
-window.RD_Spectro = (function () {
-  'use strict';
-
-  const LO = 24, HI = 108, NM = HI - LO + 1;
-  const HOP = 512;
-  const NS = 4096, NL = 16384;
-  const SPLIT = 60;
-  const tick = () => new Promise(r => setTimeout(r, 0));
-  const D = () => window.RD_StudioDSP;
-  const midiFreq = m => 440 * Math.pow(2, (m - 69) / 12);
-
-  function binRange(m, n, sr) {
-    const hz = sr / n;
-    const lo = midiFreq(m - 0.5) / hz, hi = midiFreq(m + 0.5) / hz;
-    let a = Math.ceil(lo), b = Math.floor(hi);
-    if (b < a) { a = Math.round(midiFreq(m) / hz); b = a; }
-    return [a, b];
-  }
-
-  async function spectrogram(pcm, sr, progress) {
-    const frames = Math.max(0, Math.floor((pcm.length - NS) / HOP) + 1);
-    const mag = new Float32Array(frames * NM);
-    const ds = D();
-    const hs = new Float64Array(NS), hl = new Float64Array(NL);
-    for (let i = 0; i < NS; i++) hs[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (NS - 1));
-    for (let i = 0; i < NL; i++) hl[i] = 0.5 - 0.5 * Math.cos(2 * Math.PI * i / (NL - 1));
-    const gs = 2 / (NS / 2), gl = 2 / (NL / 2);
-    const rs = [], rl = [];
-    for (let m = LO; m <= HI; m++) { rs.push(binRange(m, NS, sr)); rl.push(binRange(m, NL, sr)); }
-    const reS = new Float64Array(NS), imS = new Float64Array(NS), reL = new Float64Array(NL), imL = new Float64Array(NL);
-    const shortM = new Float32Array(frames * NM);
-    for (let f = 0; f < frames; f++) {
-      const st = f * HOP;
-      for (let i = 0; i < NS; i++) { reS[i] = pcm[st + i] * hs[i]; imS[i] = 0; }
-      ds.fft(reS, imS);
-      for (let k = 0; k < NM; k++) {
-        let mx = 0;
-        for (let b = rs[k][0]; b <= rs[k][1]; b++) { const v = Math.hypot(reS[b], imS[b]); if (v > mx) mx = v; }
-        shortM[f * NM + k] = mx * gs;
-      }
-      if (f % 2 === 0) {
-        const c = st + NS / 2 - NL / 2;
-        for (let i = 0; i < NL; i++) { const j = c + i; reL[i] = (j >= 0 && j < pcm.length ? pcm[j] : 0) * hl[i]; imL[i] = 0; }
-        ds.fft(reL, imL);
-        for (let k = 0; k < NM; k++) {
-          let mx = 0;
-          for (let b = rl[k][0]; b <= rl[k][1]; b++) { const v = Math.hypot(reL[b], imL[b]); if (v > mx) mx = v; }
-          const val = mx * gl;
-          mag[f * NM + k] = val;
-          if (f + 1 < frames) mag[(f + 1) * NM + k] = val;
-        }
-      }
-      if (f % 64 === 63) { progress && progress(f / frames); await tick(); }
-    }
-    const db = new Float32Array(frames * NM), sdb = new Float32Array(frames * NM);
-    for (let f = 0; f < frames; f++) {
-      for (let k = 0; k < NM; k++) {
-        const i = f * NM + k, m = LO + k;
-        const lv = m < SPLIT ? mag[i] : shortM[i];
-        db[i] = 20 * Math.log10(lv + 1e-7);
-        sdb[i] = 20 * Math.log10(shortM[i] + 1e-7);
-      }
-    }
-    return { db, sdb, frames, hop: HOP, sr, nm: NM, lo: LO, shift: (m) => (m < SPLIT ? NL : NS) / 2 / sr };
-  }
-
-  function context(spec) {
-    const { db, frames, nm, hop, sr } = spec;
-    const band = new Float32Array(frames * nm);
-    for (let f = 0; f < frames; f++) {
-      const base = f * nm;
-      for (let k = 0; k < nm; k++) {
-        let mx = -200;
-        const a = Math.max(0, k - 12), b = Math.min(nm - 1, k + 12);
-        for (let j = a; j <= b; j++) if (db[base + j] > mx) mx = db[base + j];
-        band[base + k] = mx;
-      }
-    }
-    const r = Math.round(0.9 * sr / hop), stepF = 4;
-    const ctx = new Float32Array(frames * nm);
-    const coarse = [];
-    for (let f = 0; f < frames; f += stepF) {
-      const a = Math.max(0, f - r), b = Math.min(frames - 1, f + r);
-      const row = new Float32Array(nm);
-      for (let k = 0; k < nm; k++) {
-        const arr = [];
-        for (let i = a; i <= b; i += 3) arr.push(band[i * nm + k]);
-        arr.sort((x, y) => x - y);
-        row[k] = arr[Math.floor(arr.length * 0.8)];
-      }
-      coarse.push(row);
-    }
-    for (let f = 0; f < frames; f++) {
-      const c = Math.min(coarse.length - 1, Math.round(f / stepF));
-      for (let k = 0; k < nm; k++) ctx[f * nm + k] = coarse[c][k];
-    }
-    const all = [];
-    for (let i = 0; i < db.length; i += 37) all.push(db[i]);
-    all.sort((x, y) => x - y);
-    const top = all[Math.floor(all.length * 0.999)];
-    const med = new Float32Array(nm);
-    for (let k = 0; k < nm; k++) {
-      const col = [];
-      for (let f = 0; f < frames; f += 3) col.push(db[f * nm + k]);
-      col.sort((x, y) => x - y);
-      med[k] = col[Math.floor(col.length / 2)];
-    }
-    const noise = top;
-    return { ctx, top, med };
-  }
-
-  function detectFrames(spec, c, v) {
-    const { db, frames, nm } = spec;
-    const act = new Uint8Array(frames * nm);
-    const loc = new Float32Array(nm);
-    const cand = [];
-    const OV = [[12, 2], [19, 0], [24, 0], [28, 0], [31, 0], [34, 0], [36, 0], [38, 0], [40, 0]];
-    for (let f = 0; f < frames; f++) {
-      const base = f * nm;
-      for (let k = 0; k < nm; k++) {
-        const a = Math.max(0, k - 7), b = Math.min(nm - 1, k + 7);
-        const arr = [];
-        for (let j = a; j <= b; j++) arr.push(db[base + j]);
-        arr.sort((x, y) => x - y);
-        loc[k] = arr[Math.floor(arr.length / 2)];
-      }
-      cand.length = 0;
-      for (let k = 1; k < nm - 1 - 8; k++) {
-        const d = db[base + k];
-        const floor = Math.max(c.top - v.absRange, c.med[k] + v.medMargin, c.ctx[base + k] - v.range);
-        if (d < floor || d < loc[k] + v.prom) continue;
-        if (d < db[base + k - 1] || d < db[base + k + 1]) continue;
-        cand.push(k);
-      }
-      const pbase = base - nm;
-      if (f > 0) {
-        for (let k = 1; k < nm - 1; k++) {
-          if (!act[pbase + k] || cand.includes(k)) continue;
-          const d = db[base + k];
-          const floor = Math.max(c.top - v.absRange - v.hyst, c.med[k] + v.medMargin - v.hyst, c.ctx[base + k] - v.range - v.hyst);
-          if (d < floor || d < loc[k] + v.prom * 0.4) continue;
-          if (d < db[base + k - 1] || d < db[base + k + 1]) continue;
-          if (d < db[pbase + k] - 10) continue;
-          cand.push(k);
-        }
-        cand.sort((x, y) => x - y);
-      }
-      const kept = [];
-      for (const k of cand) {
-        let over = false;
-        for (const [iv, gap] of OV) {
-          const lk = k - iv;
-          if (lk < 0) continue;
-          if (kept.includes(lk) && db[base + k] < db[base + lk] - (LO + lk < 52 && iv <= 24 ? -v.lowOvertone : gap) + v.overtone) { over = true; break; }
-        }
-        if (over) continue;
-        let kk = k;
-        if (LO + k < v.fundBelow && k - 12 >= 0) {
-          const lo = db[base + k - 12];
-          if (lo > db[base + k] - v.fundGap && lo > Math.max(c.top - v.absRange, c.med[k - 12] + v.medMargin) && lo >= db[base + k - 13] - 1 && lo >= db[base + k - 11] - 1) kk = k - 12;
-        }
-        if (!kept.includes(kk)) kept.push(kk);
-      }
-      kept.sort((x, y) => db[base + y] - db[base + x]);
-      kept.slice(0, v.maxNotes).forEach(k => { act[base + k] = 1; });
-    }
-    return act;
-  }
-
-  function tracks(spec, act, v) {
-    const { frames, nm, db, sdb, hop, sr } = spec;
-    const fr = hop / sr;
-    const out = [];
-    const gap = v.gapFrames;
-    for (let k = 0; k < nm; k++) {
-      const m = LO + k;
-      let start = -1, lastOn = -1;
-      const close = (end) => {
-        if (start < 0) return;
-        out.push({ k, m, f0: start, f1: end });
-        start = -1;
-      };
-      for (let f = 0; f < frames; f++) {
-        if (act[f * nm + k]) { if (start < 0) start = f; lastOn = f; }
-        else if (start >= 0 && f - lastOn > gap) close(lastOn);
-      }
-      close(lastOn);
-    }
-    const notes = [];
-    for (const t of out) {
-      const k = t.k, m = t.m;
-      const sh = (m < SPLIT ? NL : NS) / 2 / sr;
-      const sm = (f) => spec.sdb[Math.max(0, Math.min(frames - 1, f)) * nm + k];
-      const lm = (f) => spec.db[Math.max(0, Math.min(frames - 1, f)) * nm + k];
-      const wide = (f) => {
-        let mx = -200;
-        for (let j = Math.max(0, k - 1); j <= Math.min(nm - 1, k + 1); j++) mx = Math.max(mx, spec.sdb[Math.max(0, Math.min(frames - 1, f)) * nm + j]);
-        return mx;
-      };
-      const lowSearch = Math.round((m < SPLIT ? 0.45 : 0.2) / fr);
-      let bestF = t.f0, bestRise = -1e9;
-      for (let f = Math.max(2, t.f0 - lowSearch); f <= Math.min(frames - 3, t.f0 + Math.round(0.12 / fr)); f++) {
-        const rise = sm(f + 2) - sm(f - 2);
-        if (rise > bestRise) { bestRise = rise; bestF = f; }
-      }
-      const splits = [bestF];
-      const seg = [];
-      for (let f = t.f0; f <= t.f1; f++) seg.push(f);
-      const sigF = (f) => (m < SPLIT ? Math.max(sm(f), lm(f)) : sm(f));
-      let lastSplit = bestF;
-      for (let f = Math.max(t.f0, bestF) + 3; f <= t.f1; f++) {
-        if (f - lastSplit < Math.round(v.minSplit / fr)) continue;
-        let mn = 1e9;
-        for (let j = Math.max(lastSplit + 1, f - 8); j < f; j++) mn = Math.min(mn, sigF(j));
-        const rise = sigF(f) - mn;
-        const near = sm(f + 1) >= sm(f) && sm(f) >= sm(f - 1) - 0.5;
-        if (rise >= v.restrike && near) {
-          let pk = f; while (pk + 1 <= t.f1 && sm(pk + 1) > sm(pk)) pk++;
-          splits.push(f); lastSplit = f; f = Math.max(f, pk);
-        }
-      }
-      for (let i = 0; i < splits.length; i++) {
-        const a = splits[i], b = i + 1 < splits.length ? splits[i + 1] - 1 : t.f1;
-        const onsetFrames = a;
-        const onT = onsetFrames * fr + NS / 2 / sr * 0.0 - 0.0;
-        const end = b * fr + (m < SPLIT ? 0 : 0);
-        let level = -200;
-        for (let f = a; f <= Math.min(b, a + 6); f++) level = Math.max(level, wide(f));
-        const lenFrames = b - a + 1;
-        if (lenFrames * fr < v.minDur) continue;
-        const rise = Math.max(0, sm(a + 2) - sm(a - 3));
-        notes.push({ midi: m, t: onT, end, level, rise, freq: midiFreq(m) });
-      }
-    }
-    return notes;
-  }
-
-  function params(seed) {
-    const base = { lowOvertone: 26, absRange: 48, medMargin: 12, range: 34, hyst: 9, prom: 6, overtone: 0, fundBelow: 50, fundGap: 27, maxNotes: 6, gapFrames: 4, minDur: 0.09, minSplit: 0.12, restrike: 4.5 };
-    if (!seed) return base;
-    let s = seed * 2654435761 >>> 0;
-    const r = () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-    return Object.assign(base, {
-      absRange: base.absRange + (r() - 0.5) * 6,
-      medMargin: base.medMargin + (r() - 0.5) * 3,
-      range: base.range + (r() - 0.5) * 6,
-      prom: base.prom + (r() - 0.5) * 2,
-      overtone: (r() - 0.5) * 2,
-      restrike: base.restrike + (r() - 0.5) * 1.2,
-      gapFrames: 3 + Math.floor(r() * 3),
-      minDur: 0.08 + r() * 0.03
-    });
-  }
-
-  function notesFor(spec, seed) {
-    const v = params(seed);
-    const c = spec._ctx || (spec._ctx = context(spec));
-    const act = detectFrames(spec, c, v);
-    return tracks(spec, act, v);
-  }
-
-  return { LO, HI, HOP, spectrogram, notesFor, params, context, detectFrames, tracks };
-})();
-
-;
 window.RD_AutoChart = (function () {
   'use strict';
 
@@ -2173,16 +1908,20 @@ window.RD_AutoChart = (function () {
   }
 
   const MINP = 3, MAXP = 10, NEED = 3;
-  const specCache = new WeakMap();
+  function variantFor(n) {
+    if (n === 0) return { sens: 1, skip: 0.025, lenK: 1 };
+    const r = rng(n * 7919 + 13);
+    return { sens: 1, skip: 0.018 + r() * 0.027, lenK: 0.9 + r() * 0.2 };
+  }
 
   function cluster(passes) {
     const items = [];
-    passes.forEach((ns, p) => ns.forEach(n => items.push({ p, n, midi: n.midi, t: n.t })));
+    passes.forEach((ev, p) => ev.forEach(e => e.notes.forEach(n => items.push({ t: e.t, midi: n.midi, p, e, n }))));
     items.sort((a, b) => a.midi - b.midi || a.t - b.t);
     const groups = [];
     items.forEach(it => {
       const g = groups[groups.length - 1];
-      if (g && g.midi === it.midi && it.t - g.last <= 0.09) { g.items.push(it); g.last = it.t; }
+      if (g && g.midi === it.midi && it.t - g.last <= 0.07) { g.items.push(it); g.last = it.t; }
       else groups.push({ midi: it.midi, last: it.t, items: [it] });
     });
     groups.forEach(g => { g.votes = new Set(g.items.map(i => i.p)).size; });
@@ -2191,95 +1930,174 @@ window.RD_AutoChart = (function () {
 
   function tally(passes) {
     const gs = cluster(passes);
-    const ok = gs.filter(g => g.votes >= NEED).length;
-    return { agreed: ok, pending: gs.filter(g => g.votes === NEED - 1).length > 0.08 * Math.max(1, ok) };
+    return { agreed: gs.filter(g => g.votes >= NEED).length, pending: gs.filter(g => g.votes === NEED - 1).length > 0.08 * Math.max(1, gs.filter(g => g.votes >= NEED).length) };
   }
 
-  function median(a) { const b = a.slice().sort((x, y) => x - y); return b[Math.floor(b.length / 2)]; }
-
-  function agreedNotes(passes) {
-    return cluster(passes).filter(g => g.votes >= Math.min(NEED, passes.length)).map(g => ({
-      midi: g.midi, freq: g.items[0].n.freq, t: median(g.items.map(i => i.n.t)), end: median(g.items.map(i => i.n.end)),
-      level: median(g.items.map(i => i.n.level)), rise: median(g.items.map(i => i.n.rise)), votes: g.votes
-    }));
+  function consensus(passes) {
+    const gs = cluster(passes).filter(g => g.votes >= Math.min(NEED, passes.length));
+    const byEvent = new Map();
+    gs.forEach(g => {
+      const ts = g.items.map(i => i.t).sort((a, b) => a - b);
+      const t = ts[Math.floor(ts.length / 2)];
+      const lens = g.items.map(i => i.n.length).sort((a, b) => a - b);
+      const first = g.items[0];
+      const key = Math.round(t / 0.07);
+      const note = { midi: g.midi, freq: first.n.freq, conf: first.n.conf, length: lens[Math.floor(lens.length / 2)], trace: first.n.trace, votes: g.votes };
+      const ev = byEvent.get(key) || { t, strength: first.e.strength, notes: [], fam: first.e.fam, feat: first.e.feat };
+      ev.notes.push(note);
+      byEvent.set(key, ev);
+    });
+    const out = [...byEvent.values()].sort((a, b) => a.t - b.t);
+    out.forEach(e => e.notes.sort((a, b) => a.midi - b.midi));
+    return out;
   }
 
-  function toEvents(notes, onsets, top, cfg, pcm, sr) {
-    const diffs = [];
-    notes.forEach(n => {
-      let best = null;
-      for (const o of onsets) { const d = n.t - o.t; if (Math.abs(d) < 0.16 && (best === null || Math.abs(d) < Math.abs(best))) best = d; }
-      if (best !== null) diffs.push(best);
+  const FPS = 100;
+
+  async function onsetCurve100(x, sr, progress) {
+    const FRAME = 1024, HOP = Math.round(sr / FPS);
+    const frames = Math.max(0, Math.floor((x.length - FRAME) / HOP));
+    const flux = new Float32Array(frames);
+    const re = new Float64Array(FRAME), im = new Float64Array(FRAME);
+    const w = hann(FRAME);
+    const bins = Math.min(FRAME / 2 - 1, Math.floor(7000 / (sr / FRAME)));
+    let prev = new Float64Array(bins), cur = new Float64Array(bins);
+    for (let f = 0; f < frames; f++) {
+      const st = f * HOP;
+      for (let i = 0; i < FRAME; i++) { re[i] = x[st + i] * w[i]; im[i] = 0; }
+      D().fft(re, im);
+      let sum = 0;
+      for (let k = 1; k <= bins; k++) cur[k - 1] = Math.log(1 + 240 * Math.hypot(re[k], im[k]) / FRAME);
+      for (let k = 0; k < bins; k++) {
+        const ref = Math.max(prev[k > 1 ? k - 2 : 0], prev[k > 0 ? k - 1 : 0], prev[k], prev[k + 1 < bins ? k + 1 : k], prev[k + 2 < bins ? k + 2 : k]);
+        const d = cur[k] - ref;
+        if (d > 0) sum += d;
+      }
+      flux[f] = f ? sum : 0;
+      const t = prev; prev = cur; cur = t;
+      if (progress && f % 400 === 399) { progress(f / frames); await tick(); }
+    }
+    return { flux, hop: HOP, frame: FRAME, sr };
+  }
+
+  function pickLocal(curve, sens) {
+    const flux = curve.flux, n = flux.length;
+    if (!n) return [];
+    const sm = new Float32Array(n);
+    for (let i = 0; i < n; i++) sm[i] = (flux[Math.max(0, i - 1)] + 2 * flux[i] + flux[Math.min(n - 1, i + 1)]) / 4;
+    const fps = curve.sr / curve.hop, w = Math.round(0.209 * fps), nb = Math.max(2, Math.round(0.023 * fps));
+    const prefix = new Float64Array(n + 1);
+    for (let i = 0; i < n; i++) prefix[i + 1] = prefix[i] + sm[i];
+    const R = Math.round(3 * curve.sr / curve.hop), stride = 16;
+    const tops = [];
+    for (let c = 0; c < n; c += stride) {
+      const a = Math.max(0, c - R), b = Math.min(n, c + R);
+      const arr = [];
+      for (let i = a; i < b; i += 2) arr.push(sm[i]);
+      arr.sort((x, y) => x - y);
+      tops.push(arr[Math.floor(arr.length * 0.96)] || 1e-9);
+    }
+    const topAt = i => tops[Math.min(tops.length - 1, Math.round(i / stride))];
+    const picks = [];
+    for (let i = nb; i < n - nb; i++) {
+      const lo = Math.max(0, i - w), hi = Math.min(n, i + w + 1);
+      const mean = (prefix[hi] - prefix[lo]) / (hi - lo);
+      const top = topAt(i);
+      if (sm[i] < mean * (1.25 / sens) + 0.06 * top) continue;
+      let isPeak = true;
+      for (let d = 1; d <= nb && isPeak; d++) if (sm[i] < sm[i - d] || sm[i] < sm[i + d]) isPeak = false;
+      if (!isPeak) continue;
+      picks.push(i);
+    }
+    const minGap = Math.round(0.06 * curve.sr / curve.hop);
+    const out = [];
+    for (const i of picks) {
+      const last = out[out.length - 1];
+      if (last !== undefined && i - last < minGap) { if (sm[i] > sm[last]) out[out.length - 1] = i; } else out.push(i);
+    }
+    const after = Math.round(0.14 * curve.sr / curve.hop);
+    const kept = out.filter((i, idx) => {
+      for (let j = idx - 1; j >= 0 && i - out[j] <= after; j--) if (sm[out[j]] >= 0.7 * sm[i]) return false;
+      return true;
     });
-    const bias = diffs.length > 8 ? median(diffs) : 0;
-    notes.forEach(n => { n.t -= bias; n.end -= bias; });
-    notes.forEach(n => {
-      let best = null;
-      for (const o of onsets) if (Math.abs(n.t - o.t) < 0.06 && (best === null || Math.abs(n.t - o.t) < Math.abs(n.t - best.t))) best = o;
-      if (best) n.t = best.t;
-      n.t = Math.max(0, n.t);
-      n.length = Math.max(0.1, n.end - n.t);
-      n.strength = Math.max(0, Math.min(1, (n.level - (top - 50)) / 50)) * 0.6 + Math.max(0, Math.min(1, n.rise / 18)) * 0.4;
-    });
-    notes.sort((a, b) => a.t - b.t || a.midi - b.midi);
+    return kept.map(i => ({ t: Math.max(0, (i * curve.hop + curve.frame * 0.4) / curve.sr - 0.0115), strength: Math.min(1.5, sm[i] / topAt(i)) }));
+  }
+
+  async function onePass(pcm, sr, cfg, opts, curve, v, passNo, step, dur) {
+    const all = pickLocal(curve, v.sens);
+    const onsets = thinOnsets(all, cfg.perSec * (opts.density || 1), dur);
     const events = [];
-    notes.forEach(n => {
-      const e = events[events.length - 1];
-      if (e && n.t - e.t < 0.045) e.notes.push(n);
-      else events.push({ t: n.t, notes: [n] });
-    });
-    events.forEach(e => {
-      e.notes.sort((a, b) => b.strength - a.strength);
-      e.notes = e.notes.slice(0, cfg.chord).sort((a, b) => a.midi - b.midi);
-      e.strength = Math.max.apply(null, e.notes.map(n => n.strength));
-    });
+    for (let i = 0; i < onsets.length; i++) {
+      const o = onsets[i];
+      const next = onsets[i + 1] ? onsets[i + 1].t : Infinity;
+      const len = isFinite(next) ? Math.max(0.12, Math.min(0.32, next - o.t - 0.02)) : 0.3;
+      const found = D().pitchesAt(pcm, sr, o.t, { maxNotes: cfg.chord, len: len * v.lenK, lowMidi: 31, skip: v.skip });
+      if (found.length) {
+        const reach = Math.min(6, (isFinite(next) ? next - o.t : 6) + 0.6);
+        found.forEach(n => {
+          if (n.midi >= 64 || n.midi - 12 < 28) return;
+          const st = Math.round((o.t + 0.12) * sr), w = Math.round(0.3 * sr);
+          const hi = bandLevel(pcm, sr, st, w, n.freq), lo = bandLevel(pcm, sr, st, w, n.freq / 2);
+          if (lo > 0.015 * hi) { n.midi -= 12; n.freq = 440 * Math.pow(2, (n.midi - 69) / 12); }
+        });
+        let sq = 0, cnt = 0;
+        for (let j = Math.max(0, Math.round((o.t - 1) * sr)); j < Math.min(pcm.length, Math.round((o.t + 1) * sr)); j += 7) { sq += pcm[j] * pcm[j]; cnt++; }
+        const rms = Math.sqrt(sq / Math.max(1, cnt));
+        for (let j = found.length - 1; j >= 0; j--) {
+          const lv = bandLevel(pcm, sr, Math.round((o.t + 0.04) * sr), Math.round(0.25 * sr), found[j].freq);
+          if (lv < 0.012 * rms) found.splice(j, 1);
+        }
+        if (!found.length) continue;
+        const fresh = found.filter(n => {
+          const ringing = events.some(e => e.notes.some(a => e.t + a.length > o.t - 0.03 && [0, 12, 19, 24].includes(n.midi - a.midi)));
+          if (!ringing) return true;
+          const w = Math.round(0.09 * sr);
+          const before = bandLevel(pcm, sr, Math.max(0, Math.round((o.t - 0.1) * sr)), w, n.freq);
+          const after = bandLevel(pcm, sr, Math.round((o.t + 0.07) * sr), w, n.freq);
+          return after > 1.8 * before;
+        });
+        if (fresh.length) { found.length = 0; fresh.forEach(n => found.push(n)); } else found.length = 0;
+        if (!found.length) continue;
+        const notes = found.map(n => {
+          const tr = noteTrace(pcm, sr, o.t, n.freq, Math.max(0.5, reach));
+          return { midi: n.midi, freq: n.freq, conf: n.conf, length: noteLength(tr), trace: tr };
+        });
+        let fam = null, feat = null;
+        if (opts.instruments !== false) {
+          const top = notes[notes.length - 1];
+          feat = timbre(pcm, sr, o.t, top.midi, top.trace);
+          fam = family(feat, top.midi);
+        }
+        events.push({ t: o.t, strength: o.strength, notes, fam, feat });
+      }
+      if (i % 12 === 11) { step(0.3 + 0.7 * ((passNo + i / onsets.length) / MAXP), 'Pass ' + (passNo + 1) + ': naming notes'); await tick(); }
+    }
     return events;
   }
+
 
   async function analyse(pcm, sr, opts, progress) {
     const dur = pcm.length / sr;
     const cfg = DIFFICULTY[opts.difficulty] || DIFFICULTY.medium;
     const step = (p, msg) => progress && progress(p, msg);
-    const S = window.RD_Spectro;
 
-    step(0, 'Reading the spectrogram');
-    let spec = specCache.get(pcm);
-    if (!spec) { spec = await S.spectrogram(pcm, sr, p => step(p * 0.55, 'Reading the spectrogram')); specCache.set(pcm, spec); S.notesFor(spec, 0); }
-    const curve = await D().onsetCurve(pcm, sr, p => step(0.55 + p * 0.1, 'Listening for note starts'));
-    const allOnsets = D().pickOnsets(curve, { sensitivity: 1.3 });
-    const tempo = D().estimateTempo(curve, D().pickOnsets(curve));
+    step(0, 'Listening for note starts');
+    const curve = await onsetCurve100(pcm, sr, p => step(p * 0.3, 'Listening for note starts'));
+    const allOnsets = D().pickOnsets(curve);
+    const tempo = D().estimateTempo(curve, allOnsets);
 
     const passes = [];
     let agreed = 0;
     while (passes.length < MAXP) {
-      step(0.65 + 0.3 * passes.length / MAXP, 'Pass ' + (passes.length + 1) + ': finding notes');
-      await tick();
-      passes.push(S.notesFor(spec, passes.length));
+      passes.push(await onePass(pcm, sr, cfg, opts, curve, variantFor(passes.length), passes.length, step, dur));
       if (passes.length < MINP) continue;
       const c = tally(passes);
       const settled = Math.abs(c.agreed - agreed) <= 0.03 * Math.max(1, c.agreed);
       agreed = c.agreed;
       if (!c.pending || (passes.length > MINP && settled)) break;
     }
-    const all = agreedNotes(passes);
-    let events = toEvents(all, allOnsets, spec._ctx.top, cfg, pcm, sr);
-
-    const win = 4, keep = [];
-    for (let t0 = 0; t0 < dur; t0 += win) {
-      const inWin = events.filter(e => e.t >= t0 && e.t < t0 + win).sort((a, b) => b.strength - a.strength);
-      keep.push.apply(keep, inWin.slice(0, Math.max(1, Math.round(cfg.perSec * (opts.density || 1) * win))));
-    }
-    events = keep.sort((a, b) => a.t - b.t);
-
+    const events = consensus(passes);
     if (opts.instruments !== false) {
-      for (let i = 0; i < events.length; i++) {
-        const e = events[i], top = e.notes[e.notes.length - 1];
-        const reach = Math.min(6, Math.max(0.6, top.length));
-        const tr = noteTrace(pcm, sr, e.t, top.freq, reach);
-        e.feat = timbre(pcm, sr, e.t, top.midi, tr);
-        e.fam = family(e.feat, top.midi);
-        if (i % 40 === 39) await tick();
-      }
       for (let i = 0; i < events.length; i++) {
         const votes = {};
         for (let j = Math.max(0, i - 3); j <= Math.min(events.length - 1, i + 3); j++) {
