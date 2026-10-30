@@ -109,7 +109,65 @@ window.RD_Spectro = (function () {
     return { ctx, top, med };
   }
 
+  const OFF = [0, 12, 19, 24, 28, 31, 34, 36, 38, 40, 42, 43, 44, 46, 47, 48];
+  const PROF = [1, 0.65, 0.45, 0.32, 0.24, 0.18, 0.14, 0.1, 0.08, 0.06, 0.05, 0.04, 0.035, 0.03, 0.025, 0.02];
+
+  function detectTemplate(spec, c, v) {
+    const { db, frames, nm } = spec;
+    const act = new Uint8Array(frames * nm);
+    const loc = new Float32Array(nm), r = new Float32Array(nm), fl = new Float32Array(nm), flc = new Float32Array(nm);
+    const kmax = nm - 1 - 12;
+    for (let f = 0; f < frames; f++) {
+      const base = f * nm, pbase = base - nm;
+      for (let k = 0; k < nm; k++) {
+        const a = Math.max(0, k - 7), b = Math.min(nm - 1, k + 7);
+        const arr = [];
+        for (let j = a; j <= b; j++) arr.push(db[base + j]);
+        arr.sort((x, y) => x - y);
+        loc[k] = arr[Math.floor(arr.length / 2)];
+        r[k] = Math.pow(10, db[base + k] / 20);
+        const bx = LO + k < 45 ? v.bxLow : (LO + k > 84 ? 10 : 0);
+        const fdb = Math.max(c.top - v.absRange + bx, c.med[k] + v.medMargin + bx, c.ctx[base + k] - v.range + bx);
+        fl[k] = Math.pow(10, fdb / 20);
+        flc[k] = Math.pow(10, (fdb - v.hyst) / 20);
+      }
+      for (let it = 0; it < v.maxNotes; it++) {
+        let best = -1, bestS = 0;
+        for (let k = 1; k < kmax; k++) {
+          const rk = r[k];
+          const cont = f > 0 && act[pbase + k];
+          if (rk < (cont ? flc[k] : fl[k])) continue;
+          if (rk < r[k - 1] || rk < r[k + 1]) continue;
+          if (20 * Math.log10(rk + 1e-9) < loc[k] + v.prom * (cont ? 0.4 : 1)) continue;
+          let S = rk;
+          for (let h = 1; h < OFF.length; h++) { const j = k + OFF[h]; if (j < nm) S += PROF[h] * r[j]; }
+          if (S > bestS) { bestS = S; best = k; }
+        }
+        if (best < 0) break;
+        let kk = best;
+        if (LO + best < v.fundBelow && best - 12 >= 0) {
+          const lo = db[base + best - 12];
+          if (lo > db[base + best] - v.fundGap && lo > Math.max(c.top - v.absRange, c.med[best - 12] + v.medMargin) && lo >= db[base + best - 13] - 1 && lo >= db[base + best - 11] - 1) kk = best - 12;
+        }
+        act[base + kk] = 1;
+        const A = kk !== best ? r[best] / PROF[1] : r[best];
+        for (let h = 0; h < OFF.length; h++) {
+          const j = kk + OFF[h];
+          if (j >= nm) break;
+          const sub = A * PROF[h] * v.tg;
+          r[j] = Math.max(0, r[j] - sub);
+          if (j > 0) r[j - 1] = Math.max(0, r[j - 1] - sub * 0.5);
+          if (j + 1 < nm) r[j + 1] = Math.max(0, r[j + 1] - sub * 0.5);
+        }
+        r[best] = 0;
+        if (kk !== best) r[kk] = 0;
+      }
+    }
+    return act;
+  }
+
   function detectFrames(spec, c, v) {
+    if (v.templ) return detectTemplate(spec, c, v);
     const { db, frames, nm } = spec;
     const act = new Uint8Array(frames * nm);
     const loc = new Float32Array(nm);
@@ -127,7 +185,7 @@ window.RD_Spectro = (function () {
       cand.length = 0;
       for (let k = 1; k < nm - 1 - 12; k++) {
         const d = db[base + k];
-        const bx = LO + k < 45 ? 8 : (LO + k > 84 ? 10 : 0);
+        const bx = LO + k < 45 ? v.bxLow : (LO + k > 84 ? 10 : 0);
         const floor = Math.max(c.top - v.absRange + bx, c.med[k] + v.medMargin + bx, c.ctx[base + k] - v.range + bx);
         if (d < floor || d < loc[k] + v.prom) continue;
         if (d < db[base + k - 1] || d < db[base + k + 1]) continue;
@@ -198,6 +256,14 @@ window.RD_Spectro = (function () {
         for (let j = Math.max(0, k - 1); j <= Math.min(nm - 1, k + 1); j++) mx = Math.max(mx, spec.sdb[Math.max(0, Math.min(frames - 1, f)) * nm + j]);
         return mx;
       };
+      const sig0 = (f) => (m < SPLIT ? Math.max(sm(f), lm(f)) : sm(f));
+      let pk = -200, pkF = t.f0;
+      for (let f = t.f0; f <= Math.min(t.f1, t.f0 + Math.round(0.5 / fr)); f++) { const g0 = sig0(f); if (g0 > pk) { pk = g0; pkF = f; } }
+      let low = 0;
+      for (let f = pkF; f <= t.f1; f++) {
+        if (sig0(f) < pk - v.cut) { low++; if (low >= Math.round(0.12 / fr)) { t.f1 = Math.max(t.f0, f - low); break; } }
+        else low = 0;
+      }
       const lowSearch = Math.round((m < SPLIT ? 0.45 : 0.2) / fr);
       let bestF = t.f0, bestRise = -1e9;
       for (let f = Math.max(R2, t.f0 - lowSearch); f <= Math.min(frames - R2 - 1, t.f0 + Math.round(0.12 / fr)); f++) {
@@ -223,8 +289,8 @@ window.RD_Spectro = (function () {
       for (let i = 0; i < splits.length; i++) {
         const a = splits[i], b = i + 1 < splits.length ? splits[i + 1] - 1 : t.f1;
         const onsetFrames = a;
-        const onT = onsetFrames * fr + NS / 2 / sr * 0.0 - 0.0;
-        const end = b * fr + (m < SPLIT ? 0 : 0);
+        const onT = onsetFrames * fr + NS / 2 / sr;
+        const end = b * fr + NS / 2 / sr;
         let level = -200;
         for (let f = a; f <= Math.min(b, a + 6); f++) level = Math.max(level, wide(f));
         const lenFrames = b - a + 1;
@@ -244,7 +310,7 @@ window.RD_Spectro = (function () {
   }
 
   function params(seed) {
-    const base = { lowOvertone: 26, absRange: 48, medMargin: 12, range: 28, hyst: 12, prom: 4.5, overtone: 0, fundBelow: 50, fundGap: 27, maxNotes: 10, gapFrames: 9, minDur: 0.09, minSplit: 0.12, mergeGap: 0.2, mergeRise: 5, restrike: 4.5 };
+    const base = { bxLow: 16, cut: 24, templ: 1, tg: 0.7, lowOvertone: 26, absRange: 48, medMargin: 4, range: 28, hyst: 12, prom: 4.5, overtone: 0, fundBelow: 50, fundGap: 27, maxNotes: 10, gapFrames: 9, minDur: 0.09, minSplit: 0.12, mergeGap: 0.2, mergeRise: 5, restrike: 4.5 };
     if (!seed) return base;
     let s = seed * 2654435761 >>> 0;
     const r = () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
@@ -260,8 +326,8 @@ window.RD_Spectro = (function () {
     });
   }
 
-  function notesFor(spec, seed) {
-    const v = params(seed);
+  function notesFor(spec, seed, over) {
+    const v = Object.assign(params(seed), over || {});
     const c = spec._ctx || (spec._ctx = context(spec));
     const act = detectFrames(spec, c, v);
     return tracks(spec, act, v);

@@ -202,6 +202,7 @@ window.RD_AutoChart = (function () {
     return kept.map(i => ({ t: Math.max(0, (i * curve.hop + curve.frame * 0.4) / curve.sr - 0.0115), strength: Math.min(1.5, sm[i] / topAt(i)) }));
   }
 
+  const SUPPORT_RISE = 10;
   const MINP = 10, MAXP = 30, NEED = 3;
   const specCache = new WeakMap();
 
@@ -234,6 +235,18 @@ window.RD_AutoChart = (function () {
     }));
   }
 
+  function refineOnset(pcm, sr, n) {
+    const w = Math.round((n.midi < 60 ? 0.09 : 0.05) * sr);
+    const lvl = (t) => Math.log(1e-6 + bandLevel(pcm, sr, Math.round(t * sr) - (w >> 1), w, n.freq));
+    let best = null, bestR = 0.35;
+    for (let t = n.t - 0.12; t <= n.t + 0.3; t += 0.005) {
+      if (t < 0.05) continue;
+      const r = lvl(t + 0.02) - lvl(t - 0.02);
+      if (r > bestR) { bestR = r; best = t; }
+    }
+    return best;
+  }
+
   function toEvents(notes, onsets, top, cfg, pcm, sr) {
     const diffs = [];
     notes.forEach(n => {
@@ -241,15 +254,17 @@ window.RD_AutoChart = (function () {
       for (const o of onsets) { const d = n.t - o.t; if (Math.abs(d) < 0.16 && (best === null || Math.abs(d) < Math.abs(best))) best = d; }
       if (best !== null) diffs.push(best);
     });
-    const bias = diffs.length > 8 ? median(diffs) : 0;
-    notes.forEach(n => { n.t -= bias; n.end -= bias; });
+    notes.forEach(n => {
+      const r = refineOnset(pcm, sr, n);
+      if (r !== null) { n.end += r - n.t; n.t = r; }
+    });
     notes = notes.filter(n => {
       for (const o of onsets) if (Math.abs(n.t - o.t) < 0.09) return true;
-      return n.rise >= 5 || n.end - n.t >= 0.3;
+      return n.rise >= SUPPORT_RISE;
     });
     notes.forEach(n => {
       let best = null;
-      for (const o of onsets) if (Math.abs(n.t - o.t) < 0.06 && (best === null || Math.abs(n.t - o.t) < Math.abs(n.t - best.t))) best = o;
+      for (const o of onsets) if (Math.abs(n.t - o.t) < 0.03 && (best === null || Math.abs(n.t - o.t) < Math.abs(n.t - best.t))) best = o;
       if (best) n.t = best.t;
       n.t = Math.max(0, n.t);
       n.length = Math.max(0.1, n.end - n.t);
