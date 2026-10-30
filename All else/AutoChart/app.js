@@ -1,7 +1,7 @@
 (function () {
   const $ = id => document.getElementById(id);
   const A = window.RD_AutoChart, D = window.RD_StudioDSP;
-  const S = { pcm: null, sr: 22050, name: '', analysis: null, key: '', result: null, playing: [] };
+  const S = { pcm: null, sr: 22050, name: '', analysis: null, key: '', result: null, playing: [], timer: null };
 
   const status = (m, err) => { $('status').textContent = m || ''; $('status').style.color = err ? 'var(--bad)' : ''; };
   const setProg = p => { $('prog').style.width = Math.round(p * 100) + '%'; };
@@ -85,23 +85,38 @@
     }));
   }
 
-  function stopPlay() { S.playing.forEach(h => { try { h.stop(0.05); } catch (e) {} }); S.playing = []; $('play').textContent = '▶ Hear the chart'; }
+  function stopPlay() {
+    clearInterval(S.timer); S.timer = null;
+    S.playing.forEach(h => { try { h.stop(0.05); } catch (e) {} }); S.playing = [];
+    $('play').textContent = '▶ Hear the chart';
+  }
 
   function play() {
-    if (S.playing.length) { stopPlay(); return; }
+    if (S.timer) { stopPlay(); return; }
     const r = S.result.level, rowSec = 60 / r.bpm;
     const c = RD_getContext();
-    const t0 = c.currentTime + 0.1;
-    let last = 0;
+    const list = [];
     r.grid.forEach((row, ri) => row.forEach(cell => {
       if (!cell) return;
-      const when = t0 + ri * rowSec;
-      const dur = cell.hold ? (cell.hold + 1) * rowSec : 0.5;
-      S.playing.push(RD_noteOn(cell.freq, { inst: cell.inst || r.instrument, vel: 0.6, when, dur }));
-      last = Math.max(last, ri * rowSec + dur);
+      list.push({ at: ri * rowSec, freq: cell.freq, inst: cell.inst || r.instrument, dur: cell.hold ? (cell.hold + 1) * rowSec : 0.5 });
     }));
+    list.sort((a, b) => a.at - b.at);
+    const end = list.length ? list[list.length - 1].at + 1.5 : 0;
+    let i = 0, t0 = null;
+    const pump = () => {
+      if (t0 === null) t0 = c.currentTime + 0.15;
+      const now = c.currentTime - t0;
+      while (i < list.length && list[i].at < now + 1.2) {
+        const n = list[i++];
+        const h = RD_noteOn(n.freq, { inst: n.inst, vel: 0.6, when: t0 + n.at, dur: n.dur });
+        S.playing.push(h);
+      }
+      if (S.playing.length > 80) S.playing = S.playing.slice(-60);
+      if (now > end) stopPlay();
+    };
+    const go = () => { pump(); S.timer = setInterval(pump, 150); };
     $('play').textContent = '■ Stop';
-    setTimeout(() => { if (S.playing.length) stopPlay(); }, (last + 1.2) * 1000);
+    if (c.state === 'suspended' && c.resume) c.resume().then(go, go); else go();
   }
 
   $('pick').addEventListener('click', () => $('file').click());
