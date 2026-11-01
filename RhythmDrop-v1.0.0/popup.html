@@ -1323,7 +1323,9 @@ body.gfx-modern::after { opacity:.4; }
 body { background:var(--bg); }
 .tab-pane.active > *:first-child { margin-top:0; }
 
-.cam-songs, #cam-list { background:transparent !important; border:0 !important; box-shadow:none !important; }
+.cam-songs { padding:10px 9px 5px; overflow:visible; }
+#cam-list { background:transparent !important; border:0 !important; box-shadow:none !important; }
+.cam-songs .song-row { margin-bottom:7px; }
 .song-row { margin-bottom:5px; }
 #profile-bar, #home-hero { margin:6px 8px 0; }
 
@@ -1332,12 +1334,15 @@ body { background:var(--bg); }
 .rarity-tag, .av-badge-owned, .av-badge-eq { position:absolute; z-index:4; }
 svg.ic { position:relative; z-index:1; }
 .lane-hitbar { height:0 !important; background:none !important; box-shadow:none !important; }
-.lane-hitglow {
-  display:block !important; bottom:34px !important; height:44px !important; left:6px; right:6px;
-  background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--tap) 16%, transparent) 38%, color-mix(in srgb, var(--tap) 16%, transparent) 62%, transparent) !important;
-  border-top:1px solid color-mix(in srgb, var(--ink) 16%, transparent); border-bottom:1px solid color-mix(in srgb, var(--ink) 16%, transparent);
-  border-radius:8px; pointer-events:none; z-index:2;
+.lane-hitglow { display:none !important; }
+#g-lanes { position:relative; }
+#g-lanes::after {
+  content:''; position:absolute; left:8px; right:8px; bottom:34px; height:44px; z-index:2; pointer-events:none;
+  background:linear-gradient(180deg, transparent, color-mix(in srgb, var(--tap) 13%, transparent) 40%, color-mix(in srgb, var(--tap) 13%, transparent) 60%, transparent);
+  border-top:1px solid color-mix(in srgb, var(--ink) 14%, transparent); border-bottom:1px solid color-mix(in srgb, var(--ink) 14%, transparent);
+  border-radius:10px;
 }
+#g-lanes .lane { z-index:1; }
 </style>
 </head>
 <body>

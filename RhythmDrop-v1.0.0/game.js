@@ -1701,6 +1701,11 @@ document.addEventListener('keydown', e => {
   }
 
   if (e.code === 'KeyR' && running) startGame();
+  else if (e.code === 'KeyR' && !e.ctrlKey && !e.metaKey && document.querySelector('#game.active') && document.getElementById('g-overlay').classList.contains('show')) {
+    e.preventDefault();
+    document.getElementById('ov-btn').click();
+    return;
+  }
   if (e.code === 'KeyQ') quitToMenu();
 });
 

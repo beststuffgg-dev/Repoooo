@@ -130,6 +130,26 @@ console.log('== ink engine ==');
     ok(prime.before === prime.after && /240/.test(prime.after), 'a double tile stays where it is after the first press (' + prime.after + ')');
   }
 
+  console.log('== R on the result card ==');
+  {
+    const { page } = await openApp(b, { width: 440, height: 660 }, { file: APP });
+    const r = await page.evaluate(async () => {
+      document.querySelector('.song-row').click();
+      await new Promise(x => setTimeout(x, 300));
+      document.getElementById('ov-btn').click();
+      await new Promise(x => setTimeout(x, 200));
+      endGame(false);
+      await new Promise(x => setTimeout(x, 200));
+      const shown = document.getElementById('g-overlay').classList.contains('show');
+      const label = document.getElementById('ov-btn').textContent;
+      document.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyR', bubbles: true }));
+      await new Promise(x => setTimeout(x, 300));
+      return { shown, label, running: !!window.running || (typeof running !== 'undefined' && running), overlay: document.getElementById('g-overlay').classList.contains('show') };
+    });
+    ok(r.shown && /Play Again/.test(r.label), 'the result card offers Play Again (' + r.label + ')');
+    ok(!r.overlay && r.running, 'pressing R there starts the run again');
+  }
+
   console.log('== scenes and codes ==');
   {
     const { page } = await openApp(b, { width: 440, height: 660 }, { file: APP });
