@@ -5982,12 +5982,21 @@ function newCellFor(lane) {
 }
 
 let crPreviewAt = 0;
+let crPreviewTimer = null;
+let crPreviewPending = null;
 function crPreview(freq, isDtap, inst) {
   if (!freq || !window.RD_playNoteFreq) return;
   const now = performance.now();
-  if (now - crPreviewAt < 60) return;
+  crPreviewPending = [freq, !!isDtap, inst || crInstrument];
+  const wait = 60 - (now - crPreviewAt);
+  if (wait > 0) {
+    if (!crPreviewTimer) crPreviewTimer = setTimeout(() => { crPreviewTimer = null; crPreviewAt = 0; if (crPreviewPending) crPreview.apply(null, crPreviewPending); }, wait + 2);
+    return;
+  }
   crPreviewAt = now;
-  window.RD_playNoteFreq(freq, !!isDtap, 0, inst || crInstrument);
+  const p = crPreviewPending;
+  crPreviewPending = null;
+  window.RD_playNoteFreq(p[0], p[1], 0, p[2]);
 }
 function crPreviewCell(cell) {
   if (cell) crPreview(cell.freq, cell.type === 'dtap', cell.inst);

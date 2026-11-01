@@ -163,6 +163,7 @@ const INIT = () => {
     await page.evaluate(() => { fresh(); spyAudio(); crInstrument = 'piano'; crGrid[1][0] = { type: 'tap', freq: 261.63, sustain: 0 }; setTool('move'); });
     await page.evaluate(() => { __plays.length = 0; });
     await drag([1, 0], [4, 3], 8);
+    await page.waitForTimeout(160);
     const plays = await page.evaluate(() => __plays.map(p => p.f));
     ok(plays.length >= 1 && plays.length <= 4, 'dragging a note across lanes plays as it goes, not on every pixel (' + plays.length + ' sounds)');
     ok(Math.abs(plays[plays.length - 1] - 523.25) < 0.01, 'ending on the pitch it lands with (' + plays[plays.length - 1] + ')');
