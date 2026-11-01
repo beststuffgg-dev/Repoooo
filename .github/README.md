@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="All%20else/RhythmDrop/docs/screenshots/logo.png" width="72" alt="RhythmDrop">
+  <img src="../All%20else/RhythmDrop/docs/screenshots/logo.png" width="72" alt="RhythmDrop">
 </p>
 
 <h1 align="center">RhythmDrop</h1>
@@ -12,9 +12,9 @@
 </p>
 
 <p align="center">
-  <b>v9.0</b> ·
-  <a href="All%20else/RhythmDrop/HANDOFF-V9.md">Full feature reference</a> ·
-  <a href="All%20else/RhythmDrop/v7/HANDOFF.md">V7, kept alongside</a>
+  <b>v1.0.0</b> ·
+  <a href="../All%20else/RhythmDrop/HANDOFF-V9.md">Full feature reference</a> ·
+  <a href="../All%20else/RhythmDrop/v7/HANDOFF.md">V7, kept alongside</a>
 </p>
 
 ---
@@ -23,12 +23,12 @@
 
 | | |
 |---|---|
-| ![Home](All%20else/RhythmDrop/docs/screenshots/home.png) | ![Gameplay](All%20else/RhythmDrop/docs/screenshots/gameplay.png) |
-| Home — the campaign, ten eras deep | Play — combo lit, a ×2 slab incoming |
-| ![Shop](All%20else/RhythmDrop/docs/screenshots/shop.png) | ![Settings](All%20else/RhythmDrop/docs/screenshots/settings.png) |
-| Shop — avatars, trails, effects, mystery boxes | Settings — hit window, key remap, a visible timing band |
-
-<p align="center"><img src="All%20else/RhythmDrop/docs/screenshots/creator.png" width="360" alt="Level Creator"><br><sub>The level creator — two-stage note placement, multi-select cut/copy/paste, a live sound preview</sub></p>
+| ![Home](../All%20else/RhythmDrop/docs/screenshots/home.png) | ![Gameplay](../All%20else/RhythmDrop/docs/screenshots/gameplay.png) |
+| Home — the campaign, ten eras deep | Play — one dot for a tap, two for a double, a dot and a thin line for a hold |
+| ![Shop](../All%20else/RhythmDrop/docs/screenshots/shop.png) | ![Themes](../All%20else/RhythmDrop/docs/screenshots/themes.png) |
+| Shop — avatars, trails, effects, mystery boxes | Themes — a thin colour strip and a name; ten are earned in the campaign |
+| ![Settings](../All%20else/RhythmDrop/docs/screenshots/settings.png) | ![Creator](../All%20else/RhythmDrop/docs/screenshots/creator.png) |
+| Settings — hit window, key remap, menu sounds | The level creator — tap, double, hold and move tools, undo, a sound on every placement |
 
 ## What it is
 
@@ -42,9 +42,8 @@ Hit **A · S · D · F** as slabs cross the strike line (the creator also makes 
 - **Auto Level Generator** — a separate page, `All else/Auto Level Generator.html` (not part of the extension): drop in a recording, mostly classical music works best, and it finds note starts, chords and how long each note lasts, guesses the instrument family, and lays out a level (long notes become holds, lanes follow pitch, easy/medium/hard, 4/6/8 lanes). It gives a share code to paste into Import from code. Detection is best on clear piano, strings and solo lines; dense orchestral mixes are approximate and instrument guesses are by family. Rebuild with `node "All else/AutoChart/build.js"`.
 - **Economy** — every level pays a flat coin reward, so grinding a long chart isn't better than clearing a short one. Every purchase is two clicks: the first previews (an avatar goes on your profile, an effect plays live on the board, a mystery box shows its real odds), only the second spends.
 - **11 instruments** — a synth, violin, cello, flute, clarinet, trumpet, French horn, harp, piano, a drum kit and a kazoo — all synthesized, none played back from recordings: each pitched voice is built from harmonic tables and decay times *measured from* CC0 recordings (VSCO 2 Community Edition), so there are still no samples and no network. Plus avatars, note trails, mystery boxes and 20 themes — frosted glass, warm paper, arctic white, six textured materials — and ten more you earn: one per campaign area, each with its own texture (burlap, sandstone, marble, travertine, obsidian, carved jade, organ pipes, wool twill, poured concrete, a neon grid).
-- **A Material-3-flavoured shell.** Both graphics styles share it: a rounded shape scale, tonal raised surfaces, state-layer hovers, a faint material grain on *every* theme and an expressive display type. It's a refresh over the original look, not a reskin of one theme — the existing palettes and their identities are untouched.
-- **Two graphics styles.** On top of that shell, *Modern* (default) adds real depth — lit tile edges, raised cards and a glowing strike line. *Classic* keeps the flat look, with no dimensional lighting. The whole depth layer is scoped under one class and stays strictly additive, so turning it off genuinely removes it; `v8graphics` proves the two render differently and that each renders deterministically.
 - **Settings** for key remapping, starting lives, UI scale, master and music volume, and instrument choice.
+- **Fullscreen.** The button on the home screen opens the game in its own tab, scaled to the window; `F` toggles browser fullscreen there.
 - **Width, not height.** Chrome caps an extension popup at 800×600 and clips the rest, which is why vertical resizing never worked. The height is pinned to that ceiling and only the width is adjustable — everything vertical scrolls.
 
 ## Run it
@@ -62,9 +61,10 @@ Three ways, all from the same source, no build step:
 ## Repo layout
 
 ```
-```
 RhythmDrop-v1.0.0/               the game — load this folder as an unpacked extension
-  popup.html                  markup, styling, the theme system
+  popup.html                  markup, styling, the theme tokens
+  ink.js, ink-ui.js           the hand-drawn look: outlines, hover/press, menu sounds, logo
+  icons.js, scenes.js         the drawn icon set and the level backdrops
   game.js                     screens, input, scoring, campaign UI, shop, creator
   studio.js, studio-dsp.js    the Song Studio screen and its audio analysis
   campaign.js                 unlocks, XP, coins, records, dailies
@@ -76,17 +76,17 @@ RhythmDrop-v1.0.0/               the game — load this folder as an unpacked ex
 RhythmDrop-v1.0.0.zip            the game, zipped — hand this to someone
 
 All else/                     everything that isn't the game itself
-  README.md                   this file
   htmls/
     RhythmDrop.html           the whole game as one file — generated
   Auto Level Generator.html   the separate music-to-level page (rebuilt by AutoChart/build.js)
   AutoChart/                  its source, plus the hand-written Clair de Lune score
   Clair de Lune ... .txt      two level codes to paste into Import from code
-  tests/                      42 suites — 17 for V9, 25 for V7
+  tests/                      44 suites — 18 for V9, 26 for V7
   RhythmDrop/
     v7/                       the previous game, kept whole and still working
     tools/                    bake-levels, build-single, build-redesign, fit/build/gate voices, package.sh
     docs/screenshots/         the images in this README
+.github/README.md             this file
     HANDOFF-V9.md             full feature inventory and architecture
   anbernic/                   handheld build
 ```
@@ -105,7 +105,7 @@ Never hand-edit anything in `All else/htmls/`, any `.zip`, or `RhythmDrop-v1.0.0
 cd "All else/tests" && npm install && node run-all.js
 ```
 
-Forty-two harnesses. Seventeen cover V9 — the baked campaign against the build that plays it, the progression rules, every instrument rendered and measured through an OfflineAudioContext, the graphics layer, generation and its one-type-per-row rule, the 4/6/8 lane boards, hold notes, the creator's move, undo and preview, the campaign themes and their unlocks, and real-Chromium passes over the layout, gameplay and whole runs. The other twenty-five are V7's, unchanged, still green against `All else/RhythmDrop/v7/`.
+Forty-four harnesses. Eighteen cover V9 — the baked campaign against the build that plays it, the progression rules, every instrument rendered and measured through an OfflineAudioContext, the graphics layer, generation and its one-type-per-row rule, the 4/6/8 lane boards, hold notes, the creator's move, undo and preview, the campaign themes and their unlocks, and real-Chromium passes over the layout, gameplay and whole runs. The other twenty-five are V7's, unchanged, still green against `All else/RhythmDrop/v7/`.
 
 Eight suites drive a real browser rather than jsdom, because jsdom has no layout engine or audio engine and structurally cannot catch a layout or a silence bug — those are the ones that found the strike line sitting 12–19px off the bar it was drawn on, the campaign list collapsing to a 39px viewport, and the master bus peaking a third past full scale on a seven-note chord.
 
@@ -114,7 +114,7 @@ npm run test:v8                                # just the V9 suites
 APP_DIR=RhythmDropV7-Redesign node run-all.js  # V7's suites against its variant
 ```
 
-See [`All else/tests/README.md`](All%20else/tests/README.md) for the per-suite breakdown, and [`HANDOFF-V9.md`](All%20else/RhythmDrop/HANDOFF-V9.md#7-testing) for how it fits together.
+See [`All else/tests/README.md`](../All%20else/tests/README.md) for the per-suite breakdown, and [`HANDOFF-V9.md`](../All%20else/RhythmDrop/HANDOFF-V9.md#7-testing) for how it fits together.
 
 ---
 
