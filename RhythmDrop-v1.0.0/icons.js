@@ -132,7 +132,7 @@ window.RD_Icons = (function () {
       Object.keys(I).map(symbol).join('') + '</defs></svg>';
   }
 
-  const CSS = '.ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.22em;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;fill:none;flex-shrink:0;overflow:visible;filter:url(#ic-wobble)}' +
+  const CSS = '.ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.22em;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;fill:none;flex-shrink:0;overflow:visible}' +
     '.ic.ic-big{width:2.2em;height:2.2em}.ic.ic-xl{width:3.2em;height:3.2em}.ic+.ic{margin-left:.05em}';
 
   const html = (name, cls) => '<svg class="ic ic-' + name + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#ic-' + name + '"/></svg>';

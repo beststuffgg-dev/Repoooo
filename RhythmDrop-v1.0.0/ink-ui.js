@@ -60,7 +60,8 @@ window.RD_InkUI = (function () {
 
   function install() {
     labelIcons();
-    new MutationObserver(() => labelIcons()).observe(document.body, { childList: true, subtree: true });
+    let queued = false;
+    new MutationObserver(() => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; labelIcons(); }); }).observe(document.body, { childList: true, subtree: true });
     let hovering = null;
     document.addEventListener('pointerover', e => {
       if (e.pointerType === 'touch') return;

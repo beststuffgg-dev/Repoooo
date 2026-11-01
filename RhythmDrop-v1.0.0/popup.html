@@ -1323,9 +1323,10 @@ body.gfx-modern::after { opacity:.4; }
 body { background:var(--bg); }
 .tab-pane.active > *:first-child { margin-top:0; }
 
-.cam-songs { padding:10px 9px 5px; overflow:visible; }
+.cam-songs { padding:8px; overflow:visible; gap:0; }
 #cam-list { background:transparent !important; border:0 !important; box-shadow:none !important; }
-.cam-songs .song-row { margin-bottom:7px; }
+.cam-songs .song-row { margin:0; }
+.cam-songs .song-row:last-child { border-bottom-color:transparent !important; }
 .song-row { margin-bottom:5px; }
 #profile-bar, #home-hero { margin:6px 8px 0; }
 
