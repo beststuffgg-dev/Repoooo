@@ -423,13 +423,13 @@ function buildThemesGrid() {
     c.className = 'theme-card' + (th.id === cur ? ' selected' : '') + (locked ? ' locked' : '');
     c.dataset.theme = th.id;
     c.innerHTML = `
-      <div class="tc-name">${th.name}</div>
-      <div class="tc-subs">${th.subs}</div>
-      <div class="tc-dots">
-        <div class="tc-dot" style="background:${th.dots[0]}"></div>
-        <div class="tc-dot" style="background:${th.dots[1]}"></div>
-        <div class="tc-dot" style="background:${th.dots[2]}"></div>
-      </div>`
+      <div class="tc-strip">
+        <i style="background:${th.bg}"></i>
+        <i style="background:${th.dots[0]}"></i>
+        <i style="background:${th.dots[1]}"></i>
+        <i style="background:${th.text || '#3a3023'}"></i>
+      </div>
+      <div class="tc-name">${th.name}</div>`
       + (locked ? '<div class="tc-lock">🔒 Clear ' + area.name + '</div>' : '');
     c.style.color = th.text || '#3a3023';
     c.addEventListener('click', () => {
