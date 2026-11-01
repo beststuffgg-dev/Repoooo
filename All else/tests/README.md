@@ -35,7 +35,7 @@ npm run test:v8          # just the V9 suites
 V8_DIR=/path/to/build npm run test:v8
 ```
 
-The V9 suites always test `RhythmDrop/RhythmDropV9` unless `V8_DIR` says
+The V9 suites always test `RhythmDrop-v1.0.0` unless `V8_DIR` says
 otherwise, so `APP_DIR` never affects them.
 
 ## V7 — kept alongside

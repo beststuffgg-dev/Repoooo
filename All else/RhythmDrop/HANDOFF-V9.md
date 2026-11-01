@@ -9,11 +9,11 @@ V9 is built on the **v3.0** source — its look, its themes, its intro splash, i
 ## 1. Layout
 
 ```
-RhythmDropV9.zip          the game, zipped
+RhythmDrop-v1.0.0.zip          the game, zipped
 htmls/RhythmDrop.html     the game as one self-contained file (generated)
 tests/                    42 suites — 17 for V9, 25 for V7
 RhythmDrop/
-  RhythmDropV9/           the source — load this as an unpacked extension
+  RhythmDrop-v1.0.0/           the source — load this as an unpacked extension
     popup.html              markup, styling, the v3 theme system
     game.js                 shell: screens, profile/coins, shop, themes, settings, boot
     play.js                 gameplay engine: queue, loop, input, scoring, the Double
@@ -100,7 +100,7 @@ Why bake at all: a song that exists as a file can be read, diffed and reviewed. 
 
 ## 4a. Live generation
 
-V9 ships a baked campaign, but V7's deterministic composer is bundled as `RhythmDrop/RhythmDropV9/generator.js` — `RhythmDrop/v7/RhythmDropV7/campaign.js` with its comments stripped and exporting `window.RD_Generator` instead of `window.RD_Campaign` (V9 already has an `RD_Campaign`, its progression engine; the two do not collide). It loads after `audio.js` because it reads `window.RD_INSTRUMENTS` to resolve each area's voice.
+V9 ships a baked campaign, but V7's deterministic composer is bundled as `RhythmDrop-v1.0.0/generator.js` — `RhythmDrop/v7/RhythmDropV7/campaign.js` with its comments stripped and exporting `window.RD_Generator` instead of `window.RD_Campaign` (V9 already has an `RD_Campaign`, its progression engine; the two do not collide). It loads after `audio.js` because it reads `window.RD_INSTRUMENTS` to resolve each area's voice.
 
 Two entry points use it:
 
@@ -114,7 +114,7 @@ Every generated chart — Generate, the creator's *Generate into grid*, each End
 `generator.js` is generated from V7's composer, not hand-edited. If the composer changes, refresh it from the repo root with:
 
 ```
-node -e "const {stripJs}=require('./tests/strip');const fs=require('fs');fs.writeFileSync('RhythmDrop/RhythmDropV9/generator.js',stripJs(fs.readFileSync('RhythmDrop/v7/RhythmDropV7/campaign.js','utf8')).replace('window.RD_Campaign = {','window.RD_Generator = {'))"
+node -e "const {stripJs}=require('./tests/strip');const fs=require('fs');fs.writeFileSync('RhythmDrop-v1.0.0/generator.js',stripJs(fs.readFileSync('RhythmDrop/v7/RhythmDropV7/campaign.js','utf8')).replace('window.RD_Campaign = {','window.RD_Generator = {'))"
 ```
 
 That reproduces the committed file byte for byte, and `v8generate.js` fails if the two ever differ by anything other than comments and the export name.

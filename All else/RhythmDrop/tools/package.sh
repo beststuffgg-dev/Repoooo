@@ -3,7 +3,7 @@ set -euo pipefail
 cd "$(dirname "$0")/../../.."
 
 echo "V9 (the game):"
-node "All else/RhythmDrop/tools/build-single.js" RhythmDropV9 htmls/RhythmDrop.html
+node "All else/RhythmDrop/tools/build-single.js" RhythmDrop-v1.0.0 "All else/htmls/RhythmDrop.html"
 
 echo "V7 (kept alongside):"
 node "All else/RhythmDrop/tools/build-redesign.js"
@@ -27,7 +27,7 @@ def make(src, out):
                     z.writestr(info, fh.read())
     print('  %s (%s bytes)' % (out, format(os.path.getsize(out), ',')))
 print('zipping:')
-make('RhythmDropV9',              'RhythmDropV9.zip')
+make('RhythmDrop-v1.0.0',              'RhythmDrop-v1.0.0.zip')
 make('All else/RhythmDrop/v7/RhythmDropV7',           'All else/RhythmDrop/v7/RhythmDropV7-Final.zip')
 make('All else/RhythmDrop/v7/RhythmDropV7-Redesign',  'All else/RhythmDrop/v7/RhythmDropV7-Redesign.zip')
 PY

@@ -4,8 +4,8 @@ const path = require('path');
 const vm = require('vm');
 const REPO = path.join(__dirname, '..', '..', '..');
 global.window = global;
-vm.runInThisContext(fs.readFileSync(path.join(REPO, 'RhythmDropV9', 'lanes.js'), 'utf8'));
-vm.runInThisContext(fs.readFileSync(path.join(REPO, 'RhythmDropV9', 'codec.js'), 'utf8'));
+vm.runInThisContext(fs.readFileSync(path.join(REPO, 'RhythmDrop-v1.0.0', 'lanes.js'), 'utf8'));
+vm.runInThisContext(fs.readFileSync(path.join(REPO, 'RhythmDrop-v1.0.0', 'codec.js'), 'utf8'));
 
 const SCORE = `
 0.5: E4~1.2 G4
@@ -193,6 +193,6 @@ const code = window.RD_Codec.encodeLevel(level);
 const back = window.RD_Codec.decodeLevel(code);
 let n = 0, holds = 0;
 back.grid.forEach(r => r.forEach(c => { if (c) { n++; if (c.hold) holds++; } }));
-const out = path.join(REPO, 'Clair de Lune (hand-written) - RhythmDrop code.txt');
+const out = path.join(REPO, 'All else', 'Clair de Lune (hand-written) - RhythmDrop code.txt');
 fs.writeFileSync(out, code);
 console.log('wrote ' + out + ': ' + n + ' notes, ' + holds + ' holds, ' + rows.length + ' rows, ' + (rows.length * ROW).toFixed(0) + ' s');

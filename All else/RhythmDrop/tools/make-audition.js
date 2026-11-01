@@ -5,7 +5,7 @@ const D = require('./lib/dsp');
 
 const CACHE = process.env.VSCO_DIR || '/tmp/vsco/x';
 const PACK = path.dirname(CACHE);
-const V9 = path.join(__dirname, '..', '..', '..', 'RhythmDropV9');
+const V9 = path.join(__dirname, '..', '..', '..', 'RhythmDrop-v1.0.0');
 const OUT = process.argv[2] || path.join(__dirname, 'out', 'audition.html');
 const RATE = 22050;
 

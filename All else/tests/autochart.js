@@ -4,7 +4,7 @@ const path = require('path');
 const { launchOpts, v8Dir } = require('./browser');
 
 const DIR = v8Dir();
-const TOOL = path.join(DIR, '..', 'Auto Level Generator.html');
+const TOOL = path.join(DIR, '..', 'All else', 'Auto Level Generator.html');
 const SRC = ['voices.js', 'audio.js'].map(f => fs.readFileSync(path.join(DIR, f), 'utf8')).join('\n');
 const notes = [];
 let pass = 0, fail = 0;

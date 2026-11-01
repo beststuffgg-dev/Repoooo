@@ -39,7 +39,7 @@ Hit **A · S · D · F** as slabs cross the strike line (the creator also makes 
 - **Level creator** — a grid editor with 4, 6 or 8 lanes, a **Hold** tool (place one, drag its tail to lengthen it), a **Move** tool (drag any note or selection around), a sound on every place, move and pitch change, undo and redo, a voice per note as well as per level, per-lane default pitches, a per-note picker, sustain and a configurable drum/bass backing. Its advanced panel opens **sideways** and widens the window rather than covering the chart you're editing.
 - **Song Studio** — load an MP3, play it at 0.25× to 1.25× (pitch preserved), tap every note you want (hold the pad for a hold note), and it finds each tap's note or chord, snaps the tap to the music, estimates the tempo and builds a level you then review in the creator. Analysis runs on your computer; the MP3 is never uploaded or stored, and the level plays with the game's instruments.
 - **Hand-drawn look** — paper-light by default, wavy brush outlines with a white outline on hover and a lighter fill on press everywhere, a thick rounded font with a light paper grain, every emoji replaced by a small drawn icon, small menu sounds (Settings → Menu Sounds), 18 themes (8 free, 10 earned from the campaign), and a new logo. Tiles are marked with one white dot (tap), two (double) or a dot with a thin line to the tail (hold). Levels can have a minimal textured backdrop (picked in the creator, carried in the share code, one per campaign area). The home screen's corner button opens the game fullscreen in its own tab (`F` toggles browser fullscreen there).
-- **Auto Level Generator** — a separate page, `Auto Level Generator.html` (not part of the extension): drop in a recording, mostly classical music works best, and it finds note starts, chords and how long each note lasts, guesses the instrument family, and lays out a level (long notes become holds, lanes follow pitch, easy/medium/hard, 4/6/8 lanes). It gives a share code to paste into Import from code. Detection is best on clear piano, strings and solo lines; dense orchestral mixes are approximate and instrument guesses are by family. Rebuild with `node "All else/AutoChart/build.js"`.
+- **Auto Level Generator** — a separate page, `All else/Auto Level Generator.html` (not part of the extension): drop in a recording, mostly classical music works best, and it finds note starts, chords and how long each note lasts, guesses the instrument family, and lays out a level (long notes become holds, lanes follow pitch, easy/medium/hard, 4/6/8 lanes). It gives a share code to paste into Import from code. Detection is best on clear piano, strings and solo lines; dense orchestral mixes are approximate and instrument guesses are by family. Rebuild with `node "All else/AutoChart/build.js"`.
 - **Economy** — every level pays a flat coin reward, so grinding a long chart isn't better than clearing a short one. Every purchase is two clicks: the first previews (an avatar goes on your profile, an effect plays live on the board, a mystery box shows its real odds), only the second spends.
 - **11 instruments** — a synth, violin, cello, flute, clarinet, trumpet, French horn, harp, piano, a drum kit and a kazoo — all synthesized, none played back from recordings: each pitched voice is built from harmonic tables and decay times *measured from* CC0 recordings (VSCO 2 Community Edition), so there are still no samples and no network. Plus avatars, note trails, mystery boxes and 20 themes — frosted glass, warm paper, arctic white, six textured materials — and ten more you earn: one per campaign area, each with its own texture (burlap, sandstone, marble, travertine, obsidian, carved jade, organ pipes, wool twill, poured concrete, a neon grid).
 - **A Material-3-flavoured shell.** Both graphics styles share it: a rounded shape scale, tonal raised surfaces, state-layer hovers, a faint material grain on *every* theme and an expressive display type. It's a refresh over the original look, not a reskin of one theme — the existing palettes and their identities are untouched.
@@ -51,11 +51,11 @@ Hit **A · S · D · F** as slabs cross the strike line (the creator also makes 
 
 Three ways, all from the same source, no build step:
 
-1. **As the extension it's meant to be** — go to `chrome://extensions`, enable Developer Mode, "Load unpacked," and select `RhythmDropV9/`.
-2. **Unzip and load** — `RhythmDropV9.zip` is the same folder, zipped, for handing to someone else.
-3. **Just open it** — `htmls/RhythmDrop.html` is the entire game as one self-contained file. Double-click it, or open it on a phone. No dependencies, nothing to install, nothing to fetch over the network.
+1. **As the extension it's meant to be** — go to `chrome://extensions`, enable Developer Mode, "Load unpacked," and select `RhythmDrop-v1.0.0/`.
+2. **Unzip and load** — `RhythmDrop-v1.0.0.zip` is the same folder, zipped, for handing to someone else.
+3. **Just open it** — `All else/htmls/RhythmDrop.html` is the entire game as one self-contained file. Double-click it, or open it on a phone. No dependencies, nothing to install, nothing to fetch over the network.
 
-`htmls/RhythmDrop.html` is *generated* from `RhythmDropV9/` — every script inlined in place. Never edit it directly; edit the source folder and run `bash All else/RhythmDrop/tools/package.sh`.
+`All else/htmls/RhythmDrop.html` is *generated* from `RhythmDrop-v1.0.0/` — every script inlined in place. Never edit it directly; edit the source folder and run `bash All else/RhythmDrop/tools/package.sh`.
 
 **V7 is still here.** The previous game lives whole under `All else/RhythmDrop/v7/` — source, Redesign variant, single-file builds, zips and its own handoff — and still passes its own 25 test suites. V9 (originally V8) is built on the earlier v3.0 source with V7's campaign ported onto it, so the two are genuinely different games rather than versions of one.
 
@@ -63,7 +63,7 @@ Three ways, all from the same source, no build step:
 
 ```
 ```
-RhythmDropV9/               the game — load this folder as an unpacked extension
+RhythmDrop-v1.0.0/               the game — load this folder as an unpacked extension
   popup.html                  markup, styling, the theme system
   game.js                     screens, input, scoring, campaign UI, shop, creator
   studio.js, studio-dsp.js    the Song Studio screen and its audio analysis
@@ -73,11 +73,15 @@ RhythmDropV9/               the game — load this folder as an unpacked extensi
   rowtypes.js                 one kind of note per row; shared by the game and the baker
   audio.js                    the note engine (hold and release), 11 voices, limiter, backing layer
   voices.js                   measured timbre tables for the eight pitched voices — generated
-RhythmDropV9.zip            the game, zipped — hand this to someone
-htmls/
-  RhythmDrop.html             the whole game as one file — generated
+RhythmDrop-v1.0.0.zip            the game, zipped — hand this to someone
 
-All else/
+All else/                     everything that isn't the game itself
+  README.md                   this file
+  htmls/
+    RhythmDrop.html           the whole game as one file — generated
+  Auto Level Generator.html   the separate music-to-level page (rebuilt by AutoChart/build.js)
+  AutoChart/                  its source, plus the hand-written Clair de Lune score
+  Clair de Lune ... .txt      two level codes to paste into Import from code
   tests/                      42 suites — 17 for V9, 25 for V7
   RhythmDrop/
     v7/                       the previous game, kept whole and still working
@@ -93,7 +97,7 @@ Everything derived is regenerated by one command:
 bash All else/RhythmDrop/tools/package.sh
 ```
 
-Never hand-edit anything in `htmls/`, any `.zip`, or `RhythmDropV9/levels.js` — they are all outputs. `package.sh` deliberately does *not* re-bake the campaign: that is a 150-song diff and should be meant, so run `node All else/RhythmDrop/tools/bake-levels.js` yourself when you want it.
+Never hand-edit anything in `All else/htmls/`, any `.zip`, or `RhythmDrop-v1.0.0/levels.js` — they are all outputs. `package.sh` deliberately does *not* re-bake the campaign: that is a 150-song diff and should be meant, so run `node All else/RhythmDrop/tools/bake-levels.js` yourself when you want it.
 
 ## Testing
 
