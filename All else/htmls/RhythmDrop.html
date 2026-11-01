@@ -1828,6 +1828,15 @@ body.fullscreen .screen { max-width:560px; background:var(--bg2); box-shadow:0 0
 #g-overlay.show ~ #g-hud, #g-hud { opacity:1; }
 #tab-settings .bg-radio-btn.sel, #tab-settings button.sel { background:var(--accent) !important; color:#fff !important; }
 #tab-settings { padding-bottom:28px; }
+
+.trail-flame { filter:none; width:16px; height:44px; box-shadow:0 0 0 2px rgba(0,0,0,.12), inset 0 -8px 10px rgba(255,255,255,.35); }
+.trail-swatch { overflow:visible; }
+#cam-areas::after { content:''; flex:0 0 22px; }
+.cr-toolbar .tool-btn .ic, .cr-selbar .ic { width:15px; height:15px; stroke-width:2.2; vertical-align:-3px; margin-right:3px; }
+.cr-toolbar .tool-btn .ic * { stroke-width:2.2; }
+.cr-toolbar { gap:5px; }
+#g-overlay { background:color-mix(in srgb, var(--bg) 88%, transparent); }
+.hud-score-num { color:var(--text); }
 </style>
 
 
