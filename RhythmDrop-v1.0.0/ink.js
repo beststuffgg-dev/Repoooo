@@ -206,8 +206,10 @@ window.RD_Ink = (function () {
       return '0 0 0 ' + alpha(ik, 0.2) + ',0 1px 2px ' + alpha(ik, 0.3);
     };
     const b = 'border-width:1px;border-style:solid;border-color:transparent !important;border-radius:9px;';
+    const lightTheme = luminance(tokens.bg) > 0.4;
+    const deepen = c => lightTheme ? darken(c, 0.1) : lighten(c, 0.1);
     const emit = (name, selector, T, fill, grad, press, themeFill) => {
-      const inkC = T.ink;
+      const inkC = deepen(T.ink);
       const mk = (variant, mode, f, g) => boxURL({ fill: f, grad: g, stroke: inkC, seed: 11 + variant * 29 + name.length * 5, amp, mode, r: T.r || 13, strokeW: T.strokeW || 2.8 });
       const bi = (v, mode, f, g) => mk(v, mode, f, g) + ' 20 fill / 12px / 4px stretch';
       const base = ':is(' + selector + ')';
