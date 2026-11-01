@@ -4,7 +4,7 @@ let laneExpansion = 0;
 const store = {
   load:             ()  => { try { return JSON.parse(localStorage.getItem('rd_levels')||'[]'); } catch { return []; } },
   save:             a   => localStorage.setItem('rd_levels', JSON.stringify(a)),
-  loadTheme:        ()  => localStorage.getItem('rd_theme')||'graphite',
+  loadTheme:        ()  => localStorage.getItem('rd_theme')||'paper',
   saveTheme:        t   => localStorage.setItem('rd_theme', t),
   loadCustomTheme:  ()  => { try { return JSON.parse(localStorage.getItem('rd_custom_theme')||'null'); } catch { return null; } },
   saveCustomTheme:  t   => localStorage.setItem('rd_custom_theme', JSON.stringify(t)),
@@ -315,38 +315,27 @@ const showScreen = id => {
 };
 
 const THEMES = [
-  { id:'graphite',   name:'Graphite',   subs:'Instrument panel', dots:['#6FA8B5','#C4854E','#121517'] },
-  { id:'walnut',     name:'Walnut',     subs:'Oiled wood',       dots:['#6FB3A0','#E0894A','#2A1B0E'], mat:true },
-  { id:'bone',       name:'Bone',       subs:'Matte paper',      dots:['#1E7A8C','#C2325C','#EDE8DE'], mat:true },
-  { id:'amber',      name:'Amber',      subs:'Brushed brass',    dots:['#E8B355','#D9762E','#1F1508'], mat:true },
-  { id:'vapor',      name:'Vapor',      subs:'Frosted glass',    dots:['#57E0E8','#F065C8','#1D1136'], mat:true },
-  { id:'blueprint',  name:'Blueprint',  subs:'Drafting linen',   dots:['#5BC8FF','#FF9E5B','#0B2440'], mat:true },
-  { id:'mono',       name:'Mono',       subs:'Matte rubber',     dots:['#FFFFFF','#FF4757','#141414'], mat:true },
-  { id:'dark',       name:'Dark',       subs:'Blue & Pink',      dots:['#3B82F6','#FF3A6E','#0e0e1c'] },
-  { id:'forest',     name:'Forest',     subs:'Green & Orange',   dots:['#22c55e','#f97316','#081a0f'] },
-  { id:'sunset',     name:'Sunset',     subs:'Amber & Pink',     dots:['#f59e0b','#ec4899','#1e1008'] },
-  { id:'void',       name:'Void',       subs:'Monochrome',       dots:['#ffffff','#888','#111'] },
-  { id:'neon',       name:'Neon',       subs:'Cyan & Magenta',   dots:['#00ffff','#ff00ff','#000820'] },
-  { id:'dune',       name:'Dune',       subs:'Spice & Sand',     dots:['#d9a441','#5aa9e6','#1a1206'] },
-  { id:'lotr',       name:'Middle-earth', subs:'Gold & Forest',  dots:['#c9a227','#6b8e4e','#0c0f0a'] },
-  { id:'foundation', name:'Foundation', subs:'Psychohistory',    dots:['#5ad1e6','#e0b020','#060a14'] },
-  { id:'nintendo',   name:'Nintendo',   subs:'Red & Blue',       dots:['#e60012','#00a0e9','#0a0a0a'] },
-  { id:'glass',      name:'Liquid Glass', subs:'Frosted',        dots:['#7dd3fc','#f0abfc','#0a0e16'] },
-  { id:'paper',      name:'Paper',        subs:'Light & Warm',   dots:['#1a6bbf','#c0392b','#ede8dc'] },
-  { id:'arctic',     name:'Arctic',       subs:'Light & Cool',   dots:['#0070c0','#7b2fbe','#e4eefa'] },
-  { id:'custom',     name:'Custom',       subs:'Your colors',    dots:['#888','#888','#333'] },
+  { id:'paper',    name:'Paper',     subs:'Warm & light',      dots:['#3f88c5','#e0553a','#f6efe0'], bg:'#f6efe0' },
+  { id:'butter',   name:'Butter',    subs:'Sunny page',        dots:['#3f88c5','#d6502f','#fbf0c4'], bg:'#fbf0c4' },
+  { id:'sky',      name:'Sky',       subs:'Clear blue',        dots:['#2f7fd1','#d9558a','#e3f1fb'], bg:'#e3f1fb' },
+  { id:'mint',     name:'Mint',      subs:'Fresh green',       dots:['#2f9e6a','#e07a3a','#e2f4e6'], bg:'#e2f4e6' },
+  { id:'blush',    name:'Blush',     subs:'Soft pink',         dots:['#5a8fd0','#d9547a','#fbe4e8'], bg:'#fbe4e8' },
+  { id:'lilac',    name:'Lilac',     subs:'Gentle violet',     dots:['#5a8fd0','#8a5cd6','#ece4fa'], bg:'#ece4fa' },
+  { id:'night',    name:'Night Ink', subs:'Dark paper',        dots:['#6fb1e8','#ff7a90','#1f2433'], bg:'#1f2433', text:'#f1ecdf' },
+  { id:'custom',   name:'Custom',    subs:'Your colors',       dots:['#888','#888','#ddd'], bg:'#e8e2d2' },
 
-  { id:'harvest',  name:'Harvest',    subs:'Straw & poppy',     area:1,  dots:['#E5C46A','#DC6351','#172218'], card:{ bg:'#172218', text:'#EEE8CF' } },
-  { id:'lapis',    name:'Lapis',      subs:'Lapis & sandstone', area:2,  dots:['#4F86E0','#D9AE3E','#1D1810'], card:{ bg:'#1D1810', text:'#F3E6C6' } },
-  { id:'marble',   name:'Marble',     subs:'Aegean light',      area:3,  dots:['#1F5FAE','#925719','#EFF2F5'], card:{ bg:'#EFF2F5', text:'#1A2330' } },
-  { id:'imperium', name:'Imperium',   subs:'Crimson & laurel',  area:4,  dots:['#D65C6C','#D9B04C','#22151A'], card:{ bg:'#22151A', text:'#F4E6DD' } },
-  { id:'obsidian', name:'Obsidian',   subs:'Volcanic glass',    area:5,  dots:['#2CC7B4','#F07A38','#10151A'], card:{ bg:'#10151A', text:'#E4F1F0' } },
-  { id:'jade',     name:'Jade',       subs:'Carved stone',      area:6,  dots:['#3FD98E','#E3C158','#0B1F18'], card:{ bg:'#0B1F18', text:'#DDF7EA' } },
-  { id:'oakmoss',  name:'Oakmoss',    subs:'Pipes & moss',      area:7,  dots:['#9CC25E','#CF6A57','#1D2014'], card:{ bg:'#1D2014', text:'#ECE6CC' } },
-  { id:'braid',    name:'Gold Braid', subs:'Navy & scarlet',    area:8,  dots:['#DDB647','#DF5B54','#111A38'], card:{ bg:'#111A38', text:'#E8ECFA' } },
-  { id:'concrete', name:'Concrete',   subs:'Poured & glass',    area:9,  dots:['#085F70','#9A3814','#DEE1E4'], card:{ bg:'#DEE1E4', text:'#151A1F' } },
-  { id:'chrome',   name:'Chrome',     subs:'Neon grid',         area:10, dots:['#3FE0FF','#FF5CA8','#15103A'], card:{ bg:'#15103A', text:'#EFEAFF' } },
+  { id:'harvest',  name:'Harvest',    subs:'Straw & poppy',     area:1,  dots:['#8aa332','#dc6351','#f3e9c0'], bg:'#f3e9c0' },
+  { id:'lapis',    name:'Lapis',      subs:'Lapis & sandstone', area:2,  dots:['#4f86e0','#d9ae3e','#e8ecf5'], bg:'#e8ecf5' },
+  { id:'marble',   name:'Marble',     subs:'Aegean light',      area:3,  dots:['#1f5fae','#925719','#f1f3f6'], bg:'#f1f3f6' },
+  { id:'imperium', name:'Imperium',   subs:'Crimson & laurel',  area:4,  dots:['#d9b04c','#c0394f','#f6e1dc'], bg:'#f6e1dc' },
+  { id:'obsidian', name:'Obsidian',   subs:'Volcanic glass',    area:5,  dots:['#2cc7b4','#f07a38','#1b2227'], bg:'#1b2227', text:'#e4f1f0' },
+  { id:'jade',     name:'Jade',       subs:'Carved stone',      area:6,  dots:['#2f9e66','#d8a93a','#dff3e8'], bg:'#dff3e8' },
+  { id:'oakmoss',  name:'Oakmoss',    subs:'Pipes & moss',      area:7,  dots:['#8aa83e','#cf6a57','#e9eed5'], bg:'#e9eed5' },
+  { id:'braid',    name:'Gold Braid', subs:'Navy & scarlet',    area:8,  dots:['#3d57b5','#df5b54','#e6e9f6'], bg:'#e6e9f6' },
+  { id:'concrete', name:'Concrete',   subs:'Poured & glass',    area:9,  dots:['#085f70','#9a3814','#e2e5e8'], bg:'#e2e5e8' },
+  { id:'chrome',   name:'Chrome',     subs:'Neon grid',         area:10, dots:['#3fe0ff','#ff5ca8','#1a1540'], bg:'#1a1540', text:'#efeaff' },
 ];
+window.RD_THEMES = THEMES;
 
 const themeById = id => THEMES.find(t => t.id === id) || null;
 
@@ -362,7 +351,7 @@ function applyTheme(id) {
   clearCustomThemeVars();
   const keep = ['gfx-modern', 'adv-overlay']
     .filter(c => document.body.classList.contains(c));
-  document.body.className = [id === 'dark' ? '' : 'theme-' + id, ...keep]
+  document.body.className = [id === 'paper' ? '' : 'theme-' + id, ...keep]
     .filter(Boolean).join(' ');
   if (id === 'custom') applyCustomTheme(store.loadCustomTheme());
   if (id === 'glass')  applyGlassTrans(store.loadGlassTrans());
@@ -414,9 +403,7 @@ function buildThemesGrid() {
   const g = document.getElementById('themes-grid');
   g.innerHTML = '';
   const cur = store.loadTheme();
-  const txt = { void:'#fff', neon:'#00ffff', forest:'#c8ffdd', sunset:'#ffe8c8',
-    dune:'#f0d9a8', lotr:'#e8e0c0', foundation:'#bfe9f5', nintendo:'#ffffff', glass:'#eaf2ff',
-    paper:'#1a1510', arctic:'#0a1828' };
+
 
   const earned = THEMES.filter(t => t.area && !isThemeLocked(t)).length;
   const total  = THEMES.filter(t => t.area).length;
@@ -444,8 +431,7 @@ function buildThemesGrid() {
         <div class="tc-dot" style="background:${th.dots[2]}"></div>
       </div>`
       + (locked ? '<div class="tc-lock">🔒 Clear ' + area.name + '</div>' : '');
-    if (th.card) c.style.background = th.card.bg;
-    c.style.color = th.card ? th.card.text : (txt[th.id] || '#e8e8ff');
+    c.style.color = th.text || '#3a3023';
     c.addEventListener('click', () => {
       if (locked) { showToast('Clear every song in ' + area.name + ' to unlock ' + th.name, true); return; }
       applyTheme(th.id);
@@ -1364,6 +1350,27 @@ function buildSettingsAudio(panel) {
     panel.appendChild(row);
   }
 
+  panel.appendChild(_settingsSectionHead('Menu Sounds'));
+  {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;gap:6px;margin-bottom:4px;';
+    [[true, 'On'], [false, 'Off']].forEach(([val, label]) => {
+      const btn = document.createElement('button');
+      const on = (currentSettings.uiSounds !== false) === val;
+      btn.className = 'bg-radio-btn' + (on ? ' sel' : '');
+      btn.style.cssText = 'flex:1;';
+      btn.textContent = label;
+      btn.addEventListener('click', () => {
+        currentSettings.uiSounds = val;
+        store.saveSettings(currentSettings);
+        applySettingsToDOM();
+        buildSettingsPanel();
+      });
+      row.appendChild(btn);
+    });
+    panel.appendChild(row);
+  }
+
   panel.appendChild(_settingsSectionHead('Your Instrument'));
   const instrRow = document.createElement('div');
   instrRow.style.cssText = 'display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:4px;';
@@ -1441,13 +1448,8 @@ function buildSettingsPanel() {
   SETTINGS_SUBTABS.forEach(st => {
     const btn = document.createElement('button');
     const active = settingsSubTab === st.id;
-    btn.style.cssText = [
-      'flex:1;padding:7px 4px;border-radius:8px;font-size:11px;font-weight:700;',
-      'font-family:var(--font-body);cursor:pointer;transition:all .12s;border:1px solid;',
-      active
-        ? 'border-color:var(--accent);background:rgba(255,58,110,.12);color:var(--accent);'
-        : 'border-color:var(--border2);background:var(--bg3);color:var(--muted);',
-    ].join('');
+    btn.style.cssText = 'flex:1;padding:7px 4px;font-size:12px;cursor:pointer;';
+    if (active) btn.classList.add('sel');
     btn.textContent = st.label;
     btn.addEventListener('click', () => { settingsSubTab = st.id; buildSettingsPanel(); });
     subNav.appendChild(btn);
@@ -1489,6 +1491,7 @@ const DEFAULT_SETTINGS = {
   keys8: window.RD_Lanes.defaultKeys(8),
   gfx: 'modern',
   songVoices: true,
+  uiSounds: true,
   hitWindow: 'normal',
   width: 420,
   height: 640,
@@ -1528,6 +1531,7 @@ function loadAndApplySettings() {
     if (saved.instrument) currentSettings.instrument = window.RD_resolveInstrument ? window.RD_resolveInstrument(saved.instrument) : saved.instrument;
     if (saved.gfx)            currentSettings.gfx        = saved.gfx;
     if (typeof saved.songVoices === 'boolean') currentSettings.songVoices = saved.songVoices;
+    if (typeof saved.uiSounds === 'boolean') currentSettings.uiSounds = saved.uiSounds;
     if (saved.hitWindow)      currentSettings.hitWindow  = saved.hitWindow;
     if (saved.uiScale)        currentSettings.uiScale   = saved.uiScale;
     if (saved.masterVol != null) currentSettings.masterVol = saved.masterVol;
@@ -1577,6 +1581,7 @@ function applySettingsToDOM() {
   root.style.width  = appliedWidth() + 'px';
   root.style.height = currentSettings.height + 'px';
   document.body.classList.toggle('gfx-modern', currentSettings.gfx !== 'classic');
+  if (window.RD_setUiSounds) window.RD_setUiSounds(currentSettings.uiSounds !== false);
   document.body.style.zoom = currentSettings.uiScale || 1;
   const laneKeys = keysFor(laneCount);
   laneKeys.forEach((code, i) => {
@@ -1701,7 +1706,7 @@ document.getElementById('g-menu-btn').addEventListener('click', quitToMenu);
 
 loadAndApplySettings();
 observeManualResize();
-applyTheme(isThemeLocked(themeById(store.loadTheme())) ? 'graphite' : store.loadTheme());
+applyTheme(themeById(store.loadTheme()) && !isThemeLocked(themeById(store.loadTheme())) ? store.loadTheme() : 'paper');
 const ct = store.loadCustomTheme();
 if (ct && store.loadTheme() === 'custom') applyCustomTheme(ct);
 

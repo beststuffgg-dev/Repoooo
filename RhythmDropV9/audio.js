@@ -882,6 +882,49 @@ window.RD_stopBg = function () {
   bgMode = 'none'; bgStep = 0;
 };
 
+const UI_SFX = {
+  hover:  [{ f: 1900, t: 0.022, g: 0.035, w: 'sine' }],
+  press:  [{ f: 520, f2: 360, t: 0.05, g: 0.09, w: 'triangle' }],
+  click:  [{ f: 880, f2: 1240, t: 0.07, g: 0.08, w: 'sine' }, { f: 1760, t: 0.05, g: 0.03, w: 'sine', d: 0.01 }],
+  tab:    [{ f: 660, t: 0.05, g: 0.07, w: 'triangle' }, { f: 990, t: 0.07, g: 0.07, w: 'triangle', d: 0.05 }],
+  on:     [{ f: 600, t: 0.05, g: 0.07, w: 'triangle' }, { f: 900, t: 0.07, g: 0.07, w: 'triangle', d: 0.05 }],
+  off:    [{ f: 700, t: 0.05, g: 0.07, w: 'triangle' }, { f: 450, t: 0.07, g: 0.07, w: 'triangle', d: 0.05 }],
+  back:   [{ f: 620, f2: 420, t: 0.09, g: 0.08, w: 'sine' }],
+  deny:   [{ f: 200, f2: 150, t: 0.11, g: 0.07, w: 'square' }],
+  coin:   [{ f: 1568, t: 0.07, g: 0.07, w: 'sine' }, { f: 2093, t: 0.16, g: 0.07, w: 'sine', d: 0.07 }],
+  open:   [{ f: 440, f2: 700, t: 0.11, g: 0.07, w: 'sine' }],
+  close:  [{ f: 700, f2: 440, t: 0.11, g: 0.07, w: 'sine' }],
+  success:[{ f: 523, t: 0.08, g: 0.07, w: 'triangle' }, { f: 659, t: 0.08, g: 0.07, w: 'triangle', d: 0.08 }, { f: 784, t: 0.16, g: 0.07, w: 'triangle', d: 0.16 }],
+};
+const UI_GAP = { hover: 0.07, press: 0.03, click: 0.03 };
+let _uiLast = {}, _uiOn = true, _uiBlocked = false;
+window.RD_setUiSounds = on => { _uiOn = !!on; };
+window.RD_getUiSounds = () => _uiOn;
+window.RD_blockUiSounds = b => { _uiBlocked = !!b; };
+window.RD_uiSfx = function (kind) {
+  const spec = UI_SFX[kind];
+  if (!spec || !_uiOn || _uiBlocked || _masterVol <= 0) return false;
+  let c;
+  try { c = ctx(); } catch (e) { return false; }
+  const now = c.currentTime;
+  if (now - (_uiLast[kind] || -9) < (UI_GAP[kind] || 0.02)) return false;
+  _uiLast[kind] = now;
+  const out = masterGain();
+  spec.forEach(n => {
+    const o = c.createOscillator(), g = c.createGain();
+    const t0 = now + (n.d || 0);
+    o.type = n.w;
+    o.frequency.setValueAtTime(n.f, t0);
+    if (n.f2) o.frequency.exponentialRampToValueAtTime(n.f2, t0 + n.t);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(n.g, t0 + 0.006);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + n.t);
+    o.connect(g); g.connect(out);
+    o.start(t0); o.stop(t0 + n.t + 0.02);
+  });
+  return true;
+};
+
 window.RD_Audio = {
   playLaneNote:   window.RD_playNote,
   startMenuMusic: () => {},
