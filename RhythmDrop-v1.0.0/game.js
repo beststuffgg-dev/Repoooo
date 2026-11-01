@@ -1325,10 +1325,10 @@ function buildSettingsDisplay(panel) {
   sizeRow('Height', 420, maxH, 'height', 'size-h-slider', 'size-h-input');
 
   const applyBtn = document.createElement('button');
-  applyBtn.style.cssText = 'width:100%;margin-top:4px;padding:9px;border-radius:9px;border:1px solid var(--accent);background:rgba(255,58,110,.1);color:var(--accent);font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;transition:background .12s;';
+  applyBtn.style.cssText = 'width:100%;margin-top:4px;padding:9px;border-radius:9px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:12px;font-weight:700;font-family:var(--font-body);cursor:pointer;transition:background .12s;';
   applyBtn.textContent = '✓ Apply Size';
-  applyBtn.onmouseenter = () => applyBtn.style.background = 'rgba(255,58,110,.22)';
-  applyBtn.onmouseleave = () => applyBtn.style.background = 'rgba(255,58,110,.1)';
+  applyBtn.onmouseenter = () => applyBtn.style.filter = 'brightness(1.1)';
+  applyBtn.onmouseleave = () => applyBtn.style.filter = '';
   applyBtn.addEventListener('click', () => {
     currentSettings.width  = _pendingSize.width;
     currentSettings.height = _pendingSize.height;

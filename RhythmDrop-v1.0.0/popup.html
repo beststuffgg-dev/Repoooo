@@ -1807,6 +1807,20 @@ input[type="range"], input[type="checkbox"], input[type="radio"] { accent-color:
 @keyframes splashOut {
   to { opacity:0; visibility:hidden; pointer-events:none; }
 }
+
+input[type="range"] { accent-color:var(--accent) !important; }
+.rarity-tag { background-image:linear-gradient(rgba(0,0,0,.45), rgba(0,0,0,.45)); font-size:9px; padding:2px 6px; }
+.hud-score-lbl { color:var(--text); opacity:.75; font-size:10px; }
+.hud-combo { color:var(--text); background:var(--bg2); }
+.hud-lives { color:var(--text); }
+#g-footer, #g-footer * { color:var(--text); opacity:1; }
+.cce-done { border-color:var(--accent) !important; box-shadow:0 3px 0 color-mix(in srgb,var(--accent) 55%, #000); }
+.area-chip.sel .ac-name { color:var(--text); }
+.bg-radio-btn.sel { background:var(--accent) !important; color:#fff !important; }
+.bg-radio-btn.sel * { color:#fff !important; }
+#cam-areas, .cam-areas { -webkit-mask-image:linear-gradient(90deg,#000 88%,transparent); mask-image:linear-gradient(90deg,#000 88%,transparent); }
+body.fullscreen .screen { max-width:560px; background:var(--bg2); box-shadow:0 0 0 2px var(--border2), 0 18px 50px rgba(0,0,0,.14); border-radius:18px; min-height:calc(100vh - 32px); margin-top:16px; margin-bottom:16px; }
+.wave-empty, #st-wave:empty::after { color:var(--muted); }
 </style>
 
 
