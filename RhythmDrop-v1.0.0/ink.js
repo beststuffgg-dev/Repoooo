@@ -214,7 +214,7 @@ window.RD_Ink = (function () {
       const sh = lvl => ';box-shadow:' + shadow(lvl, 'rest') + ' !important';
       if (T.flat) {
         out.push(base + '{border-width:1px;border-style:solid;border-color:transparent transparent ' + alpha(ik, 0.14) + ' transparent !important;border-radius:0;background:transparent !important;border-image:none;box-shadow:none !important;transition:transform .14s,box-shadow .14s;position:relative;}');
-        out.push(base + ':is(:hover,:focus-visible){border-image:' + bi(0, 'hover', fill, grad) + ';border-color:transparent !important;box-shadow:' + shadow(T.elev, 'hover') + ' !important;transform:translateY(-3px) scale(1.02);z-index:6;outline:none;}');
+        out.push(base + ':is(:hover,:focus-visible){border-image:' + bi(0, 'hover', fill, grad) + ';border-color:transparent !important;box-shadow:' + shadow(T.elev, 'hover') + ' !important;transform:translateY(-2px) scale(1.012);z-index:6;outline:none;}');
         out.push(base + ':active{border-image-source:' + mk(0, 'press', press, null) + ';box-shadow:' + shadow(T.elev, 'press') + ' !important;transform:translateY(0) scale(1.0);}');
         return;
       }
