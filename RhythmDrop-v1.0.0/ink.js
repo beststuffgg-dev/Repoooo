@@ -17,6 +17,8 @@ window.RD_Ink = (function () {
     if (m) return m[1].split('').map(h => parseInt(h + h, 16));
     m = /^#([0-9a-f]{6})/i.exec(c);
     if (m) return [0, 2, 4].map(i => parseInt(m[1].slice(i, i + 2), 16));
+    m = /color\(srgb\s+([\d.]+)\s+([\d.]+)\s+([\d.]+)/i.exec(c);
+    if (m) return [+m[1] * 255, +m[2] * 255, +m[3] * 255];
     m = /rgba?\(\s*([\d.]+)[ ,]+([\d.]+)[ ,]+([\d.]+)/i.exec(c);
     if (m) return [+m[1], +m[2], +m[3]];
     return [128, 128, 128];
@@ -112,10 +114,14 @@ window.RD_Ink = (function () {
     const amp = o.amp === undefined ? 1.1 : o.amp;
     const seed = o.seed || 1;
     const main = wavyPath(size, r, amp, seed);
-    const echo = wavyPath(size, r, amp * 1.25, seed + 77);
-    const sw = o.strokeW === undefined ? 2.8 : o.strokeW;
+        const sw = o.strokeW === undefined ? 2.8 : o.strokeW;
     let s = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">';
-    if (o.fill && o.fill !== 'none') s += '<path d="' + main + '" fill="' + o.fill + '"/>';
+    let fillAttr = o.fill;
+    if (o.grad) {
+      s += '<defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + o.grad[0] + '"/><stop offset="1" stop-color="' + o.grad[1] + '"/></linearGradient></defs>';
+      fillAttr = 'url(#g)';
+    }
+    if (fillAttr && fillAttr !== 'none') s += '<path d="' + main + '" fill="' + fillAttr + '"/>';
     if (o.mode === 'hover') {
       s += '<path d="' + main + '" fill="none" stroke="' + o.stroke + '" stroke-width="' + (sw + 2.6) + '" stroke-linejoin="round"/>';
       s += '<path d="' + main + '" fill="none" stroke="#ffffff" stroke-width="' + (sw + 0.5) + '" stroke-linejoin="round"/>';
@@ -124,7 +130,6 @@ window.RD_Ink = (function () {
       s += '<path d="' + main + '" fill="none" stroke="#ffffff" stroke-width="' + (sw + 1) + '" stroke-linejoin="round"/>';
     } else if (sw > 0) {
       s += '<path d="' + main + '" fill="none" stroke="' + o.stroke + '" stroke-width="' + sw + '" stroke-linejoin="round" stroke-linecap="round"/>';
-      s += '<path d="' + echo + '" fill="none" stroke="' + o.stroke + '" stroke-width="' + (sw * 0.5) + '" stroke-linejoin="round" opacity=".28"/>';
     }
     return s + '</svg>';
   }
@@ -138,20 +143,28 @@ window.RD_Ink = (function () {
 
   const TONES = {
     card: {
-      sel: '.level-card, .avatar-card, #daily-card, #endless-card, .endless-band, .song-row, .area-chip, .custom-av-upload, .hs-entry, #profile-bar, .home-hero, #home-hero, .st-item, .gen-box, .ov-key, .ov-leg, .ov-logo, .hud-combo, .leg-pill',
-      fill: t => t.card, ink: t => t.ink, press: t => lighten(t.card, 0.4)
+      sel: '.level-card, .avatar-card, #daily-card, #endless-card, .endless-band, .song-row, .area-chip, .custom-av-upload, .hs-entry, .st-item, .gen-box, .ov-key, .ov-leg, .ov-logo, .hud-combo, .leg-pill',
+      fill: t => lighten(t.card, 0.4), grad: t => [lighten(t.card, 0.75), lighten(t.card, 0.3)], ink: t => t.ink, press: t => lighten(t.card, 0.7), elev: 1, move: true
     },
     button: {
-      sel: 'button:not(.hnav):not(.lane-btn):not(.cr-cell):not(.tool-btn):not(.cr-back):not(.ov-key), .ic-btn, .chaos-toggle, .bg-radio-btn, .adv-toggle, .cce-btn, .cce-pitch, .gen-main, .gen-go, .gen-play, .uname-btn, .ctf-apply, .cr-save-btn, .mb-close-btn, .ov-play-btn, .glass-trans-btn, .cr-add-btn',
-      fill: t => t.raised, ink: t => t.ink, press: t => lighten(t.raised, 0.45)
+      sel: ':where(button:not(.hnav):not(.lane-btn):not(.cr-cell):not(.tool-btn):not(.cr-back):not(.ov-key)), .ic-btn, .chaos-toggle, .bg-radio-btn, .adv-toggle, .cce-btn, .cce-pitch, .gen-main, .gen-play, .ctf-apply, .glass-trans-btn, .cr-add-btn',
+      fill: t => t.raised, grad: t => [lighten(t.raised, 0.6), t.raised], ink: t => t.ink, press: t => lighten(t.raised, 0.45), elev: 2, move: true
+    },
+    panel: {
+      sel: '#profile-bar, #home-hero, .home-hero',
+      fill: t => lighten(t.bg, 0.45), grad: t => [lighten(t.bg, 0.7), lighten(t.bg, 0.3)], ink: t => t.ink, press: t => lighten(t.bg, 0.6), elev: 0
+    },
+    primary: {
+      sel: '.ov-play-btn, .uname-btn, .gen-go, .cr-save-btn, #new-lvl-btn, #custom-av-buy-btn, .mb-close-btn',
+      fill: t => t.accent, grad: t => [lighten(t.accent, 0.28), t.accent], ink: t => t.ink, press: t => lighten(t.accent, 0.35), elev: 3, move: true, onAccent: true
     },
     field: {
       sel: 'select, input[type="text"], input[type="number"], textarea, .uname-input, .ctf-input',
-      fill: t => lighten(t.bg, 0.5), ink: t => t.ink, press: t => lighten(t.bg, 0.7)
+      fill: t => lighten(t.bg, 0.5), ink: t => t.ink, press: t => lighten(t.bg, 0.7), elev: 0, inset: true
     },
     tool: {
       sel: '.tool-btn, .cr-back, .hnav',
-      fill: t => 'none', ink: t => t.inkSoft, press: t => lighten(t.card, 0.5)
+      fill: t => 'none', ink: t => t.inkSoft, press: t => lighten(t.card, 0.5), elev: 0
     },
   };
   const ACTIVE = ':is(.active, .selected, .sel, .on, .is-active, .playing, [aria-pressed="true"])';
@@ -174,31 +187,43 @@ window.RD_Ink = (function () {
 
   function rules(tokens, opts) {
     opts = opts || {};
-    const amp = opts.flat ? 0.12 : (opts.amp === undefined ? 0.55 : opts.amp);
+    const amp = opts.flat ? 0.1 : (opts.amp === undefined ? 0.3 : opts.amp);
     const out = [];
-    const b = 'border-width:1px;border-style:solid;border-color:transparent !important;border-radius:12px;box-shadow:none !important;';
-    const emit = (name, selector, fill, ink, press, themeFill) => {
-      const mk = (variant, mode, f) => boxURL({ fill: f, stroke: ink, seed: 11 + variant * 29 + name.length * 5, amp, mode, r: 13, strokeW: 2.8 });
-      const bi = (v, mode, f) => mk(v, mode, f) + ' 20 fill / 9px / 4px stretch';
+    const ik = tokens.ink;
+    const shadow = (lvl, st) => {
+      if (!lvl) return 'none';
+      const k = lvl;
+      if (st === 'rest') return '0 ' + (k + 1) + 'px 0 ' + alpha(ik, 0.2) + ',0 ' + (k * 4 + 2) + 'px ' + (k * 5 + 5) + 'px -' + (k * 2 + 3) + 'px ' + alpha(ik, 0.4);
+      if (st === 'hover') return '0 ' + (k + 3) + 'px 0 ' + alpha(ik, 0.2) + ',0 ' + (k * 5 + 5) + 'px ' + (k * 6 + 8) + 'px -' + (k * 2 + 3) + 'px ' + alpha(ik, 0.45);
+      return '0 0 0 ' + alpha(ik, 0.2) + ',0 1px 2px ' + alpha(ik, 0.3);
+    };
+    const b = 'border-width:1px;border-style:solid;border-color:transparent !important;border-radius:9px;';
+    const emit = (name, selector, T, fill, grad, press, themeFill) => {
+      const inkC = T.ink;
+      const mk = (variant, mode, f, g) => boxURL({ fill: f, grad: g, stroke: inkC, seed: 11 + variant * 29 + name.length * 5, amp, mode, r: 13, strokeW: 2.8 });
+      const bi = (v, mode, f, g) => mk(v, mode, f, g) + ' 20 fill / 12px / 4px stretch';
       const base = ':is(' + selector + ')';
-      out.push(base + '{' + b + 'background:transparent !important;border-image:' + bi(0, 'rest', fill) + ';}');
-      out.push(base + ':nth-child(3n+2){border-image-source:' + mk(1, 'rest', fill) + ';}');
-      out.push(base + ':nth-child(3n){border-image-source:' + mk(2, 'rest', fill) + ';}');
-      out.push(base + ':is(:hover,:focus-visible){border-image-source:' + mk(0, 'hover', fill) + ';outline:none;}');
-      out.push(base + ':active{border-image-source:' + mk(0, 'press', press) + ';}');
-      if (!themeFill) {
-        out.push(base + ACTIVE + '{border-image-source:' + mk(0, 'rest', tokens.accent) + ';color:' + (luminance(tokens.accent) > 0.5 ? '#2b241a' : '#ffffff') + ';}');
-        out.push(base + ACTIVE + ':is(:hover,:focus-visible){border-image-source:' + mk(0, 'hover', tokens.accent) + ';}');
-        out.push(base + ACTIVE + ':active{border-image-source:' + mk(0, 'press', lighten(tokens.accent, 0.4)) + ';}');
-      } else {
-        out.push(base + '.selected{border-image-source:' + mk(0, 'hover', fill) + ';}');
+      const sh = lvl => ';box-shadow:' + shadow(lvl, 'rest') + ' !important';
+      out.push(base + '{' + b + 'background:transparent !important;border-image:' + bi(0, 'rest', fill, grad) + sh(T.elev) + ';' + (T.move ? 'transition:transform .12s, box-shadow .12s;' : '') + '}');
+      out.push(base + ':nth-child(3n+2){border-image-source:' + mk(1, 'rest', fill, grad) + ';}');
+      out.push(base + ':nth-child(3n){border-image-source:' + mk(2, 'rest', fill, grad) + ';}');
+      out.push(base + ':is(:hover,:focus-visible){border-image-source:' + mk(0, 'hover', fill, grad) + ';outline:none;box-shadow:' + shadow(T.elev, 'hover') + ' !important;' + (T.move ? 'transform:translateY(-1px);' : '') + '}');
+      out.push(base + ':active{border-image-source:' + mk(0, 'press', press, null) + ';box-shadow:' + shadow(T.elev, 'press') + ' !important;' + (T.move ? 'transform:translateY(2px);' : '') + '}');
+      if (!themeFill && !T.onAccent) {
+        const acc = tokens.accent, ag = [lighten(acc, 0.28), acc];
+        out.push(base + ACTIVE + '{border-image-source:' + mk(0, 'rest', acc, ag) + ';color:' + (luminance(acc) > 0.5 ? '#2b241a' : '#ffffff') + ';}');
+        out.push(base + ACTIVE + ':is(:hover,:focus-visible){border-image-source:' + mk(0, 'hover', acc, ag) + ';}');
+        out.push(base + ACTIVE + ':active{border-image-source:' + mk(0, 'press', lighten(acc, 0.4), null) + ';}');
+      } else if (themeFill) {
+        out.push(base + '.selected{border-image-source:' + mk(0, 'hover', fill, grad) + ';}');
       }
+      if (T.onAccent) out.push(base + '{color:' + (luminance(tokens.accent) > 0.5 ? '#2b241a' : '#ffffff') + ';}');
     };
     Object.keys(TONES).forEach(name => {
       const T = TONES[name];
-      emit(name, T.sel, T.fill(tokens), T.ink(tokens), T.press(tokens), false);
+      emit(name, T.sel, Object.assign({}, T, { ink: T.ink(tokens) }), T.fill(tokens), T.grad ? T.grad(tokens) : null, T.press(tokens), false);
     });
-    (opts.extra || []).forEach((e, i) => emit('x' + i, e.sel, e.fill, e.ink || tokens.ink, lighten(e.fill, 0.4), true));
+    (opts.extra || []).forEach((e, i) => emit('x' + i, e.sel, { ink: e.ink || tokens.ink, elev: 1, move: true }, e.fill, [lighten(e.fill, 0.35), e.fill], lighten(e.fill, 0.4), true));
     return out.join('\n');
   }
 
@@ -245,23 +270,22 @@ window.RD_Ink = (function () {
 
   function playRules(t, opts) {
     opts = opts || {};
-    const amp = opts.flat ? 0.15 : 0.5;
+    const amp = opts.flat ? 0.1 : 0.3;
     const bi = (o) => boxURL(Object.assign({ amp, r: 12 }, o)) + ' 20 fill / 9px / 0 stretch';
     const white = '#ffffff';
     const tapFill = t.tap, dtapFill = t.dtap;
     const holdFill = mix(t.tap, t.bg, 0.55);
     const css = [];
-    css.push('.lane{border-width:1px !important;border-style:solid !important;border-color:transparent !important;border-radius:12px;background:transparent !important;border-image:' + boxURL({ fill: alpha(mix(t.bg, t.ink, 0.04), 0.82), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 2.4 }) + ' 20 fill / 9px / 0 stretch;}');
+    css.push('.lane{border-width:1px !important;border-style:solid !important;border-color:transparent !important;border-radius:12px;background:transparent !important;border-image:' + boxURL({ fill: alpha(mix(t.bg, t.ink, 0.04), 0.82), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 2.4 }) + ' 20 fill / 9px / 0 stretch;box-shadow:0 3px 0 ' + alpha(t.ink, 0.14) + ',0 10px 16px -8px ' + alpha(t.ink, 0.35) + ';}');
     css.push('.lane:nth-child(even){border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.ink, 0.09), 0.82), stroke: t.ink, amp, r: 12, seed: 43, strokeW: 2.4 }) + ';}');
     css.push('.lane.glow-tap{border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.tap, 0.3), 0.85), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 2.4 }) + ';}');
     css.push('.lane.glow-dtap{border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.dtap, 0.3), 0.85), stroke: t.ink, amp, r: 12, seed: 43, strokeW: 2.4 }) + ';}');
-    css.push('.lane-hitbar{height:8px;bottom:50px;background:' + hLineURL(t.ink, { w: 80, h: 8, sw: 3 }) + ' repeat-x center/80px 8px !important;box-shadow:none !important;}');
-    css.push('.lane-hitglow{background:none !important;}');
-    css.push('.tile{background:none !important;box-shadow:none !important;filter:none;}');
-    css.push('.tile-tap{border-width:2px;border-style:solid;border-color:transparent;border-radius:9px;border-image:' + bi({ fill: tapFill, stroke: t.ink, seed: 51, strokeW: 3 }) + ';}');
-    css.push('.tile-dtap{border-width:2px !important;border-style:solid !important;border-color:transparent !important;border-radius:9px;border-image:' + bi({ fill: dtapFill, stroke: t.ink, seed: 53, strokeW: 3 }) + ';}');
-    css.push('.tile-dtap.primed{border-image-source:' + boxURL({ fill: lighten(dtapFill, 0.35), stroke: t.ink, amp, r: 12, seed: 53, strokeW: 3, mode: 'hover' }) + ';animation:none;}');
-    css.push('.tile-hold{border-width:2px !important;border-style:solid !important;border-color:transparent !important;border-radius:9px;border-image:' + bi({ fill: holdFill, stroke: t.ink, seed: 55, strokeW: 2.8 }) + ';}');
+    const sh = c => '0 5px 0 ' + darken(c, 0.4) + ',0 10px 12px -5px ' + alpha(t.ink, 0.45);
+    css.push('.tile{background:none !important;filter:none;}');
+    css.push('.tile-tap{border-width:2px;border-style:solid;border-color:transparent;border-radius:9px;border-image:' + bi({ fill: tapFill, grad: [lighten(tapFill, 0.3), tapFill], stroke: t.ink, seed: 51, strokeW: 3 }) + ';box-shadow:' + sh(tapFill) + ';}');
+    css.push('.tile-dtap{border-width:2px !important;border-style:solid !important;border-color:transparent !important;border-radius:9px;border-image:' + bi({ fill: dtapFill, grad: [lighten(dtapFill, 0.3), dtapFill], stroke: t.ink, seed: 53, strokeW: 3 }) + ';box-shadow:' + sh(dtapFill) + ';}');
+    css.push('.tile-dtap.primed{border-image-source:' + boxURL({ fill: lighten(dtapFill, 0.35), stroke: t.ink, amp, r: 12, seed: 53, strokeW: 3, mode: 'hover' }) + ';}');
+    css.push('.tile-hold{border-width:2px !important;border-style:solid !important;border-color:transparent !important;border-radius:9px;border-image:' + bi({ fill: holdFill, grad: [lighten(holdFill, 0.3), holdFill], stroke: t.ink, seed: 55, strokeW: 2.8 }) + ';box-shadow:' + sh(holdFill) + ';}');
     css.push('.tile-hold.held{border-image-source:' + boxURL({ fill: lighten(holdFill, 0.3), stroke: t.ink, amp, r: 12, seed: 55, strokeW: 2, mode: 'hover' }) + ';}');
     const dot = dotURL(white, { size: 24, seed: 7, ring: t.ink });
     css.push('.tile-tap:not(.tile-hold)::before,.tile-dtap::before{content:"";position:absolute;inset:auto;width:18px;height:18px;left:50%;top:50%;margin:-9px 0 0 -9px;background:' + dot + ' center/18px 18px no-repeat !important;border:0;opacity:1;}');
@@ -272,8 +296,8 @@ window.RD_Ink = (function () {
     css.push('.tile-hold::after{content:"";position:absolute;left:50%;margin-left:-3px;width:6px;top:8px;bottom:30px;background:' + lineURL(white, { w: 6, h: 64, sw: 2, amp: 0.9 }) + ' center/6px 100% repeat-y;pointer-events:none;}');
     css.push('.hold-fill{left:50% !important;right:auto !important;width:5px;margin-left:-2.5px;bottom:28px !important;border-radius:3px !important;background:' + t.ink + ' !important;box-shadow:none !important;opacity:0;}');
     css.push('.tile-hold.held .hold-fill{opacity:.85 !important;}');
-    css.push('.lane-btn{background:none !important;border-width:1px !important;border-style:solid !important;border-color:transparent !important;border-image:' + boxURL({ fill: mix(t.bg, t.ink, 0.12), stroke: t.ink, amp, r: 12, seed: 61, strokeW: 2.4 }) + ' 20 fill / 9px / 0 stretch;box-shadow:none !important;}');
-    css.push('.lane-btn:active,.lane-btn.down{border-image-source:' + boxURL({ fill: lighten(mix(t.bg, t.ink, 0.12), 0.5), stroke: t.ink, amp, r: 12, seed: 61, strokeW: 2.4, mode: 'press' }) + ';}');
+    css.push('.lane-btn{background:none !important;border-width:1px !important;border-style:solid !important;border-color:transparent !important;border-image:' + boxURL({ fill: mix(t.bg, t.ink, 0.12), stroke: t.ink, amp, r: 12, seed: 61, strokeW: 2.4 }) + ' 20 fill / 9px / 0 stretch;box-shadow:0 4px 0 ' + alpha(t.ink, 0.28) + ',0 8px 10px -4px ' + alpha(t.ink, 0.4) + ' !important;transition:transform .06s;}');
+    css.push('.lane-btn:active,.lane-btn.down{border-image-source:' + boxURL({ fill: lighten(mix(t.bg, t.ink, 0.12), 0.5), stroke: t.ink, amp, r: 12, seed: 61, strokeW: 2.4, mode: 'press' }) + ';box-shadow:0 0 0 ' + alpha(t.ink, 0.28) + ' !important;transform:translateY(4px);}');
     return css.join('\n');
   }
 

@@ -7,8 +7,15 @@ window.RD_InkUI = (function () {
   let styleEl = null;
   let last = '';
 
+  let probe = null;
   function read(k) {
-    return getComputedStyle(document.body).getPropertyValue(k);
+    if (!probe) {
+      probe = document.createElement('i');
+      probe.style.cssText = 'position:absolute;width:0;height:0;visibility:hidden;pointer-events:none';
+      document.body.appendChild(probe);
+    }
+    probe.style.color = 'var(' + k + ')';
+    return getComputedStyle(probe).color;
   }
 
   function fillLogos(tokens) {
@@ -46,7 +53,14 @@ window.RD_InkUI = (function () {
     if (typeof window.RD_uiSfx === 'function') window.RD_uiSfx(kind);
   }
 
+  function labelIcons(root) {
+    (root || document).querySelectorAll('button[title]:not([aria-label])').forEach(b => { b.setAttribute('aria-label', b.getAttribute('title')); });
+    (root || document).querySelectorAll('svg.ic').forEach(s => { if (!s.hasAttribute('aria-hidden')) s.setAttribute('aria-hidden', 'true'); });
+  }
+
   function install() {
+    labelIcons();
+    new MutationObserver(() => labelIcons()).observe(document.body, { childList: true, subtree: true });
     let hovering = null;
     document.addEventListener('pointerover', e => {
       if (e.pointerType === 'touch') return;

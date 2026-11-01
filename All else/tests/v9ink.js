@@ -114,6 +114,20 @@ console.log('== ink engine ==');
     ok(r.dt[0] && r.dt[1], 'a double tile has two white dots');
     ok(r.hold[0] && r.hold[1], 'a hold tile has a dot and a thin line to its end');
     ok(r.border, 'tiles are drawn with the hand-drawn border');
+    const prime = await page.evaluate(async () => {
+      const lane = document.querySelector('.lane');
+      const t = document.createElement('div');
+      t.className = 'tile tile-dtap';
+      t.style.height = '90px';
+      t.style.transform = 'translate3d(0,240px,0)';
+      lane.appendChild(t);
+      const before = getComputedStyle(t).transform;
+      t.classList.add('primed');
+      await new Promise(r => setTimeout(r, 400));
+      const after = getComputedStyle(t).transform;
+      return { before, after };
+    });
+    ok(prime.before === prime.after && /240/.test(prime.after), 'a double tile stays where it is after the first press (' + prime.after + ')');
   }
 
   console.log('== scenes and codes ==');
