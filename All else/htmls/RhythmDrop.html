@@ -1323,9 +1323,10 @@ body.gfx-modern::after { opacity:.4; }
 body { background:var(--bg); }
 .tab-pane.active > *:first-child { margin-top:0; }
 
-.cam-songs { padding:10px 9px 5px; overflow:visible; }
+.cam-songs { padding:3px; overflow:visible; gap:0; }
 #cam-list { background:transparent !important; border:0 !important; box-shadow:none !important; }
-.cam-songs .song-row { margin-bottom:7px; }
+.cam-songs .song-row { margin:0; }
+.cam-songs .song-row:last-child { border-bottom-color:transparent !important; }
 .song-row { margin-bottom:5px; }
 #profile-bar, #home-hero { margin:6px 8px 0; }
 
@@ -3532,7 +3533,7 @@ window.RD_Ink = (function () {
 
   const TONES = {
     card: {
-      sel: '.level-card, .avatar-card, #daily-card, #endless-card, .endless-band, .song-row, .area-chip, .custom-av-upload, .hs-entry, .st-item, .gen-box, .ov-key, .ov-leg, .ov-logo, .hud-combo, .leg-pill',
+      sel: '.level-card, .avatar-card, #daily-card, #endless-card, .endless-band, .area-chip, .custom-av-upload, .hs-entry, .st-item, .gen-box, .ov-key, .ov-leg, .ov-logo, .hud-combo, .leg-pill',
       fill: t => lighten(t.card, 0.4), grad: t => [lighten(t.card, 0.75), lighten(t.card, 0.3)], ink: t => t.ink, press: t => lighten(t.card, 0.7), elev: 1, move: true
     },
     button: {
@@ -3545,7 +3546,11 @@ window.RD_Ink = (function () {
     },
     group: {
       sel: '.cam-songs',
-      fill: t => alpha(lighten(t.bg, 0.25), 0.6), ink: t => darken(t.ink, 0.05), press: t => lighten(t.bg, 0.4), elev: 1, strokeW: 4.6, still: true
+      fill: t => alpha(lighten(t.bg, 0.25), 0.6), ink: t => darken(t.ink, 0.05), press: t => lighten(t.bg, 0.4), elev: 1, strokeW: 4.6, r: 17, still: true
+    },
+    row: {
+      sel: '.cam-songs .song-row',
+      fill: t => lighten(t.card, 0.7), grad: t => [lighten(t.card, 0.9), lighten(t.card, 0.55)], ink: t => t.ink, press: t => lighten(t.card, 0.9), elev: 3, r: 4, strokeW: 3.2, flat: true
     },
     primary: {
       sel: '.ov-play-btn, .uname-btn, .gen-go, .cr-save-btn, #new-lvl-btn, #custom-av-buy-btn, .mb-close-btn',
@@ -3593,13 +3598,17 @@ window.RD_Ink = (function () {
     const b = 'border-width:1px;border-style:solid;border-color:transparent !important;border-radius:9px;';
     const emit = (name, selector, T, fill, grad, press, themeFill) => {
       const inkC = T.ink;
-      const mk = (variant, mode, f, g) => boxURL({ fill: f, grad: g, stroke: inkC, seed: 11 + variant * 29 + name.length * 5, amp, mode, r: 13, strokeW: T.strokeW || 2.8 });
+      const mk = (variant, mode, f, g) => boxURL({ fill: f, grad: g, stroke: inkC, seed: 11 + variant * 29 + name.length * 5, amp, mode, r: T.r || 13, strokeW: T.strokeW || 2.8 });
       const bi = (v, mode, f, g) => mk(v, mode, f, g) + ' 20 fill / 12px / 4px stretch';
       const base = ':is(' + selector + ')';
       const sh = lvl => ';box-shadow:' + shadow(lvl, 'rest') + ' !important';
+      if (T.flat) {
+        out.push(base + '{border-width:1px;border-style:solid;border-color:transparent transparent ' + alpha(ik, 0.14) + ' transparent !important;border-radius:0;background:transparent !important;border-image:none;box-shadow:none !important;transition:transform .14s,box-shadow .14s;position:relative;}');
+        out.push(base + ':is(:hover,:focus-visible){border-image:' + bi(0, 'hover', fill, grad) + ';border-color:transparent !important;box-shadow:' + shadow(T.elev, 'hover') + ' !important;transform:translateY(-2px) scale(1.012);z-index:6;outline:none;}');
+        out.push(base + ':active{border-image-source:' + mk(0, 'press', press, null) + ';box-shadow:' + shadow(T.elev, 'press') + ' !important;transform:translateY(0) scale(1.0);}');
+        return;
+      }
       out.push(base + '{' + b + 'background:transparent !important;border-image:' + bi(0, 'rest', fill, grad) + sh(T.elev) + ';' + (T.move ? 'transition:transform .12s, box-shadow .12s;' : '') + '}');
-      out.push(base + ':nth-child(3n+2){border-image-source:' + mk(1, 'rest', fill, grad) + ';}');
-      out.push(base + ':nth-child(3n){border-image-source:' + mk(2, 'rest', fill, grad) + ';}');
       if (T.still) return;
       out.push(base + ':is(:hover,:focus-visible){border-image-source:' + mk(0, 'hover', fill, grad) + ';outline:none;box-shadow:' + shadow(T.elev, 'hover') + ' !important;' + (T.move ? 'transform:translateY(-1px);' : '') + '}');
       out.push(base + ':active{border-image-source:' + mk(0, 'press', press, null) + ';box-shadow:' + shadow(T.elev, 'press') + ' !important;' + (T.move ? 'transform:translateY(2px);' : '') + '}');
@@ -3977,7 +3986,7 @@ window.RD_Icons = (function () {
       Object.keys(I).map(symbol).join('') + '</defs></svg>';
   }
 
-  const CSS = '.ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.22em;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;fill:none;flex-shrink:0;overflow:visible;filter:url(#ic-wobble)}' +
+  const CSS = '.ic{display:inline-block;width:1.15em;height:1.15em;vertical-align:-.22em;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;fill:none;flex-shrink:0;overflow:visible}' +
     '.ic.ic-big{width:2.2em;height:2.2em}.ic.ic-xl{width:3.2em;height:3.2em}.ic+.ic{margin-left:.05em}';
 
   const html = (name, cls) => '<svg class="ic ic-' + name + (cls ? ' ' + cls : '') + '" aria-hidden="true"><use href="#ic-' + name + '"/></svg>';
@@ -4109,7 +4118,8 @@ window.RD_InkUI = (function () {
 
   function install() {
     labelIcons();
-    new MutationObserver(() => labelIcons()).observe(document.body, { childList: true, subtree: true });
+    let queued = false;
+    new MutationObserver(() => { if (queued) return; queued = true; requestAnimationFrame(() => { queued = false; labelIcons(); }); }).observe(document.body, { childList: true, subtree: true });
     let hovering = null;
     document.addEventListener('pointerover', e => {
       if (e.pointerType === 'touch') return;

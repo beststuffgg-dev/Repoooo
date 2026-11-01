@@ -156,7 +156,7 @@ window.RD_Ink = (function () {
     },
     group: {
       sel: '.cam-songs',
-      fill: t => alpha(lighten(t.bg, 0.25), 0.6), ink: t => darken(t.ink, 0.05), press: t => lighten(t.bg, 0.4), elev: 1, strokeW: 4.6, r: 7, still: true
+      fill: t => alpha(lighten(t.bg, 0.25), 0.6), ink: t => darken(t.ink, 0.05), press: t => lighten(t.bg, 0.4), elev: 1, strokeW: 4.6, r: 17, still: true
     },
     row: {
       sel: '.cam-songs .song-row',
