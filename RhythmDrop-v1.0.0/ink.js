@@ -311,25 +311,32 @@ window.RD_Ink = (function () {
 
   function logoSVG(o) {
     o = o || {};
-    const ink = o.ink || '#3a3023', ring = o.ring || '#f0556d', tap = o.tap || '#3f88c5', dtap = o.dtap || '#e0553a', hold = o.hold || '#f2b92c';
-    const paper = o.paper || '#fff7e6';
+    const ink = o.ink || '#2f2a24', tap = o.tap || '#3f88c5', dtap = o.dtap || '#e0553a', hold = o.hold || '#f2b92c';
+    const paper = o.paper || '#fbf4e4';
     const anim = o.anim ? ' logo-anim' : '';
+    const W = 3;
+    const stroke = (d, fill, extra) => '<path d="' + d + '" fill="' + fill + '" stroke="' + ink + '" stroke-width="' + W + '" stroke-linejoin="round" stroke-linecap="round"' + (extra || '') + '/>' +
+      '<path d="' + d + '" fill="none" stroke="' + ink + '" stroke-width="1" opacity=".16" transform="translate(.8 -.6) rotate(.4 64 64)"/>';
+    const trail = d => '<path d="' + d + '" fill="none" stroke="' + ink + '" stroke-width="2.2" stroke-linecap="round" opacity=".7"/>';
+    const dot = (x, y) => '<path d="' + blob(x, y, 3.6, 0.35, x + y, 10) + '" fill="#ffffff" stroke="' + ink + '" stroke-width="1.8"/>';
+    const slab = 'M10 68C26 58 48 47 64 43C68 42 71 42 75 44L118 69C106 75 90 81 77 87C67 91 56 95 45 93C39 92 35 89 31 85C25 79 17 73 10 68Z';
+    const tiles = [
+      { cls: 'b1', col: tap, d: 'M38 22C47 21.500 56 21.500 66 22C64 32 60 39 53 43C48 46 42 45.500 38.500 43.500C41 36 41 29 38 22Z', dot: [51, 34], trail: 'M52 6C53 12 52.500 17 52 20' },
+      { cls: 'b3', col: dtap, d: 'M78 14C89 19 99 24 108 27C104 37 99 45 91 50C86 53 80 54 75 53C74 49 74 45 73 41C79 35 81 25 78 14Z', dot: [92, 37], trail: 'M104 6C103 12 101 17 99 21' },
+      { cls: 'b2', col: hold, d: 'M86 56C93 57 100 59 107 62C105 67 101 71 96 74C92 76 87 77 82 78C79 76 76 74 73 71C80 69 85 64 86 56Z', dot: [91, 68], trail: 'M112 46C108 52 104 57 100 61' },
+    ];
     let g = '';
-    g += '<path d="' + wavyPath(128, 56, 1.6, 7).replace(/Z$/, 'Z') + '" fill="' + alpha(paper, 0.9) + '" stroke="' + ring + '" stroke-width="7" stroke-linejoin="round"/>';
-    g += '<path d="' + wavyPath(128, 56, 2.2, 19) + '" fill="none" stroke="' + ring + '" stroke-width="2.4" opacity=".55"/>';
-    const trail = (x0, y0, x1, y1, bend, sd) => [-4, 0, 4].map((off, i) => '<path d="' + line(x0 + off, y0, x1 + off * 0.6, y1, 1.6, sd + i, 6).replace(/^M[^C]*/, m => m) + '" fill="none" stroke="' + ink + '" stroke-width="' + (i === 1 ? 2 : 1.3) + '" stroke-linecap="round" opacity="' + (i === 1 ? 0.55 : 0.3) + '"/>').join('');
-    const t1 = '<path d="M22 16C18 30 24 38 30 46" fill="none" stroke="' + ink + '" stroke-width="1.8" stroke-linecap="round" opacity=".5"/><path d="M28 14C24 28 30 36 36 45" fill="none" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" opacity=".3"/>';
-    const t2 = '<path d="M58 10C56 30 58 48 62 66" fill="none" stroke="' + ink + '" stroke-width="1.8" stroke-linecap="round" opacity=".5"/><path d="M65 8C63 28 65 46 69 65" fill="none" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" opacity=".3"/>';
-    const t3 = '<path d="M104 16C110 30 104 40 100 48" fill="none" stroke="' + ink + '" stroke-width="1.8" stroke-linecap="round" opacity=".5"/><path d="M98 14C104 28 98 38 94 46" fill="none" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" opacity=".3"/>';
-    g += t1 + t2 + t3;
-    const px = 46, py = 62, pw = 36, ph = 56;
-    g += '<path d="' + curve([[px, py + 9], [px + 9, py], [px + pw - 9, py], [px + pw, py + 9], [px + pw, py + ph - 9], [px + pw - 9, py + ph], [px + 9, py + ph], [px, py + ph - 9]], true, 1, 33) + '" fill="' + paper + '" stroke="' + ink + '" stroke-width="3.2" stroke-linejoin="round"/>';
-    g += '<path d="' + curve([[px + 5, py + 12], [px + pw - 5, py + 12], [px + pw - 5, py + ph - 12], [px + 5, py + ph - 12]], true, 0.7, 34) + '" fill="' + alpha(tap, 0.2) + '" stroke="' + ink + '" stroke-width="1.5" opacity=".75"/>';
-    g += '<path d="M' + (px + 13) + ' ' + (py + 5.500) + 'h10" stroke="' + ink + '" stroke-width="2.200" stroke-linecap="round"/>';
-    g += '<path d="M' + (px + 14) + ' ' + (py + ph - 5) + 'h8" stroke="' + ink + '" stroke-width="1.800" stroke-linecap="round" opacity=".6"/>';
-    g += '<g class="blk b1">' + cube(34, 40, 11, tap, ink, 3) + '</g>';
-    g += '<g class="blk b3">' + cube(96, 46, 11, dtap, ink, 15) + '</g>';
-    g += '<g class="blk b2">' + cube(64, 80, 12, hold, ink, 9) + '</g>';
+    g += '<g transform="translate(0 6)">' + stroke(slab, darken(paper, 0.28)) + '</g>';
+    g += stroke(slab, paper);
+    g += '<path d="M33 70C42 66 51 62 59 57" fill="none" stroke="' + ink + '" stroke-width="2" stroke-linecap="round" opacity=".55"/>';
+    g += '<path d="M50 83C62 79 74 74 86 68" fill="none" stroke="' + ink + '" stroke-width="2" stroke-linecap="round" opacity=".55"/>';
+    tiles.forEach(t => {
+      g += '<g class="blk ' + t.cls + '">' + trail(t.trail);
+      g += '<g transform="translate(0 4.500)">' + stroke(t.d, darken(t.col, 0.32)) + '</g>';
+      g += stroke(t.d, t.col);
+      g += '<path d="' + t.d + '" fill="' + lighten(t.col, 0.45) + '" opacity=".35" transform="translate(0 0) scale(1)" clip-path="none" style="mix-blend-mode:normal" stroke="none"/>'.replace(/<path[^>]*opacity=".35"[^>]*\/>/, '');
+      g += dot(t.dot[0], t.dot[1]) + '</g>';
+    });
     return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class="rd-logo-svg' + anim + '" aria-hidden="true">' + g + '</svg>';
   }
 
