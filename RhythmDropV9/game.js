@@ -349,7 +349,7 @@ function clearCustomThemeVars() {
 
 function applyTheme(id) {
   clearCustomThemeVars();
-  const keep = ['gfx-modern', 'adv-overlay']
+  const keep = ['gfx-modern', 'adv-overlay', 'fullscreen']
     .filter(c => document.body.classList.contains(c));
   document.body.className = [id === 'paper' ? '' : 'theme-' + id, ...keep]
     .filter(Boolean).join(' ');
@@ -1038,6 +1038,39 @@ function renderHighScores() {
 document.getElementById('new-lvl-btn').addEventListener('click', () => openCreator(null));
 
 const STUDIO_TAB = location.hash === '#studio';
+const FULL_TAB = location.hash === '#full';
+if (FULL_TAB) { document.body.classList.add('fullscreen'); document.documentElement.classList.add('is-full'); }
+
+function fitFull() {
+  if (!FULL_TAB) return;
+  const z = Math.max(0.8, Math.min((window.innerHeight || 640) / 640, 2.4));
+  document.body.style.zoom = z;
+  const root = document.documentElement;
+  root.style.width = '100vw';
+  root.style.height = '100vh';
+  root.style.maxWidth = 'none';
+  root.style.maxHeight = 'none';
+}
+
+function toggleFull() {
+  if (!FULL_TAB) {
+    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create && chrome.runtime && chrome.runtime.getURL) {
+      chrome.tabs.create({ url: chrome.runtime.getURL('popup.html') + '#full' });
+    } else {
+      window.open(location.href.split('#')[0] + '#full', '_blank');
+    }
+    return;
+  }
+  if (document.fullscreenElement) document.exitFullscreen();
+  else if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen();
+}
+
+document.getElementById('fs-btn').addEventListener('click', toggleFull);
+if (FULL_TAB) {
+  document.getElementById('fs-btn').title = 'Toggle browser fullscreen (F)';
+  window.addEventListener('resize', fitFull);
+  document.addEventListener('keydown', e => { if (e.code === 'KeyF' && !e.ctrlKey && !e.metaKey && !/input|textarea|select/i.test((e.target && e.target.tagName) || '')) { if (!document.querySelector('#game.active')) toggleFull(); } });
+}
 
 function openStudio() {
   if (!STUDIO_TAB && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.create && chrome.runtime && chrome.runtime.getURL) {
@@ -1193,13 +1226,14 @@ const POPUP_MAX_W = 800;
 const POPUP_MAX_H = 760;
 
 function isExtensionPopup() {
-  if (location.hash === '#studio') return false;
+  if (location.hash === '#studio' || location.hash === '#full') return false;
   return location.protocol === 'chrome-extension:'
       || location.protocol === 'moz-extension:'
       || location.protocol === 'ms-browser-extension:';
 }
 
 function getMaxDims() {
+  if (location.hash === '#full') return { maxW: 99999, maxH: 99999 };
   if (isExtensionPopup()) return { maxW: POPUP_MAX_W, maxH: POPUP_MAX_H };
   return {
     maxW: Math.max(340, Math.min(1100, window.innerWidth  || POPUP_MAX_W)),
@@ -1554,7 +1588,7 @@ function updateSizeControls(w, h) {
 
 let _resizeSaveTimer = null;
 function observeManualResize() {
-  if (!window.ResizeObserver) return;
+  if (!window.ResizeObserver || location.hash === '#full') return;
   const ro = new ResizeObserver(() => {
     const w = Math.round(document.documentElement.offsetWidth) - advExpansion - laneExpansion;
     const h = Math.round(document.documentElement.offsetHeight);
@@ -1575,14 +1609,17 @@ function applySettingsToDOM() {
   const { maxW, maxH } = getMaxDims();
   currentSettings.width  = Math.max(340, Math.min(currentSettings.width, maxW));
   currentSettings.height = Math.max(420, Math.min(currentSettings.height, maxH));
-  const root = document.documentElement;
-  root.style.maxWidth  = maxW + 'px';
-  root.style.maxHeight = maxH + 'px';
-  root.style.width  = appliedWidth() + 'px';
-  root.style.height = currentSettings.height + 'px';
+  if (location.hash === '#full') fitFull();
+  else {
+    const root = document.documentElement;
+    root.style.maxWidth  = maxW + 'px';
+    root.style.maxHeight = maxH + 'px';
+    root.style.width  = appliedWidth() + 'px';
+    root.style.height = currentSettings.height + 'px';
+  }
   document.body.classList.toggle('gfx-modern', currentSettings.gfx !== 'classic');
   if (window.RD_setUiSounds) window.RD_setUiSounds(currentSettings.uiSounds !== false);
-  document.body.style.zoom = currentSettings.uiScale || 1;
+  if (location.hash !== '#full') document.body.style.zoom = currentSettings.uiScale || 1;
   const laneKeys = keysFor(laneCount);
   laneKeys.forEach((code, i) => {
     const el = document.querySelector(`#btn${i} .lane-key`);

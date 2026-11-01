@@ -16,6 +16,7 @@ let crGrid     = [];
 let crTool     = 'tap';
 let crAdvOpen  = false;
 let crBgMode   = 'none';
+let crScene    = 'paper';
 let crLanes = 4;
 let crInstrument = 'synth';
 let crNoteInst = null;
@@ -61,6 +62,7 @@ function openCreator(idx) {
       return row;
     });
     crBgMode    = l.bgMode    || 'none';
+    crScene     = l.scene     || 'paper';
     crLaneFreqs = l.laneFreqs ? [...l.laneFreqs] : window.RD_Lanes.defaultFreqs(crLanes);
     crAdvOpen   = false;
     crBassSteps = l.bassSteps
@@ -77,6 +79,7 @@ function openCreator(idx) {
     crInstrument = window.RD_resolveInstrument(window.RD_getInstrument && window.RD_getInstrument());
     crGrid      = Array.from({ length:16 }, () => crEmptyRow());
     crBgMode    = 'none';
+    crScene     = 'paper';
     crLaneFreqs = window.RD_Lanes.defaultFreqs(4);
     crAdvOpen   = false;
     crBassSteps = [0,1,2,3,4,5,6,7].map(() => ({ active:false, freq:65.41 }));
@@ -881,6 +884,7 @@ function generateIntoGrid(band) {
   while (genFreqs.length < crLanes) genFreqs.push(window.RD_Lanes.defaultFreqs(crLanes)[genFreqs.length]);
   crLaneFreqs = genFreqs.slice(0, crLanes);
   crBgMode = lvl.bgMode || 'none';
+  crScene  = lvl.scene || 'paper';
   const nameEl = document.getElementById('cr-name');
   const bpmEl  = document.getElementById('cr-bpm');
   if (nameEl && !nameEl.value) nameEl.value = lvl.name || 'Generated';
@@ -935,6 +939,7 @@ document.getElementById('cr-save').addEventListener('click', () => {
     scrollRows:  crScrollRows || undefined,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
+    scene:       crScene !== 'paper' ? crScene : undefined,
     laneFreqs:   [...crLaneFreqs],
     bassSteps:   crBassSteps.map(s => ({ ...s })),
     bassPattern
@@ -962,6 +967,7 @@ function autoSave() {
     scrollRows:  crScrollRows || undefined,
     grid:        crGrid.map(r => r.map(cell => cell ? { ...cell } : null)),
     bgMode:      crBgMode,
+    scene:       crScene !== 'paper' ? crScene : undefined,
     laneFreqs:   [...crLaneFreqs],
     bassSteps:   crBassSteps.map(s => ({ ...s })),
     bassPattern
@@ -1052,6 +1058,7 @@ function buildAdvPanel() {
   buildLaneCountControl();
   buildLaneNoteGrid();
   buildBgRadio();
+  buildSceneRow();
   buildBassEditor();
   buildAdvInstrumentRow();
   buildAdvSustainControl();
@@ -1148,6 +1155,23 @@ function buildLaneNoteGrid() {
     row.appendChild(lbl);
     row.appendChild(badge);
     g.appendChild(row);
+  });
+}
+
+function buildSceneRow() {
+  const row = document.getElementById('cr-scene-row');
+  if (!row || !window.RD_Scenes) return;
+  row.innerHTML = '';
+  window.RD_Scenes.SCENES.forEach(sc => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'bg-radio-btn' + (sc.id === crScene ? ' sel' : '');
+    b.textContent = sc.name;
+    b.addEventListener('click', () => {
+      crScene = sc.id;
+      row.querySelectorAll('.bg-radio-btn').forEach(x => x.classList.toggle('sel', x === b));
+    });
+    row.appendChild(b);
   });
 }
 

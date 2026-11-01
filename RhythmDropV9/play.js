@@ -168,6 +168,7 @@ function spawnTile(note) {
 
 function launchLevel(lvl, asDouble) {
   gameLevel = lvl;
+  applyScene(lvl);
   buildLanes(window.RD_Lanes.laneCountOf(lvl));
   doubleMode = !!asDouble;
   lvlName.textContent = lvl.name + (asDouble ? '  ·  DOUBLE' : '');
@@ -223,6 +224,12 @@ function playGenerated(band) {
   if (!lvl) return;
   lastGenerated = lvl;
   launchLevel(lvl);
+}
+
+function applyScene(lvl) {
+  const el = document.getElementById('g-scene');
+  if (!el || !window.RD_Scenes) return;
+  el.style.backgroundImage = window.RD_Scenes.url(window.RD_Scenes.forLevel(lvl));
 }
 
 function saveGenerated(lvl) {

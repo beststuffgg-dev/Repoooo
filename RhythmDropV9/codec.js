@@ -184,8 +184,9 @@
     const bass = (lvl.bassPattern || [])
       .map(f => (f > 0 ? freqToMidi(f) : '0')).join(',');
 
+    const scene = lvl.scene && window.RD_Scenes && window.RD_Scenes.valid(lvl.scene) && lvl.scene !== 'paper' ? lvl.scene : '';
     const packed = [
-      (n > 4 || hasHold || scrollRows) ? '6' : '5',
+      (n > 4 || hasHold || scrollRows || scene) ? '6' : '5',
       (lvl.name || 'untitled').replace(/\|/g, '/'),
       lvl.bpm || 120,
       lvl.bgMode || 'none',
@@ -195,7 +196,7 @@
       voiceId(lvl.instrument),
       lvl.areaId || '',
       rowStrs.join(';'),
-    ].concat(scrollRows ? [String(scrollRows)] : []).join('|');
+    ].concat(scrollRows || scene ? [String(scrollRows || 0)] : []).concat(scene ? [scene] : []).join('|');
 
     return 'RD2:' + pack(packed);
   }
@@ -305,6 +306,7 @@
     const out = { name, bpm, bgMode, laneFreqs, bassPattern, bassSteps,
                   diff, instrument, grid, lanes: n };
     if (ver === '6' && parts[10] && parseInt(parts[10], 10) > 0) out.scrollRows = parseInt(parts[10], 10);
+    if (ver === '6' && parts[11] && /^[a-z]+$/.test(parts[11])) out.scene = parts[11];
     if (areaId) out.areaId = areaId;
     return out;
   }

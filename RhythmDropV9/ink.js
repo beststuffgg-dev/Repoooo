@@ -21,6 +21,7 @@ window.RD_Ink = (function () {
     if (m) return [+m[1], +m[2], +m[3]];
     return [128, 128, 128];
   }
+  const alpha = (c, a) => { const q = parse(c); return 'rgba(' + Math.round(q[0]) + ',' + Math.round(q[1]) + ',' + Math.round(q[2]) + ',' + a + ')'; };
   const hex = a => '#' + a.map(v => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0')).join('');
   function mix(a, b, t) {
     const x = parse(a), y = parse(b);
@@ -250,10 +251,10 @@ window.RD_Ink = (function () {
     const tapFill = t.tap, dtapFill = t.dtap;
     const holdFill = mix(t.tap, t.bg, 0.55);
     const css = [];
-    css.push('.lane{border-width:1px !important;border-style:solid !important;border-color:transparent !important;border-radius:12px;background:transparent !important;border-image:' + boxURL({ fill: mix(t.bg, t.ink, 0.04), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 1.8 }) + ' 20 fill / 9px / 0 stretch;}');
-    css.push('.lane:nth-child(even){border-image-source:' + boxURL({ fill: mix(t.bg, t.ink, 0.09), stroke: t.ink, amp, r: 12, seed: 43, strokeW: 1.8 }) + ';}');
-    css.push('.lane.glow-tap{border-image-source:' + boxURL({ fill: mix(t.bg, t.tap, 0.3), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 1.8 }) + ';}');
-    css.push('.lane.glow-dtap{border-image-source:' + boxURL({ fill: mix(t.bg, t.dtap, 0.3), stroke: t.ink, amp, r: 12, seed: 43, strokeW: 1.8 }) + ';}');
+    css.push('.lane{border-width:1px !important;border-style:solid !important;border-color:transparent !important;border-radius:12px;background:transparent !important;border-image:' + boxURL({ fill: alpha(mix(t.bg, t.ink, 0.04), 0.82), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 1.8 }) + ' 20 fill / 9px / 0 stretch;}');
+    css.push('.lane:nth-child(even){border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.ink, 0.09), 0.82), stroke: t.ink, amp, r: 12, seed: 43, strokeW: 1.8 }) + ';}');
+    css.push('.lane.glow-tap{border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.tap, 0.3), 0.85), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 1.8 }) + ';}');
+    css.push('.lane.glow-dtap{border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.dtap, 0.3), 0.85), stroke: t.ink, amp, r: 12, seed: 43, strokeW: 1.8 }) + ';}');
     css.push('.lane-hitbar{height:8px;bottom:50px;background:' + hLineURL(t.ink, { w: 80, h: 8, sw: 3 }) + ' repeat-x center/80px 8px !important;box-shadow:none !important;}');
     css.push('.lane-hitglow{background:none !important;}');
     css.push('.tile{background:none !important;box-shadow:none !important;filter:none;}');
@@ -276,5 +277,61 @@ window.RD_Ink = (function () {
     return css.join('\n');
   }
 
-  return { playRules, dotURL, lineURL, hLineURL, blob, rng, parse, hex, mix, lighten, darken, luminance, wavyPath, line, boxSvg, boxURL, uri, rules, themeTokens, TONES, SIZE };
+  function curve(points, closed, amp, seed) {
+    const rand = rng(seed || 1);
+    const ph = rand() * 6.283, f = 2 + rand() * 2;
+    const pts = [];
+    const n = points.length;
+    for (let i = 0; i < n; i++) {
+      const a = points[i], b = points[(i + 1) % n];
+      const last = i === n - 1 && !closed;
+      pts.push([a[0] + Math.sin(i * f + ph) * amp * 0.6, a[1] + Math.cos(i * f * 1.3 + ph) * amp * 0.6]);
+      if (!last) {
+        const mx = (a[0] + b[0]) / 2 + Math.sin(i * 2.1 + ph) * amp, my = (a[1] + b[1]) / 2 + Math.cos(i * 1.7 + ph) * amp;
+        pts.push([mx, my]);
+      }
+    }
+    const m = pts.length;
+    let d = 'M' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
+    const segs = closed ? m : m - 1;
+    for (let i = 0; i < segs; i++) {
+      const p0 = pts[closed ? (i - 1 + m) % m : Math.max(0, i - 1)], p1 = pts[i], p2 = pts[(i + 1) % m], p3 = pts[closed ? (i + 2) % m : Math.min(m - 1, i + 2)];
+      d += 'C' + (p1[0] + (p2[0] - p0[0]) / 6).toFixed(1) + ' ' + (p1[1] + (p2[1] - p0[1]) / 6).toFixed(1) + ' ' +
+        (p2[0] - (p3[0] - p1[0]) / 6).toFixed(1) + ' ' + (p2[1] - (p3[1] - p1[1]) / 6).toFixed(1) + ' ' + p2[0].toFixed(1) + ' ' + p2[1].toFixed(1);
+    }
+    return d + (closed ? 'Z' : '');
+  }
+
+  function cube(cx, cy, k, col, ink, seed) {
+    const T = [cx, cy - k], L = [cx - k * 0.87, cy - k * 0.5], R = [cx + k * 0.87, cy - k * 0.5], C = [cx, cy];
+    const BL = [cx - k * 0.87, cy + k * 0.5], BR = [cx + k * 0.87, cy + k * 0.5], B = [cx, cy + k];
+    const f = (pts, fill, sd) => '<path d="' + curve(pts, true, k * 0.06, seed + sd) + '" fill="' + fill + '" stroke="' + ink + '" stroke-width="' + Math.max(1.4, k * 0.13) + '" stroke-linejoin="round"/>';
+    return f([T, R, C, L], lighten(col, 0.38), 1) + f([L, C, B, BL], col, 2) + f([C, R, BR, B], darken(col, 0.2), 3);
+  }
+
+  function logoSVG(o) {
+    o = o || {};
+    const ink = o.ink || '#3a3023', ring = o.ring || '#f0556d', tap = o.tap || '#3f88c5', dtap = o.dtap || '#e0553a', hold = o.hold || '#f2b92c';
+    const paper = o.paper || '#fff7e6';
+    const anim = o.anim ? ' logo-anim' : '';
+    let g = '';
+    g += '<path d="' + wavyPath(128, 56, 1.6, 7).replace(/Z$/, 'Z') + '" fill="' + alpha(paper, 0.9) + '" stroke="' + ring + '" stroke-width="7" stroke-linejoin="round"/>';
+    g += '<path d="' + wavyPath(128, 56, 2.2, 19) + '" fill="none" stroke="' + ring + '" stroke-width="2.4" opacity=".55"/>';
+    const trail = (x0, y0, x1, y1, bend, sd) => [-4, 0, 4].map((off, i) => '<path d="' + line(x0 + off, y0, x1 + off * 0.6, y1, 1.6, sd + i, 6).replace(/^M[^C]*/, m => m) + '" fill="none" stroke="' + ink + '" stroke-width="' + (i === 1 ? 2 : 1.3) + '" stroke-linecap="round" opacity="' + (i === 1 ? 0.55 : 0.3) + '"/>').join('');
+    const t1 = '<path d="M22 16C18 30 24 38 30 46" fill="none" stroke="' + ink + '" stroke-width="1.8" stroke-linecap="round" opacity=".5"/><path d="M28 14C24 28 30 36 36 45" fill="none" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" opacity=".3"/>';
+    const t2 = '<path d="M58 10C56 30 58 48 62 66" fill="none" stroke="' + ink + '" stroke-width="1.8" stroke-linecap="round" opacity=".5"/><path d="M65 8C63 28 65 46 69 65" fill="none" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" opacity=".3"/>';
+    const t3 = '<path d="M104 16C110 30 104 40 100 48" fill="none" stroke="' + ink + '" stroke-width="1.8" stroke-linecap="round" opacity=".5"/><path d="M98 14C104 28 98 38 94 46" fill="none" stroke="' + ink + '" stroke-width="1.2" stroke-linecap="round" opacity=".3"/>';
+    g += t1 + t2 + t3;
+    const px = 46, py = 62, pw = 36, ph = 56;
+    g += '<path d="' + curve([[px, py + 9], [px + 9, py], [px + pw - 9, py], [px + pw, py + 9], [px + pw, py + ph - 9], [px + pw - 9, py + ph], [px + 9, py + ph], [px, py + ph - 9]], true, 1, 33) + '" fill="' + paper + '" stroke="' + ink + '" stroke-width="3.2" stroke-linejoin="round"/>';
+    g += '<path d="' + curve([[px + 5, py + 12], [px + pw - 5, py + 12], [px + pw - 5, py + ph - 12], [px + 5, py + ph - 12]], true, 0.7, 34) + '" fill="' + alpha(tap, 0.2) + '" stroke="' + ink + '" stroke-width="1.5" opacity=".75"/>';
+    g += '<path d="M' + (px + 13) + ' ' + (py + 5.500) + 'h10" stroke="' + ink + '" stroke-width="2.200" stroke-linecap="round"/>';
+    g += '<path d="M' + (px + 14) + ' ' + (py + ph - 5) + 'h8" stroke="' + ink + '" stroke-width="1.800" stroke-linecap="round" opacity=".6"/>';
+    g += '<g class="blk b1">' + cube(34, 40, 11, tap, ink, 3) + '</g>';
+    g += '<g class="blk b3">' + cube(96, 46, 11, dtap, ink, 15) + '</g>';
+    g += '<g class="blk b2">' + cube(64, 80, 12, hold, ink, 9) + '</g>';
+    return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" class="rd-logo-svg' + anim + '" aria-hidden="true">' + g + '</svg>';
+  }
+
+  return { logoSVG, cube, curve, alpha, playRules, dotURL, lineURL, hLineURL, blob, rng, parse, hex, mix, lighten, darken, luminance, wavyPath, line, boxSvg, boxURL, uri, rules, themeTokens, TONES, SIZE };
 })();

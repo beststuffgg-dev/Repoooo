@@ -11,8 +11,15 @@ window.RD_InkUI = (function () {
     return getComputedStyle(document.body).getPropertyValue(k);
   }
 
+  function fillLogos(tokens) {
+    document.querySelectorAll('[data-logo]').forEach(el => {
+      el.innerHTML = window.RD_Ink.logoSVG({ ink: tokens.ink, ring: tokens.dtap, tap: tokens.tap, dtap: tokens.accent, paper: window.RD_Ink.lighten(tokens.bg, 0.55), anim: el.hasAttribute('data-anim') });
+    });
+  }
+
   function refresh() {
     if (!window.RD_Ink || !document.body) return;
+    fillLogos(window.RD_Ink.themeTokens(read));
     const flat = !document.body.classList.contains('gfx-modern');
     const key = (window.RD_THEMES ? 't' : '') + document.body.className + '|' + flat + '|' + read('--bg') + read('--bg3') + read('--bg4') + read('--accent') + read('--text') + read('--ink');
     if (key === last) return;

@@ -1254,6 +1254,35 @@ body:not(.gfx-modern)::after, body:has(#game.active)::after { display:none; }
 #g-hud, #g-footer { border-color:transparent; }
 .ov-swatch { box-shadow:none; }
 .hud-combo { color:var(--tap); }
+
+.hnav { display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 8px; letter-spacing:.3px; text-transform:none; font-size:12px; flex:1; }
+.hnav .ic { font-size:12px; }
+#home-nav { gap:6px; padding:6px 12px; }
+.ic { color:currentColor; }
+button:active, .hnav:active, .level-card:active, .area-chip:active, .song-row:active { transform:scale(.96) translateY(1px); transition:transform .06s; }
+button, .hnav, .level-card, .area-chip, .song-row, .avatar-card, .theme-card { transition:transform .22s cubic-bezier(.3,1.8,.5,1); }
+
+#g-scene { position:absolute; inset:0; z-index:0; pointer-events:none; background-size:cover; background-position:center bottom; background-repeat:no-repeat; }
+#game > *:not(#g-scene) { position:relative; z-index:1; }
+#game > #g-overlay { position:absolute; z-index:50; }
+
+.logo-mark { width:54px; height:54px; background:none !important; box-shadow:none !important; border:0 !important; }
+.ov-logo { width:70px; height:70px; background:none !important; border:0 !important; }
+.logo-fill, .logo-fill svg { display:block; width:100%; height:100%; }
+#intro-logo { width:104px; height:104px; margin-bottom:4px; }
+#intro-word-drop { text-shadow:none; }
+.logo-anim .blk { transform-box:fill-box; transform-origin:center; }
+.logo-anim .b1 { animation:blkDrop .55s cubic-bezier(.3,1.6,.5,1) .05s both; }
+.logo-anim .b3 { animation:blkDrop .55s cubic-bezier(.3,1.6,.5,1) .18s both; }
+.logo-anim .b2 { animation:blkDrop .55s cubic-bezier(.3,1.6,.5,1) .32s both; }
+@keyframes blkDrop { 0% { transform:translateY(-70px) scale(.7,1.25); opacity:0; } 60% { opacity:1; transform:translateY(4px) scale(1.12,.86); } 100% { transform:translateY(0) scale(1); opacity:1; } }
+
+#fs-btn { order:3; margin-left:auto; padding:6px 8px; }
+.hero-row .hero-text { order:2; }
+body.fullscreen #g-scene { position:fixed; }
+body.fullscreen .screen { max-width:560px; margin:0 auto; }
+body.fullscreen { background:var(--bg); }
+html.is-full { resize:none; max-width:none; max-height:none; min-width:0; min-height:0; }
 </style>
 </head>
 <body>
@@ -1296,13 +1325,8 @@ body:not(.gfx-modern)::after, body:has(#game.active)::after { display:none; }
 
   <div id="home-hero">
     <div class="hero-row">
-      <div class="logo-mark">
-        <svg viewBox="0 0 32 32" fill="none">
-          <circle cx="16" cy="16" r="11" stroke="var(--dtap)" stroke-width="1.5" stroke-dasharray="4 3"/>
-          <circle cx="16" cy="16" r="6"  stroke="var(--dtap)" stroke-width="1.5" stroke-dasharray="3 2"/>
-          <circle cx="16" cy="16" r="2.5" fill="var(--dtap)"/>
-        </svg>
-      </div>
+      <div class="logo-mark"><span class="logo-fill" data-logo></span></div>
+      <button type="button" class="ic-btn" id="fs-btn" title="Open fullscreen in a new tab" aria-label="Fullscreen"><svg class="ic ic-big"><use href="#ic-expand"/></svg></button>
       <div class="hero-text">
         <h1>Rhythm<span>Drop</span></h1>
         <p>TAP THE BEAT · A · S · D · F</p>
@@ -1315,11 +1339,11 @@ body:not(.gfx-modern)::after, body:has(#game.active)::after { display:none; }
   </div>
 
   <nav id="home-nav" aria-label="Sections">
-    <button type="button" class="hnav active" data-tab="levels" aria-current="page">Levels</button>
-    <button type="button" class="hnav" data-tab="custom">Custom</button>
-    <button type="button" class="hnav" data-tab="shop">Shop</button>
-    <button type="button" class="hnav" data-tab="themes">Themes</button>
-    <button type="button" class="hnav" data-tab="settings">Settings</button>
+    <button type="button" class="hnav active" data-tab="levels" aria-current="page"><svg class="ic ic-big ic-levels"><use href="#ic-levels"/></svg><span>Levels</span></button>
+    <button type="button" class="hnav" data-tab="custom"><svg class="ic ic-big ic-piano-note"><use href="#ic-piano-note"/></svg><span>Notes</span></button>
+    <button type="button" class="hnav" data-tab="shop"><svg class="ic ic-big ic-shop"><use href="#ic-shop"/></svg><span>Shop</span></button>
+    <button type="button" class="hnav" data-tab="themes"><svg class="ic ic-big ic-palette"><use href="#ic-palette"/></svg><span>Themes</span></button>
+    <button type="button" class="hnav" data-tab="settings"><svg class="ic ic-big ic-gear"><use href="#ic-gear"/></svg><span>Settings</span></button>
   </nav>
 
   <div class="tab-pane active" id="tab-levels">
@@ -1474,6 +1498,8 @@ body:not(.gfx-modern)::after, body:has(#game.active)::after { display:none; }
       <button class="bg-radio-btn" data-lanes="6">6</button>
       <button class="bg-radio-btn" data-lanes="8">8</button>
     </div>
+    <div class="adv-section">Level Background</div>
+    <div class="bg-radio-group" id="cr-scene-row" style="flex-wrap:wrap;margin-bottom:8px;"></div>
     <div class="adv-section">Lane Default Notes</div>
     <div style="font-size:10px;color:var(--muted);margin-bottom:2px;">Default pitch per lane — override individual notes in the grid below</div>
     <div class="lane-note-grid" id="lane-note-grid"></div>
@@ -1513,6 +1539,7 @@ body:not(.gfx-modern)::after, body:has(#game.active)::after { display:none; }
 </div>
 
 <div class="screen" id="game">
+  <div id="g-scene" aria-hidden="true"></div>
   <div id="g-hud">
     <div>
       <div class="hud-score-lbl">score</div>
@@ -1533,13 +1560,7 @@ body:not(.gfx-modern)::after, body:has(#game.active)::after { display:none; }
     <button id="g-menu-btn">← menu</button>
   </div>
   <div id="g-overlay" class="show">
-    <div class="ov-logo">
-      <svg viewBox="0 0 32 32" fill="none">
-        <circle cx="16" cy="16" r="11" stroke="var(--dtap)" stroke-width="1.5" stroke-dasharray="4 3"/>
-        <circle cx="16" cy="16" r="6"  stroke="var(--dtap)" stroke-width="1.5" stroke-dasharray="3 2"/>
-        <circle cx="16" cy="16" r="2.5" fill="var(--dtap)"/>
-      </svg>
-    </div>
+    <div class="ov-logo"><span class="logo-fill" data-logo></span></div>
     <div id="ov-title">Rhythm<span>Drop</span></div>
     <div class="ov-legend">
       <div class="ov-leg"><div class="ov-swatch os-tap"></div>tap once</div>
@@ -1628,6 +1649,7 @@ body:not(.gfx-modern)::after, body:has(#game.active)::after { display:none; }
 
 <div id="intro-splash">
   <div id="intro-inner">
+    <div id="intro-logo"><span class="logo-fill" data-logo data-anim></span></div>
     <div id="intro-word-rhythm">
       <span class="il" data-i="0">R</span><span class="il" data-i="1">H</span><span class="il" data-i="2">Y</span><span class="il" data-i="3">T</span><span class="il" data-i="4">H</span><span class="il" data-i="5">M</span>
     </div>
@@ -1724,6 +1746,8 @@ body:not(.gfx-modern)::after, body:has(#game.active)::after { display:none; }
 <script src="voices.js"></script>
 <script src="audio.js"></script>
 <script src="ink.js"></script>
+<script src="scenes.js"></script>
+<script src="icons.js"></script>
 <script src="ink-ui.js"></script>
 <script src="generator.js"></script>
 <script src="rowtypes.js"></script>
