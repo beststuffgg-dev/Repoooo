@@ -1789,17 +1789,9 @@ svg.ic { position:relative; z-index:1; }
 }
 </style>
 
-<script>
-(function() {
-  var splash = document.getElementById('intro-splash');
-  splash.addEventListener('animationend', function(e) {
-    if (e.target === splash) {
-      splash.remove();
-    }
-  });
-})();
-</script>
 
+
+<script src="splash.js"></script>
 <script src="levels.js"></script>
 <script src="campaign.js"></script>
 <script src="lanes.js"></script>

@@ -10,6 +10,14 @@ let pass = 0, fail = 0;
 const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, console.log('  FAIL: ' + m)); };
 const EMOJI = /[\u{1F300}-\u{1FAFF}☀-➿⭐⬆⬇↺✓✕▶♥♡♫♾]/u;
 
+console.log('== extension page rules ==');
+{
+  const html = fs.readFileSync(APP, 'utf8');
+  ok(!/<script(?![^>]*\bsrc=)[^>]*>/i.test(html), 'popup.html has no inline script (the extension policy blocks it)');
+  ok(!/\son[a-z]+\s*=\s*["']/i.test(html), 'and no inline event attributes');
+  ok(fs.existsSync(path.join(DIR, 'splash.js')), 'the splash cleanup lives in its own file');
+}
+
 console.log('== ink engine ==');
 {
   global.window = global;
