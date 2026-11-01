@@ -163,6 +163,7 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       });
       store.saveSettings(currentSettings);
     });
+    await page.waitForTimeout(600);
     await page.reload({ waitUntil: 'load' });
     await page.waitForFunction(
       () => typeof currentSettings !== 'undefined' && currentSettings.keys
@@ -204,6 +205,8 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
         { id: 'c2', name: 'Plain', bpm: 100, diff: 'easy', laneFreqs: [261.63, 329.63, 392, 523.25], grid: [[cell(undefined), null, null, null]] },
       ]));
     });
+    await page.evaluate(() => sessionStorage.setItem('seed_old', JSON.stringify({ levels: localStorage.getItem('rd_levels'), settings: localStorage.getItem('rd_settings'), inst: localStorage.getItem('rd_instrument') })));
+    await page.addInitScript(() => { try { const d = JSON.parse(sessionStorage.getItem('seed_old') || 'null'); if (d && !localStorage.getItem('rd_levels')) { localStorage.setItem('rd_levels', d.levels); localStorage.setItem('rd_settings', d.settings); localStorage.setItem('rd_instrument', d.inst); } } catch (e) {} });
     await page.reload({ waitUntil: 'load' });
     await page.waitForTimeout(1200);
     const r = await page.evaluate(() => {
@@ -224,7 +227,7 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
     ok(r.top.join() === 'harp,', 'a custom level\'s own instrument is translated (' + r.top + ')');
     ok(r.cells.join() === 'piano,violin,flute', 'and so is each note\'s (' + r.cells + ')');
     ok(r.plainUntouched && r.nameKept === 'Old one', 'levels without voices, and everything else about a level, are untouched');
-    await page.evaluate(() => { localStorage.removeItem('rd_levels'); localStorage.removeItem('rd_settings'); localStorage.removeItem('rd_instrument'); });
+    await page.evaluate(() => { sessionStorage.removeItem('seed_old'); localStorage.removeItem('rd_levels'); localStorage.removeItem('rd_settings'); localStorage.removeItem('rd_instrument'); });
   }
 
   ok(errors.length === 0, 'no page errors through the whole audit (' + errors.join('; ') + ')');
