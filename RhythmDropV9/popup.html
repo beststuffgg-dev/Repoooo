@@ -1256,8 +1256,8 @@ body.gfx-modern:has(#game.active)::after { display:none; }
 .ov-swatch { box-shadow:none; }
 .hud-combo { color:var(--tap); }
 
-.hnav { display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 8px; letter-spacing:.3px; text-transform:none; font-size:12px; flex:1; }
-.hnav .ic { font-size:12px; }
+.hnav { flex:1 1 0; min-width:0; display:flex; flex-direction:row; align-items:center; justify-content:center; gap:4px; padding:7px 4px; letter-spacing:0; text-transform:none; font-size:12px; flex:1; white-space:nowrap; }
+.hnav .ic { font-size:15px; }
 #home-nav { gap:6px; padding:6px 12px; }
 .ic { color:currentColor; }
 button:active, .hnav:active, .level-card:active, .area-chip:active, .song-row:active { transform:scale(.96) translateY(1px); transition:transform .06s; }
@@ -1358,11 +1358,11 @@ html.is-full { resize:none; max-width:none; max-height:none; min-width:0; min-he
   </div>
 
   <nav id="home-nav" aria-label="Sections">
-    <button type="button" class="hnav active" data-tab="levels" aria-current="page"><svg class="ic ic-big ic-levels"><use href="#ic-levels"/></svg><span>Levels</span></button>
-    <button type="button" class="hnav" data-tab="custom"><svg class="ic ic-big ic-piano-note"><use href="#ic-piano-note"/></svg><span>Notes</span></button>
-    <button type="button" class="hnav" data-tab="shop"><svg class="ic ic-big ic-shop"><use href="#ic-shop"/></svg><span>Shop</span></button>
-    <button type="button" class="hnav" data-tab="themes"><svg class="ic ic-big ic-palette"><use href="#ic-palette"/></svg><span>Themes</span></button>
-    <button type="button" class="hnav" data-tab="settings"><svg class="ic ic-big ic-gear"><use href="#ic-gear"/></svg><span>Settings</span></button>
+    <button type="button" class="hnav active" data-tab="levels" aria-current="page"><svg class="ic ic-opt-pin"><use href="#ic-opt-pin"/></svg><span>Levels</span></button>
+    <button type="button" class="hnav" data-tab="custom"><svg class="ic ic-piano-note"><use href="#ic-piano-note"/></svg><span>Custom</span></button>
+    <button type="button" class="hnav" data-tab="shop"><svg class="ic ic-shop"><use href="#ic-shop"/></svg><span>Shop</span></button>
+    <button type="button" class="hnav" data-tab="themes"><svg class="ic ic-palette"><use href="#ic-palette"/></svg><span>Themes</span></button>
+    <button type="button" class="hnav" data-tab="settings"><svg class="ic ic-gear"><use href="#ic-gear"/></svg><span>Settings</span></button>
   </nav>
 
   <div class="tab-pane active" id="tab-levels">

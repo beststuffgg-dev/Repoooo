@@ -1256,8 +1256,8 @@ body.gfx-modern:has(#game.active)::after { display:none; }
 .ov-swatch { box-shadow:none; }
 .hud-combo { color:var(--tap); }
 
-.hnav { display:flex; flex-direction:column; align-items:center; gap:2px; padding:6px 8px; letter-spacing:.3px; text-transform:none; font-size:12px; flex:1; }
-.hnav .ic { font-size:12px; }
+.hnav { flex:1 1 0; min-width:0; display:flex; flex-direction:row; align-items:center; justify-content:center; gap:4px; padding:7px 4px; letter-spacing:0; text-transform:none; font-size:12px; flex:1; white-space:nowrap; }
+.hnav .ic { font-size:15px; }
 #home-nav { gap:6px; padding:6px 12px; }
 .ic { color:currentColor; }
 button:active, .hnav:active, .level-card:active, .area-chip:active, .song-row:active { transform:scale(.96) translateY(1px); transition:transform .06s; }
@@ -1358,11 +1358,11 @@ html.is-full { resize:none; max-width:none; max-height:none; min-width:0; min-he
   </div>
 
   <nav id="home-nav" aria-label="Sections">
-    <button type="button" class="hnav active" data-tab="levels" aria-current="page"><svg class="ic ic-big ic-levels"><use href="#ic-levels"/></svg><span>Levels</span></button>
-    <button type="button" class="hnav" data-tab="custom"><svg class="ic ic-big ic-piano-note"><use href="#ic-piano-note"/></svg><span>Notes</span></button>
-    <button type="button" class="hnav" data-tab="shop"><svg class="ic ic-big ic-shop"><use href="#ic-shop"/></svg><span>Shop</span></button>
-    <button type="button" class="hnav" data-tab="themes"><svg class="ic ic-big ic-palette"><use href="#ic-palette"/></svg><span>Themes</span></button>
-    <button type="button" class="hnav" data-tab="settings"><svg class="ic ic-big ic-gear"><use href="#ic-gear"/></svg><span>Settings</span></button>
+    <button type="button" class="hnav active" data-tab="levels" aria-current="page"><svg class="ic ic-opt-pin"><use href="#ic-opt-pin"/></svg><span>Levels</span></button>
+    <button type="button" class="hnav" data-tab="custom"><svg class="ic ic-piano-note"><use href="#ic-piano-note"/></svg><span>Custom</span></button>
+    <button type="button" class="hnav" data-tab="shop"><svg class="ic ic-shop"><use href="#ic-shop"/></svg><span>Shop</span></button>
+    <button type="button" class="hnav" data-tab="themes"><svg class="ic ic-palette"><use href="#ic-palette"/></svg><span>Themes</span></button>
+    <button type="button" class="hnav" data-tab="settings"><svg class="ic ic-gear"><use href="#ic-gear"/></svg><span>Settings</span></button>
   </nav>
 
   <div class="tab-pane active" id="tab-levels">
@@ -3844,6 +3844,12 @@ window.RD_Icons = (function () {
     flag: ['M5 21V4', 'M5 5h11l-2 4 2 4H5Z|a'],
     expand: ['M4 9V4h5', 'M20 9V4h-5', 'M4 15v5h5', 'M20 15v5h-5'],
     shrink: ['M9 4v5H4', 'M15 4v5h5', 'M9 20v-5H4', 'M15 20v-5h5'],
+    'opt-pin': ['M12 21s-6.500-5.500-6.500-11a6.500 6.500 0 0 1 13 0c0 5.500-6.500 11-6.500 11Z|a', 'M12 7.500a2.500 2.500 0 1 0 .01 0Z|b'],
+    'opt-peaks': ['M2.500 19.500 9 8l4 7 3-4.500 5.500 9Z|a', 'M7.500 11l1.500 1.500 1.500-1'],
+    'opt-list': ['M4 5h16v14H4Z|a', 'M8 9.500h8', 'M8 14.500h5', 'M6.500 9.500h.1', 'M6.500 14.500h.1'],
+    'opt-play': ['M12 3.500a8.500 8.500 0 1 0 .01 0Z|a', 'M10 8.500l5.500 3.500-5.500 3.500Z|b'],
+    'opt-target': ['M12 3.500a8.500 8.500 0 1 0 .01 0Z|a', 'M12 7.500a4.500 4.500 0 1 0 .01 0Z|b', 'M12 11a1 1 0 1 0 .01 0Z|a'],
+    'opt-stairs': ['M3.500 20.500h5v-5h5v-5h7v10.500Z|a', 'M8.500 15.500v5M13.500 10.500v5'],
     dots: ['M6 12h.1M12 12h.1M18 12h.1'],
     check2: ['M4 12.500l4 4L20 6'],
   };
@@ -3865,7 +3871,7 @@ window.RD_Icons = (function () {
     coin: ['#f2b92c'], heart: ['#e0553a'], lock: ['#d7b25a'], trophy: ['#f2b92c'], note: ['#6aa6d8'], dice: ['#ffffff'],
     piano: ['#ffffff', '#3a3023'], 'piano-note': ['#ffffff', '#6aa6d8'], crown: ['#f2b92c'], bolt: ['#f7d94c'], gift: ['#e0553a', '#f2b92c'],
     headphones: ['#6aa6d8'], gem: ['#7fd6e8'], flame: ['#f2803a'], sliders: ['#e0553a'], play: ['#e0553a'], star: ['#f7d94c'],
-    'glow-star': ['#f7d94c'], ghost: ['#ffffff'], robot: ['#b9c4cc'], cat: ['#f0b070'], rocket: ['#e8e8e8'], unicorn: ['#ffffff'],
+    'glow-star': ['#f7d94c'], 'opt-pin': ['#e0553a', '#ffffff'], 'opt-peaks': ['#9cc4e4'], 'opt-list': ['#fff3c4'], 'opt-play': ['#f2b92c', '#e0553a'], 'opt-target': ['#ffffff', '#e0553a'], 'opt-stairs': ['#7fc47a'], ghost: ['#ffffff'], robot: ['#b9c4cc'], cat: ['#f0b070'], rocket: ['#e8e8e8'], unicorn: ['#ffffff'],
     dragon: ['#6dbb6a'], galaxy: ['#b48be0'], alien: ['#8fd36a', '#2b2b2b'], eagle: ['#b9854e'], goat: ['#e5ddd0'], blackhole: ['#3a3023'],
     'shooting-star': ['#f7d94c'], angel: ['#ffe9b5'], box: ['#d9a96b'], disco: ['#d6d6e8'], crystal: ['#c7a6ee'], sparkle: ['#f7d94c'],
     moneybag: ['#7fc47a'], moneywings: ['#f2b92c'], seedling: ['#7fc47a'], skull: ['#ffffff'], pencil: ['#f2b92c'], floppy: ['#6aa6d8'],

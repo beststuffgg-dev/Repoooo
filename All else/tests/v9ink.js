@@ -45,7 +45,7 @@ console.log('== ink engine ==');
     ok(s.fonts.includes('RD Round'), 'the rounded font loads from inside the page');
     ok(!EMOJI.test(s.text), 'no emoji is left in the visible text');
     ok(s.ic > 10, 'drawn icons stand in for the emojis (' + s.ic + ')');
-    ok(s.tabs.length === 5 && s.tabs.every(t => t.icon && t.col === 'column'), 'each tab has its icon above its label');
+    ok(s.tabs.length === 5 && s.tabs.every(t => t.icon && t.col === 'row'), 'each tab has its icon next to its label');
     ok(/^rgb\((2[3-5]\d), (2[0-5]\d), (2[0-5]\d)\)$/.test(s.bg), 'light mode is the default (' + s.bg + ')');
     ok(s.ink && s.noImg, 'the hand-drawn borders are drawn');
     ok(s.logo, 'the new logo is on the home screen');
