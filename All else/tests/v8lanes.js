@@ -65,7 +65,7 @@ const INIT = () => {
       const ov = [...document.querySelectorAll('.ov-key')].map(e => e.textContent.trim());
       const widths = lanes.map(l => l.getBoundingClientRect().width);
       const rootW = document.documentElement.offsetWidth;
-      const bg = lanes.slice(0, 2).map(l => getComputedStyle(l).backgroundColor);
+      const bg = lanes.slice(0, 2).map(l => getComputedStyle(l).borderImageSource);
       return { n: lanes.length, caps, ov, minW: Math.min(...widths), rootW, tint: bg[0] !== bg[1],
                ids: lanes.every((l, i) => l.id === 'lane' + i && document.getElementById('btn' + i) && document.getElementById('fb' + i)) };
     }, n);

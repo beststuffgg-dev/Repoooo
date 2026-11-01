@@ -23,7 +23,7 @@ body, body[class*="theme-"] {
   --bg4:   color-mix(in srgb, var(--bg) 80%, var(--ink));
   --border:  color-mix(in srgb, var(--bg) 70%, var(--ink));
   --border2: color-mix(in srgb, var(--bg) 50%, var(--ink));
-  --muted: color-mix(in srgb, var(--text) 62%, var(--bg));
+  --muted: color-mix(in srgb, var(--text) 80%, var(--bg));
   --dim:   color-mix(in srgb, var(--bg) 75%, var(--ink));
   --tap2:  color-mix(in srgb, var(--tap) 70%, white);
   --dtap2: color-mix(in srgb, var(--dtap) 70%, white);
@@ -1241,13 +1241,14 @@ select, input[type="text"], input[type="number"], textarea, .uname-input, .ctf-i
 :where(.level-card, .song-row, .avatar-card, .theme-card, #daily-card, .area-chip, .hnav, button) > * { position:relative; z-index:1; }
 
 body::after {
-  content:''; position:fixed; inset:0; z-index:2147483000; pointer-events:none;
+  display:none; content:''; position:fixed; inset:0; z-index:2147483000; pointer-events:none;
   background:var(--bg);
-  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 -6.2'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 -6.2'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity:.7;
+  -webkit-mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 -6.6'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  mask-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' seed='7'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 9 -6.6'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity:.32;
 }
-body:not(.gfx-modern)::after, body:has(#game.active)::after { display:none; }
+body.gfx-modern::after { display:block; }
+body.gfx-modern:has(#game.active)::after { display:none; }
 
 #game { background:var(--bg); }
 #g-overlay { background:color-mix(in srgb, var(--bg) 93%, transparent); backdrop-filter:none; }
@@ -1283,6 +1284,24 @@ body.fullscreen #g-scene { position:fixed; }
 body.fullscreen .screen { max-width:560px; margin:0 auto; }
 body.fullscreen { background:var(--bg); }
 html.is-full { resize:none; max-width:none; max-height:none; min-width:0; min-height:0; }
+
+.tab-pane { padding:8px 10px; gap:5px; }
+#home-hero { padding:12px 14px 8px; }
+#profile-bar { padding:6px 12px; }
+.hero-row { gap:10px; }
+.legend-row { margin-top:8px; gap:6px; }
+.leg-pill { padding:2px 9px 2px 5px; }
+#home-nav { padding:4px 10px; gap:4px; }
+.hnav { padding:4px 6px; }
+.level-card { padding:8px 12px; }
+.song-row { padding-top:6px; padding-bottom:6px; }
+.area-chip { padding:6px 8px; }
+#daily-card { padding:8px 12px; }
+.avatar-card { padding:8px; }
+.theme-card { padding:9px; }
+.themes-grid { gap:6px; padding:8px; }
+.shop-subnav { gap:4px; }
+.cr-cell { margin:0; }
 </style>
 </head>
 <body>

@@ -186,15 +186,15 @@ console.log('== the old style is offered as a real choice ==');
       return {
         sawTile: !!tile,
         laneAfter: getComputedStyle(lane, '::after').backgroundImage.slice(0, 30),
-        barShadow: getComputedStyle(bar).boxShadow.length,
-        tileShadow: tile ? getComputedStyle(tile).boxShadow.length : 0,
+        barShadow: getComputedStyle(bar).backgroundImage.length,
+        tileShadow: tile ? getComputedStyle(tile).borderImageSource.length : 0,
         tileRadius: tile ? getComputedStyle(tile).borderRadius : '',
       };
     });
     ok(r.sawTile, 'a tile spawned to measure');
     ok(r.laneAfter !== 'none' && r.laneAfter.length > 4, 'the lane has a depth gradient');
-    ok(r.barShadow > 20, 'the strike line carries a bloom');
-    ok(r.tileShadow > 40, 'tiles carry a lit edge and a cast glow');
+    ok(r.barShadow > 20, 'the strike line is a hand-drawn stroke');
+    ok(r.tileShadow > 40, 'tiles are drawn with an inked outline');
     notes.push('tile radius under modern: ' + r.tileRadius);
     await ctx.close();
   }

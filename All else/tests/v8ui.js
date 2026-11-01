@@ -218,7 +218,7 @@ const open = async (b, w, h) => {
     ok(s.shop > 10, 'opening Shop builds it (' + s.shop + ' avatars)');
     ok(s.themes === 0 && s.settings === 0, 'and only it');
     await tab('themes');   const t = await sizes();
-    ok(t.themes === 30, 'opening Themes builds it (' + t.themes + ' themes)');
+    ok(t.themes === 18, 'opening Themes builds it (' + t.themes + ' themes)');
     await tab('settings'); const g = await sizes();
     ok(g.settings > 0, 'opening Settings builds it (' + g.settings + ' blocks)');
 

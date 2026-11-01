@@ -113,7 +113,7 @@ window.RD_Ink = (function () {
     const seed = o.seed || 1;
     const main = wavyPath(size, r, amp, seed);
     const echo = wavyPath(size, r, amp * 1.25, seed + 77);
-    const sw = o.strokeW === undefined ? 2 : o.strokeW;
+    const sw = o.strokeW === undefined ? 2.8 : o.strokeW;
     let s = '<svg xmlns="http://www.w3.org/2000/svg" width="' + size + '" height="' + size + '" viewBox="0 0 ' + size + ' ' + size + '">';
     if (o.fill && o.fill !== 'none') s += '<path d="' + main + '" fill="' + o.fill + '"/>';
     if (o.mode === 'hover') {
@@ -124,7 +124,7 @@ window.RD_Ink = (function () {
       s += '<path d="' + main + '" fill="none" stroke="#ffffff" stroke-width="' + (sw + 1) + '" stroke-linejoin="round"/>';
     } else if (sw > 0) {
       s += '<path d="' + main + '" fill="none" stroke="' + o.stroke + '" stroke-width="' + sw + '" stroke-linejoin="round" stroke-linecap="round"/>';
-      s += '<path d="' + echo + '" fill="none" stroke="' + o.stroke + '" stroke-width="' + (sw * 0.55) + '" stroke-linejoin="round" opacity=".5"/>';
+      s += '<path d="' + echo + '" fill="none" stroke="' + o.stroke + '" stroke-width="' + (sw * 0.5) + '" stroke-linejoin="round" opacity=".28"/>';
     }
     return s + '</svg>';
   }
@@ -174,11 +174,11 @@ window.RD_Ink = (function () {
 
   function rules(tokens, opts) {
     opts = opts || {};
-    const amp = opts.flat ? 0.25 : (opts.amp === undefined ? 1.1 : opts.amp);
+    const amp = opts.flat ? 0.12 : (opts.amp === undefined ? 0.55 : opts.amp);
     const out = [];
     const b = 'border-width:1px;border-style:solid;border-color:transparent !important;border-radius:12px;box-shadow:none !important;';
     const emit = (name, selector, fill, ink, press, themeFill) => {
-      const mk = (variant, mode, f) => boxURL({ fill: f, stroke: ink, seed: 11 + variant * 29 + name.length * 5, amp, mode, r: 13, strokeW: 2 });
+      const mk = (variant, mode, f) => boxURL({ fill: f, stroke: ink, seed: 11 + variant * 29 + name.length * 5, amp, mode, r: 13, strokeW: 2.8 });
       const bi = (v, mode, f) => mk(v, mode, f) + ' 20 fill / 9px / 4px stretch';
       const base = ':is(' + selector + ')';
       out.push(base + '{' + b + 'background:transparent !important;border-image:' + bi(0, 'rest', fill) + ';}');
@@ -245,23 +245,23 @@ window.RD_Ink = (function () {
 
   function playRules(t, opts) {
     opts = opts || {};
-    const amp = opts.flat ? 0.2 : 1.0;
+    const amp = opts.flat ? 0.15 : 0.5;
     const bi = (o) => boxURL(Object.assign({ amp, r: 12 }, o)) + ' 20 fill / 9px / 0 stretch';
     const white = '#ffffff';
     const tapFill = t.tap, dtapFill = t.dtap;
     const holdFill = mix(t.tap, t.bg, 0.55);
     const css = [];
-    css.push('.lane{border-width:1px !important;border-style:solid !important;border-color:transparent !important;border-radius:12px;background:transparent !important;border-image:' + boxURL({ fill: alpha(mix(t.bg, t.ink, 0.04), 0.82), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 1.8 }) + ' 20 fill / 9px / 0 stretch;}');
-    css.push('.lane:nth-child(even){border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.ink, 0.09), 0.82), stroke: t.ink, amp, r: 12, seed: 43, strokeW: 1.8 }) + ';}');
-    css.push('.lane.glow-tap{border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.tap, 0.3), 0.85), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 1.8 }) + ';}');
-    css.push('.lane.glow-dtap{border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.dtap, 0.3), 0.85), stroke: t.ink, amp, r: 12, seed: 43, strokeW: 1.8 }) + ';}');
+    css.push('.lane{border-width:1px !important;border-style:solid !important;border-color:transparent !important;border-radius:12px;background:transparent !important;border-image:' + boxURL({ fill: alpha(mix(t.bg, t.ink, 0.04), 0.82), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 2.4 }) + ' 20 fill / 9px / 0 stretch;}');
+    css.push('.lane:nth-child(even){border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.ink, 0.09), 0.82), stroke: t.ink, amp, r: 12, seed: 43, strokeW: 2.4 }) + ';}');
+    css.push('.lane.glow-tap{border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.tap, 0.3), 0.85), stroke: t.ink, amp, r: 12, seed: 41, strokeW: 2.4 }) + ';}');
+    css.push('.lane.glow-dtap{border-image-source:' + boxURL({ fill: alpha(mix(t.bg, t.dtap, 0.3), 0.85), stroke: t.ink, amp, r: 12, seed: 43, strokeW: 2.4 }) + ';}');
     css.push('.lane-hitbar{height:8px;bottom:50px;background:' + hLineURL(t.ink, { w: 80, h: 8, sw: 3 }) + ' repeat-x center/80px 8px !important;box-shadow:none !important;}');
     css.push('.lane-hitglow{background:none !important;}');
     css.push('.tile{background:none !important;box-shadow:none !important;filter:none;}');
-    css.push('.tile-tap{border-width:2px;border-style:solid;border-color:transparent;border-radius:9px;border-image:' + bi({ fill: tapFill, stroke: t.ink, seed: 51, strokeW: 2.2 }) + ';}');
-    css.push('.tile-dtap{border-width:2px !important;border-style:solid !important;border-color:transparent !important;border-radius:9px;border-image:' + bi({ fill: dtapFill, stroke: t.ink, seed: 53, strokeW: 2.2 }) + ';}');
-    css.push('.tile-dtap.primed{border-image-source:' + boxURL({ fill: lighten(dtapFill, 0.35), stroke: t.ink, amp, r: 12, seed: 53, strokeW: 2.2, mode: 'hover' }) + ';animation:none;}');
-    css.push('.tile-hold{border-width:2px !important;border-style:solid !important;border-color:transparent !important;border-radius:9px;border-image:' + bi({ fill: holdFill, stroke: t.ink, seed: 55, strokeW: 2 }) + ';}');
+    css.push('.tile-tap{border-width:2px;border-style:solid;border-color:transparent;border-radius:9px;border-image:' + bi({ fill: tapFill, stroke: t.ink, seed: 51, strokeW: 3 }) + ';}');
+    css.push('.tile-dtap{border-width:2px !important;border-style:solid !important;border-color:transparent !important;border-radius:9px;border-image:' + bi({ fill: dtapFill, stroke: t.ink, seed: 53, strokeW: 3 }) + ';}');
+    css.push('.tile-dtap.primed{border-image-source:' + boxURL({ fill: lighten(dtapFill, 0.35), stroke: t.ink, amp, r: 12, seed: 53, strokeW: 3, mode: 'hover' }) + ';animation:none;}');
+    css.push('.tile-hold{border-width:2px !important;border-style:solid !important;border-color:transparent !important;border-radius:9px;border-image:' + bi({ fill: holdFill, stroke: t.ink, seed: 55, strokeW: 2.8 }) + ';}');
     css.push('.tile-hold.held{border-image-source:' + boxURL({ fill: lighten(holdFill, 0.3), stroke: t.ink, amp, r: 12, seed: 55, strokeW: 2, mode: 'hover' }) + ';}');
     const dot = dotURL(white, { size: 24, seed: 7, ring: t.ink });
     css.push('.tile-tap:not(.tile-hold)::before,.tile-dtap::before{content:"";position:absolute;inset:auto;width:18px;height:18px;left:50%;top:50%;margin:-9px 0 0 -9px;background:' + dot + ' center/18px 18px no-repeat !important;border:0;opacity:1;}');
@@ -272,8 +272,8 @@ window.RD_Ink = (function () {
     css.push('.tile-hold::after{content:"";position:absolute;left:50%;margin-left:-3px;width:6px;top:8px;bottom:30px;background:' + lineURL(white, { w: 6, h: 64, sw: 2, amp: 0.9 }) + ' center/6px 100% repeat-y;pointer-events:none;}');
     css.push('.hold-fill{left:50% !important;right:auto !important;width:5px;margin-left:-2.5px;bottom:28px !important;border-radius:3px !important;background:' + t.ink + ' !important;box-shadow:none !important;opacity:0;}');
     css.push('.tile-hold.held .hold-fill{opacity:.85 !important;}');
-    css.push('.lane-btn{background:none !important;border-width:1px !important;border-style:solid !important;border-color:transparent !important;border-image:' + boxURL({ fill: mix(t.bg, t.ink, 0.12), stroke: t.ink, amp, r: 12, seed: 61, strokeW: 1.8 }) + ' 20 fill / 9px / 0 stretch;box-shadow:none !important;}');
-    css.push('.lane-btn:active,.lane-btn.down{border-image-source:' + boxURL({ fill: lighten(mix(t.bg, t.ink, 0.12), 0.5), stroke: t.ink, amp, r: 12, seed: 61, strokeW: 1.8, mode: 'press' }) + ';}');
+    css.push('.lane-btn{background:none !important;border-width:1px !important;border-style:solid !important;border-color:transparent !important;border-image:' + boxURL({ fill: mix(t.bg, t.ink, 0.12), stroke: t.ink, amp, r: 12, seed: 61, strokeW: 2.4 }) + ' 20 fill / 9px / 0 stretch;box-shadow:none !important;}');
+    css.push('.lane-btn:active,.lane-btn.down{border-image-source:' + boxURL({ fill: lighten(mix(t.bg, t.ink, 0.12), 0.5), stroke: t.ink, amp, r: 12, seed: 61, strokeW: 2.4, mode: 'press' }) + ';}');
     return css.join('\n');
   }
 

@@ -144,7 +144,7 @@ const ok = (c, m) => { c ? (pass++, console.log('  ok: ' + m)) : (fail++, consol
       document.getElementById('g-overlay').classList.remove('show');
       startGame();
       await new Promise(r => setTimeout(r, 120));
-      const out = { found: true, saved, maxLives, pips: document.getElementById('g-lives').textContent.trim().length };
+      const out = { found: true, saved, maxLives, pips: document.querySelectorAll('#g-lives svg.ic').length || document.getElementById('g-lives').textContent.trim().length };
       quitToMenu();
       return out;
     });

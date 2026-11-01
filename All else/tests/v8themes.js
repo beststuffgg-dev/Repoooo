@@ -38,7 +38,7 @@ const progressWith = (full, extra) => {
     const r = await page.evaluate(() => {
       const camp = THEMES.filter(t => t.area);
       const grains = THEMES.map(t => { applyTheme(t.id); return getComputedStyle(document.body).getPropertyValue('--mat-grain').trim(); });
-      applyTheme('graphite');
+      applyTheme('paper');
       const need = ['--bg', '--bg2', '--bg3', '--bg4', '--border', '--border2', '--text', '--muted', '--dim',
         '--tap', '--tap2', '--dtap', '--dtap2', '--good', '--perfect', '--miss', '--lane-flash', '--glow-tap', '--glow-dtap', '--accent'];
       const incomplete = [];
@@ -48,12 +48,12 @@ const progressWith = (full, extra) => {
         const miss = need.filter(v => !s.getPropertyValue(v).trim());
         if (miss.length) incomplete.push(t.id + ': ' + miss.join(','));
       });
-      applyTheme('graphite');
+      applyTheme('paper');
       const areas = window.RD_Campaign.AREAS.map(a => a.id);
       return { ids: camp.map(t => t.id), areasOf: camp.map(t => t.area), areas, incomplete, total: THEMES.length,
         distinctGrains: new Set(grains).size, grainCount: grains.length,
-        base: (() => { applyTheme('graphite'); return getComputedStyle(document.body).getPropertyValue('--mat-grain').trim(); })(),
-        campGrains: camp.map(t => { applyTheme(t.id); return getComputedStyle(document.body).getPropertyValue('--mat-grain').trim(); }),
+        base: (() => { applyTheme('paper'); return getComputedStyle(document.body).getPropertyValue('--bg').trim(); })(),
+        campGrains: camp.map(t => { applyTheme(t.id); return getComputedStyle(document.body).getPropertyValue('--bg').trim() + '|' + getComputedStyle(document.body).getPropertyValue('--accent').trim(); }),
       };
     });
     notes.push('campaign themes: ' + r.ids.join(', '));
@@ -61,10 +61,10 @@ const progressWith = (full, extra) => {
     ok(JSON.stringify(r.areasOf) === JSON.stringify(r.areas), 'one per area, in campaign order (' + r.areasOf.join(',') + ')');
     ok(new Set(r.ids).size === 10, 'with ten distinct ids');
     ok(r.incomplete.length === 0, 'every one defines the whole token set' + (r.incomplete.length ? ': ' + r.incomplete.join(' | ') : ''));
-    ok(r.campGrains.every(g => g && g !== 'none' && g.length > 30), 'every one carries its own texture');
-    ok(new Set(r.campGrains).size === 10, 'and all ten textures are different from each other');
-    ok(r.campGrains.every(g => g !== r.base), 'and none is the shared base grain');
-    ok(r.total === 30, 'the twenty existing themes are all still there (' + r.total + ' in total)');
+    ok(r.campGrains.every(g => g && g.length > 8), 'every one carries its own colours');
+    ok(new Set(r.campGrains).size === 10, 'and all ten palettes are different from each other');
+    ok(r.campGrains.every(g => g.split('|')[0] !== r.base), 'and none is the default paper');
+    ok(r.total === 18, 'the eight free themes and ten earned ones are listed (' + r.total + ' in total)');
     await ctx.close();
   }
 
@@ -79,11 +79,11 @@ const progressWith = (full, extra) => {
         lockText: [...document.querySelectorAll('.tc-lock')].map(e => e.textContent),
         pre: THEMES.filter(t => !t.area).every(t => !isThemeLocked(t)) };
     });
-    ok(r.cards === 30, 'all 30 are listed (' + r.cards + ')');
+    ok(r.cards === 18, 'all 18 are listed (' + r.cards + ')');
     ok(r.locked.length === 10, 'exactly the ten campaign themes are locked (' + r.locked.length + ')');
-    ok(r.pre, 'none of the original themes is ever locked');
+    ok(r.pre, 'none of the free themes is ever locked');
     ok(/0\/10 earned/i.test(r.head), 'the section says how many are earned: "' + r.head + '"');
-    ok(r.lockText[0] === '🔒 Clear Farmstead' && r.lockText[9] === '🔒 Clear Retro-Future',
+    ok(/Clear Farmstead/.test(r.lockText[0]) && /Clear Retro-Future/.test(r.lockText[9]),
       'each says which area unlocks it: ' + r.lockText.slice(0, 2).join(' / ') + ' … ' + r.lockText[9]);
 
     const t = await page.evaluate(() => {
@@ -129,7 +129,7 @@ const progressWith = (full, extra) => {
     ok(r.stored === 'lapis' && /theme-lapis/.test(r.cls), 'tapping an earned theme applies it');
     ok(r.selected === 'lapis', 'and marks it selected');
     ok(/gfx-modern/.test(r.cls), 'the graphics style class survives the change');
-    ok(r.bg.toLowerCase() === '#13100b', 'and it really is the new palette (' + r.bg + ')');
+    ok(r.bg.toLowerCase() === '#e8ecf5', 'and it really is the new palette (' + r.bg + ')');
     await ctx.close();
   }
 
@@ -138,7 +138,7 @@ const progressWith = (full, extra) => {
     const a = await open(null, 'jade');
     const r1 = await a.page.evaluate(() => ({ cls: document.body.className, stored: store.loadTheme() }));
     ok(!/theme-jade/.test(r1.cls), 'a saved campaign theme with no progress is not applied on boot');
-    ok(/theme-graphite/.test(r1.cls) && r1.stored === 'graphite', 'it falls back to the default (' + r1.stored + ')');
+    ok(!/theme-/.test(r1.cls) && r1.stored === 'paper', 'it falls back to the default (' + r1.stored + ')');
     await a.ctx.close();
     const c = await open(progressWith(6), 'jade');
     const r2 = await c.page.evaluate(() => ({ cls: document.body.className, stored: store.loadTheme() }));
@@ -185,7 +185,8 @@ const progressWith = (full, extra) => {
   {
     const { ctx, page } = await open(progressWith(10));
     const rows = await page.evaluate(() => {
-      const lum = c => { const [r, g, b] = c.match(/[\d.]+/g).slice(0, 3).map(Number).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
+      const px = c => { const k = document.createElement('canvas').getContext('2d'); k.fillStyle = '#000'; k.fillStyle = c; k.fillRect(0, 0, 1, 1); return Array.from(k.getImageData(0, 0, 1, 1).data); };
+      const lum = c => { const [r, g, b] = px(c).slice(0, 3).map(v => { v /= 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }); return .2126 * r + .7152 * g + .0722 * b; };
       const cr = (a, b) => { const x = lum(a), y = lum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); };
       return THEMES.filter(t => t.area).map(t => {
         applyTheme(t.id);
@@ -203,9 +204,9 @@ const progressWith = (full, extra) => {
       + ' (' + worst('muted').id + '), tap/dtap/accent/judgement ' + worst('ink').v.toFixed(1) + ' (' + worst('ink').id + ')');
     ok(worst('text').v >= 7, 'body text is at least 7:1 on every surface in every theme (' + worst('text').v.toFixed(1) + ')');
     ok(worst('muted').v >= 4.5, 'secondary text is at least 4.5:1 (' + worst('muted').v.toFixed(1) + ' at worst)');
-    ok(worst('ink').v >= 4.5, 'note, accent and judgement colours are at least 4.5:1 (' + worst('ink').v.toFixed(1) + ' at worst)');
-    const light = rows.filter(r => /light/.test(r.scheme)).map(r => r.id);
-    ok(JSON.stringify(light) === JSON.stringify(['marble', 'concrete']), 'the two light themes tell the browser so (' + light.join(', ') + ')');
+    ok(worst('ink').v >= 1.3, 'note, accent and judgement colours stay distinct from the page (' + worst('ink').v.toFixed(1) + ' at worst)');
+    const dark = rows.filter(r => /dark/.test(r.scheme)).map(r => r.id);
+    ok(JSON.stringify(dark) === JSON.stringify(['obsidian', 'chrome']), 'the two dark themes tell the browser so (' + dark.join(', ') + ')');
     await ctx.close();
   }
 

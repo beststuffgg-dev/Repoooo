@@ -23,6 +23,7 @@ structurally cannot catch a layout bug.
 | `v8creator.js` | The generation menu, Endless as a tab, aspect ratios |
 | `v8editor.js` | Keyboard entry, multi-select, vertical resize |
 | `v8lanes.js` | 4, 6 and 8 lanes: the board built per count, whole-lane mouse/touch/chord input, the 8-lane window widening that is never saved as your width, keys per lane count with swap-on-conflict, share codes (golden fixtures for versions 2–5 live in `v8codec.js`), and the creator's lane switch |
+| `v9ink.js` | The hand-drawn look: ink engine determinism, rounded font, no emoji in the UI, icon tabs, white hover outline and press, menu sounds (and none in levels), tile dots and hold line, backdrops in share codes, fullscreen tab |
 | `autochart.js` | The standalone Auto Level Generator page: a synthetic classical piece (cello, piano, violin) is analysed; pitch precision, holds, instruments, difficulty, lanes, seeds and the code importing into the game |
 | `v8studio.js` | The Song Studio: note starts, pitches, chords and tempo measured on audio rendered with the game's own voices; the screen end to end (file chooser, speeds, tap timing at half speed, snapping, holds, compare, making a level, scroll rows, lanes, creator hand-off, the #studio tab route) |
 | `v8move.js` | The creator's Move tool (single notes, selections, holds), refused drops and their cue, the sound on every place/move/pick, undo and redo (buttons and keys) over placing, moving, stretching, erasing and lane changes, per-note instruments, and the import sanitiser |

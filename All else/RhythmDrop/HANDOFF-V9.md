@@ -281,3 +281,14 @@ The remaining 25 are V7's, unchanged, running against `RhythmDrop/v7/`. `APP_DIR
 - **`v8settings.js` is intermittently flaky** — its "everything survives a reload" section fails roughly 1 run in 8–16 with every setting reading as its default after the reload. It reproduces identically on the build from before the theme, row-type and performance work, so it is not from them. A settle delay before the reload did not cure it, so the obvious race (a `localStorage` write not landing before the reload) is not the whole story; the cause is not found. Worth a proper look, because "settings sometimes reset on reopen" is also what a real bug would look like.
 - **The 11 above-C8 notes** (§3) are worth a listen before deciding whether to leave them.
 - **Modern is not applied to every screen yet.** The board, the campaign list, the shop cards, the profile bar and the creator grid all pick it up; the mystery-box reveal, the results overlay and the username screen still render the same under both.
+
+
+## 5h. Hand-drawn visual overhaul
+
+- `ink.js` is the whole look: seeded wobbly outlines turned into SVG data URIs used as `border-image` (9-slice), generated per theme from the CSS tokens (`--bg`, `--text`, `--ink`, `--accent`, `--tap`, `--dtap`; every other surface token is a `color-mix` of those in the first CSS block). `rules()` writes the control styles, `playRules()` the lanes, tiles and hit bar, `logoSVG()` the logo. `ink-ui.js` writes them into `<style id="ink-rules">` on boot and whenever the body class changes, wires the delegated menu sounds, and fills every `[data-logo]`.
+- Hover (white outline over an ink edge) and press (lighter fill) are CSS states inside the generated rules, so they are the same on every control. Selected/active controls use the accent. Classic graphics reduce the wobble; modern also draws the paper grain (`body.gfx-modern::after`, a masked layer over everything, off while playing).
+- `icons.js` holds the drawn icon sprite and a MutationObserver that swaps any emoji in text nodes for `<svg class="ic"><use href="#ic-name">`, so new strings need no special handling. Add icons to `I` and the character to `MAP`.
+- `scenes.js` is the texture backdrop set. `scene` is an optional level field, carried as the last share-code part (version 6); campaign levels derive it from their area (`forArea`). `applyScene` in `play.js` sets `#g-scene`.
+- `RD_uiSfx(kind)` in `audio.js` plays the menu sounds through the master gain. Lanes, the creator grid and range inputs are excluded; `uiSounds` in the settings switches them off.
+- `#full` opens the same page in a tab: `FULL_TAB` in `game.js` scales the UI with `fitFull()`, skips popup width logic and never saves its size.
+- Fonts (Fredoka, OFL) are embedded as one base64 `@font-face`, so nothing is fetched at run time.

@@ -86,7 +86,7 @@ const INIT = () => {
     ok(Math.abs(r.h - r.expected) < 1 && Math.abs(r.tileH - r.expected) < 1.5, 'a 3-row hold is ' + r.tileH.toFixed(0) + 'px tall: one tile plus three rows (' + r.expected.toFixed(0) + ')');
     ok(Math.abs(r.headCentre - r.judged) < 1.5, 'its head sits on the judged point (' + r.headCentre.toFixed(1) + ' vs ' + r.judged.toFixed(1) + ')');
     ok(r.hasClass, 'it is a tap with a hold class');
-    ok(Math.abs(r.capH - 38) < 1, 'the head cap is one tile high (' + r.capH + 'px)');
+    ok(Math.abs(r.capH - 18) < 1, 'the head dot is drawn at the foot of the tile (' + r.capH + 'px)');
   }
 
   console.log('== hold the key through to the tail ==');
