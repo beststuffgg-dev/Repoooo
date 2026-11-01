@@ -832,6 +832,7 @@ function openCellEditor(anchorEl, ri, ci) {
     const done = document.createElement('button');
     done.className = 'cce-btn done';
     done.textContent = 'Done';
+    done.classList.add('cce-done');
     done.addEventListener('click', () => pop.remove());
     foot.appendChild(erase); foot.appendChild(done);
     foot.classList.add('cce-typerow');

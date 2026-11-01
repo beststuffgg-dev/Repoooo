@@ -1130,7 +1130,7 @@ const SETTINGS_SUBTABS = [
 
 function _settingsSectionHead(text) {
   const d = document.createElement('div');
-  d.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);font-family:var(--font-data);text-transform:uppercase;margin:4px 0 6px;';
+  d.style.cssText = 'font-size:10px;font-weight:700;letter-spacing:2px;color:var(--muted);font-family:var(--font-data);text-transform:uppercase;margin:18px 0 8px;';
   d.textContent = text;
   return d;
 }

@@ -1344,6 +1344,26 @@ svg.ic { position:relative; z-index:1; }
   border-radius:10px;
 }
 #g-lanes .lane { z-index:1; }
+
+button, select, input, textarea { font-family:var(--font-body); }
+input[type="range"], input[type="checkbox"], input[type="radio"] { accent-color:var(--accent); }
+.area-chip.locked, .song-row.locked, .theme-card.locked { opacity:.8; }
+.song-row.locked .song-meta, .area-chip.locked .ac-prog { color:var(--muted); }
+.rarity-tag { background-image:linear-gradient(rgba(0,0,0,.28), rgba(0,0,0,.28)); text-shadow:none; font-size:8px; }
+.cr-row-num { color:var(--muted); font-size:10px; }
+.cr-add-btn { color:var(--muted); border-color:var(--border2); }
+#g-overlay { background:color-mix(in srgb, var(--bg) 97%, transparent); gap:10px; padding:14px 0; overflow:hidden; }
+.ov-hint { color:var(--muted); margin-top:6px; }
+.ov-logo { width:60px; height:60px; flex:none; }
+.theme-card.selected::after, .avatar-card.equipped::after {
+  content:''; position:absolute; top:7px; right:7px; width:20px; height:20px; border-radius:50%;
+  background:var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.500 12.500l4.500 4.500L19 7'/%3E%3C/svg%3E") center/14px no-repeat;
+  box-shadow:0 2px 0 rgba(0,0,0,.22); z-index:5;
+}
+.cce-done { background:var(--accent) !important; color:#fff !important; }
+.cce-done, .cce-done * { color:#fff; }
+#tab-settings .bg-radio-btn { font-family:var(--font-body); }
+.ac-prog { font-size:10px; }
 </style>
 </head>
 <body>

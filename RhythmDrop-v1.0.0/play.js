@@ -574,7 +574,7 @@ function endGame(won) {
   }
 
   ovTitle.innerHTML = won ? 'Level <span>Clear!</span>' : 'Game <span>Over</span>';
-  ovScore.textContent = score; ovScore.style.display = 'block'; ovScLbl.style.display = 'block';
+  ovScore.textContent = Number(score).toLocaleString(); ovScore.style.display = 'block'; ovScLbl.style.display = 'block';
 
   const ovCurr = document.getElementById('ov-currency-reward');
   if (ovCurr) {
