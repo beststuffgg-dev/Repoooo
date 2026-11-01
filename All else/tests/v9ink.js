@@ -39,7 +39,7 @@ console.log('== ink engine ==');
       const text = document.body.innerText;
       const tabs = [...document.querySelectorAll('.hnav')].map(t => ({ icon: !!t.querySelector('svg.ic'), label: t.textContent.trim(), col: getComputedStyle(t).flexDirection }));
       const bg = getComputedStyle(document.body).backgroundColor;
-      const card = document.querySelector('.level-card, .song-row');
+      const card = document.querySelector('#daily-card, .area-chip, .level-card');
       return { fonts, text, tabs, bg, ink: !!document.getElementById('ink-rules'), ic: document.querySelectorAll('svg.ic').length, noImg: !card || getComputedStyle(card).borderImageSource !== 'none', logo: !!document.querySelector('.logo-fill svg'), theme: document.body.className };
     });
     ok(s.fonts.includes('RD Round'), 'the rounded font loads from inside the page');
