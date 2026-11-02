@@ -15,7 +15,8 @@ console.log('== extension page rules ==');
   const html = fs.readFileSync(APP, 'utf8');
   ok(!/<script(?![^>]*\bsrc=)[^>]*>/i.test(html), 'popup.html has no inline script (the extension policy blocks it)');
   ok(!/\son[a-z]+\s*=\s*["']/i.test(html), 'and no inline event attributes');
-  ok(fs.existsSync(path.join(DIR, 'splash.js')), 'the splash cleanup lives in its own file');
+  ok(!fs.existsSync(path.join(DIR, 'splash.js')) && !/splash\.js/.test(html), 'no splash script: the splash hides itself in CSS');
+  ok(html.indexOf('src="ink.js"') < html.indexOf('src="levels.js"'), 'the look script loads first, so sprites are ready during the splash');
 }
 
 console.log('== ink engine ==');
